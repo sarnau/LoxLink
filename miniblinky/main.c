@@ -14,7 +14,7 @@ void SysTick_Handler(void) {
 void printCPUInfo() {
   uint32_t uid[3];
   HAL_GetUID(uid);
-  printf("Clock:%dMHz FLASH:%dkb, Unique device ID:%x.%x.%x\n", SystemCoreClock/1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
+  printf("Clock:%dMHz FLASH:%dkb, Unique device ID:%x.%x.%x\n", SystemCoreClock / 1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
 }
 
 void main(void) {
