@@ -18,20 +18,20 @@
       arm_target_device_name="STM32F103VE"
       arm_target_interface_type="SWD"
       c_preprocessor_definitions="STM32F10X_XL;__STM32F1xx_FAMILY;__STM32F103_SUBFAMILY;ARM_MATH_CM3;FLASH_PLACEMENT=1;STM32F103xE"
-      c_user_include_directories="$(ProjectDir)/STM32F1xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/STM32F1xx_HAL_Driver/Inc;$(ProjectDir)/CMSIS_4/CMSIS/Include;$(ProjectDir)/STM32F1xx/CMSIS/Device/Include;$(ProjectDir)/"
+      c_user_include_directories="$(ProjectDir)/STM32F1xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/STM32F1xx_HAL_Driver/Inc;$(ProjectDir)/STM32F1xx/CMSIS/Include;$(ProjectDir)/STM32F1xx/CMSIS/Device/ST/STM32L1xx/Include;$(ProjectDir)/"
       debug_register_definition_file="$(ProjectDir)/STM32F103xx_Registers.xml"
       debug_target_connection="J-Link"
       gcc_entry_point="Reset_Handler"
       linker_memory_map_file="$(ProjectDir)/STM32F103VE_MemoryMap.xml"
       linker_section_placement_file="$(ProjectDir)/flash_placement.xml"
-      macros="DeviceHeaderFile=$(PackagesDir)/STM32F1xx/CMSIS/Device/Include/stm32f10x.h;DeviceLibraryIdentifier=M3l;DeviceSystemFile=$(PackagesDir)/STM32F1xx/CMSIS/Device/Source/system_stm32f10x.c;DeviceVectorsFile=$(PackagesDir)/STM32F1xx/Source/STM32F103xx_Vectors.s;DeviceFamily=STM32F1xx;DeviceSubFamily=STM32F103;Target=STM32F103VE;Placement=Flash"
+      macros="DeviceLibraryIdentifier=M3l;DeviceSystemFile=$(PackagesDir)/STM32F1xx/CMSIS/Device/Source/system_stm32f10x.c;DeviceVectorsFile=$(PackagesDir)/STM32F1xx/Source/STM32F103xx_Vectors.s;DeviceFamily=STM32F1xx;DeviceSubFamily=STM32F103;Target=STM32F103VE;Placement=Flash"
       package_dependencies="STM32F1xx"
       project_directory=""
       project_type="Executable"
       target_reset_script="Reset();"
       target_trace_initialize_script="EnableTrace(&quot;$(TraceInterfaceType)&quot;)" />
     <folder Name="CMSIS Files">
-      <file file_name="STM32F1xx/CMSIS/Device/Source/system_stm32f1xx.c" />
+      <file file_name="STM32F1xx/CMSIS/system_stm32f1xx.c" />
     </folder>
     <folder Name="RTT Files">
       <file file_name="SEGGER_RTT.c" />
