@@ -18,7 +18,7 @@
       arm_target_device_name="STM32F103VE"
       arm_target_interface_type="SWD"
       c_preprocessor_definitions="STM32F10X_XL;__STM32F1xx_FAMILY;__STM32F103_SUBFAMILY;ARM_MATH_CM3;FLASH_PLACEMENT=1;STM32F103xE"
-      c_user_include_directories="$(ProjectDir)/STM32F1xx/STM32F1xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/STM32F1xx/STM32F1xx_HAL_Driver/Inc;$(ProjectDir)/STM32F1xx/CMSIS/Include;$(ProjectDir)/STM32F1xx/CMSIS/Device/ST/STM32L1xx/Include;$(ProjectDir)/"
+      c_user_include_directories="$(ProjectDir)/STM32F1xx/STM32F1xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/STM32F1xx/STM32F1xx_HAL_Driver/Inc;$(ProjectDir)/STM32F1xx/CMSIS/Include;$(ProjectDir)/STM32F1xx/CMSIS/Device/ST/STM32L1xx/Include;$(ProjectDir)/application_code/st_code/"
       debug_register_definition_file="$(ProjectDir)/STM32F1xx/es/STM32F103xx_Registers.xml"
       debug_target_connection="J-Link"
       gcc_entry_point="Reset_Handler"
@@ -29,26 +29,17 @@
       project_directory=""
       project_type="Executable"
       target_reset_script="Reset();"
+      target_script_file="$(ProjectDir)/STM32F1xx/es/STM32F1xx_Target.js"
       target_trace_initialize_script="EnableTrace(&quot;$(TraceInterfaceType)&quot;)" />
     <folder Name="CMSIS Files">
       <file file_name="STM32F1xx/CMSIS/system_stm32f1xx.c" />
     </folder>
-    <folder Name="RTT Files">
-      <file file_name="SEGGER_RTT.c" />
-      <file file_name="SEGGER_RTT.h" />
-      <file file_name="SEGGER_RTT_Conf.h" />
-      <file file_name="SEGGER_RTT_SES.c" />
-    </folder>
-    <folder Name="Script Files">
-      <file file_name="STM32F1xx/es/STM32F1xx_Target.js">
-        <configuration Name="Common" file_type="Reset Script" />
-      </file>
-    </folder>
-    <folder Name="Source Files">
-      <configuration Name="Common" filter="c;cpp;cxx;cc;h;s;asm;inc" />
-      <file file_name="main.c" />
-      <file file_name="stm32f1xx_hal_conf.h" />
-    </folder>
+    <folder
+      Name="application_code"
+      exclude="syscalls.c"
+      filter="*.c;*.h;*.s"
+      path="application_code"
+      recurse="Yes" />
     <folder Name="System Files">
       <file file_name="STM32F1xx/es/thumb_crt0.s" />
       <file file_name="STM32F1xx/es/STM32F1xx_Startup.s" />
