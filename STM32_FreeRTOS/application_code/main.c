@@ -33,9 +33,8 @@
  *    'Software System Reset' is selected.
  */
 
-#include "main.h"
-#include "stdint.h"
-#include "stdarg.h"
+/* Includes ------------------------------------------------------------------*/
+#include "stm32l4xx_hal.h"
 
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
@@ -52,6 +51,7 @@
 
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config( void );
+static void Error_Handler( void );
 
 /**
  * @brief Initializes the STM32L475 IoT node board.

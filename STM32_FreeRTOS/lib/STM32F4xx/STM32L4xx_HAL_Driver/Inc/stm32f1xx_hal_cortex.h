@@ -1,10 +1,10 @@
 /**
   ******************************************************************************
-  * @file    Cloud/AWS/Src/stm32l4xx_hal_msp.c
+  * @file    Cloud/AWS/Inc/stm32l4xx_it.h
   * @author  MCD Application Team
   * @version V1.0.1
   * @date    12-April-2017
-  * @brief   MSP Initialization and de-Initialization.
+  * @brief   headers of the interrupt handlers.
   ******************************************************************************
   * @attention
   *
@@ -45,47 +45,46 @@
   ******************************************************************************
   */
 
+/* Define to prevent recursive inclusion -------------------------------------*/
+#ifndef __STM32L4xx_IT_H
+#define __STM32L4xx_IT_H
+
+#ifdef __cplusplus
+ extern "C" {
+#endif 
+
 /* Includes ------------------------------------------------------------------*/
-#include "stm32l4xx_hal.h"
+/* Exported types ------------------------------------------------------------*/
+/* Exported constants --------------------------------------------------------*/
+/* Exported macro ------------------------------------------------------------*/
+/* Exported functions ------------------------------------------------------- */
 
-/**
-  * Initializes the Global MSP.
-  */
+void NMI_Handler(void);
+void HardFault_Handler(void);
+void MemManage_Handler(void);
+void BusFault_Handler(void);
+void UsageFault_Handler(void);
+void SVC_Handler(void);
+void DebugMon_Handler(void);
+void PendSV_Handler(void);
+void SysTick_Handler(void);
+void EXTI4_IRQHandler(void);
+void DMA1_Channel4_IRQHandler(void);
+void DMA1_Channel5_IRQHandler(void);
+void DMA1_Channel6_IRQHandler(void);
+void DMA1_Channel7_IRQHandler(void);
+void EXTI9_5_IRQHandler(void);
+void I2C2_EV_IRQHandler(void);
+void I2C2_ER_IRQHandler(void);
+void USART3_IRQHandler(void);
+void EXTI15_10_IRQHandler(void);
+void DMA2_Channel1_IRQHandler(void);
+void DMA2_Channel2_IRQHandler(void);
 
-void HAL_RNG_MspInit(RNG_HandleTypeDef* hrng)
-{
-  if(hrng->Instance==RNG)
-  {
-      /* Peripheral clock enable */
-    __HAL_RCC_RNG_CLK_ENABLE();
-  }
+#ifdef __cplusplus
 }
+#endif
 
-void HAL_RNG_MspDeInit(RNG_HandleTypeDef* hrng)
-{
-  if(hrng->Instance==RNG)
-  {
-    /* Peripheral clock disable */
-    __HAL_RCC_RNG_CLK_DISABLE();
-  }
-}
-
-void HAL_RTC_MspInit(RTC_HandleTypeDef* hrtc)
-{
-  if(hrtc->Instance==RTC)
-  {
-    __HAL_RCC_RTC_ENABLE();
-  }
-}
-
-void HAL_RTC_MspDeInit(RTC_HandleTypeDef* hrtc)
-{
-  if(hrtc->Instance==RTC)
-  {
-    /* Peripheral clock disable */
-    __HAL_RCC_RTC_DISABLE();
-  }
-}
-
+#endif /* __STM32L4xx_IT_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
