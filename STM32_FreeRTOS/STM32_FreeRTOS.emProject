@@ -21,7 +21,7 @@
       build_output_directory="Output/$(Configuration)/Exe"
       build_output_file_name="$(OutDir)/$(ProjectName)$(EXE)"
       c_preprocessor_definitions="USE_HAL_DRIVER;STM32L475xx;__Vectors=_vectors"
-      c_user_include_directories=".;$(ProjectDir)/application_code;$(ProjectDir)/application_code/st_code;$(ProjectDir)/application_code/segger;$(ProjectDir)/config_files;$(ProjectDir)/lib/FreeRTOS/include;$(ProjectDir)/lib/FreeRTOS/include/private;$(ProjectDir)/lib/FreeRTOS/portable/GCC/ARM_CM4F;$(ProjectDir)/lib/STM32F4xx;$(ProjectDir)/lib/STM32F4xx/STM32L4xx_HAL_Driver/Inc;$(ProjectDir)/lib/STM32F4xx/STM32L4xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/lib/STM32F4xx/CMSIS/Include;$(ProjectDir)/lib/STM32F4xx/CMSIS/Device/ST/STM32L4xx/Include"
+      c_user_include_directories=".;$(ProjectDir)/application_code;$(ProjectDir)/application_code/st_code;$(ProjectDir)/application_code/segger;$(ProjectDir)/lib/FreeRTOS;$(ProjectDir)/lib/FreeRTOS/include;$(ProjectDir)/lib/FreeRTOS/include/private;$(ProjectDir)/lib/FreeRTOS/portable/GCC/ARM_CM4F;$(ProjectDir)/lib/STM32F4xx;$(ProjectDir)/lib/STM32F4xx/STM32L4xx_HAL_Driver/Inc;$(ProjectDir)/lib/STM32F4xx/STM32L4xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/lib/STM32F4xx/CMSIS/Include;$(ProjectDir)/lib/STM32F4xx/CMSIS/Device/ST/STM32L4xx/Include"
       debug_register_definition_file="$(ProjectDir)/devicesupport/STM32L4x5_Registers.xml"
       debug_target_connection="J-Link"
       gcc_entry_point="Reset_Handler"
@@ -36,12 +36,6 @@
       target_reset_script="Reset();"
       target_script_file="$(ProjectDir)/lib/STM32F4xx/es/STM32L4xx_Target.js"
       target_trace_initialize_script="EnableTrace(&quot;$(TraceInterfaceType)&quot;)" />
-    <folder
-      Name="config_files"
-      exclude=""
-      filter="*.c;*.h"
-      path="config_files"
-      recurse="No" />
     <folder
       Name="application_code"
       exclude="syscalls.c"
