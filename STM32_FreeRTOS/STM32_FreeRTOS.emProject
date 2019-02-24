@@ -21,20 +21,20 @@
       build_output_directory="Output/$(Configuration)/Exe"
       build_output_file_name="$(OutDir)/$(ProjectName)$(EXE)"
       c_preprocessor_definitions="USE_HAL_DRIVER;STM32L475xx;__Vectors=_vectors"
-      c_user_include_directories=".;$(ProjectDir)/application_code;$(ProjectDir)/application_code/st_code;$(ProjectDir)/application_code/segger;$(ProjectDir)/config_files;$(ProjectDir)/lib/FreeRTOS/include;$(ProjectDir)/lib/FreeRTOS/include/private;$(ProjectDir)/lib/FreeRTOS/portable/GCC/ARM_CM4F;$(ProjectDir)/lib/stm32l475_discovery;$(ProjectDir)/lib/stm32l475_discovery/STM32L4xx_HAL_Driver/Inc;$(ProjectDir)/lib/stm32l475_discovery/STM32L4xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/lib/stm32l475_discovery/CMSIS/Include;$(ProjectDir)/lib/stm32l475_discovery/CMSIS/Device/ST/STM32L4xx/Include"
+      c_user_include_directories=".;$(ProjectDir)/application_code;$(ProjectDir)/application_code/st_code;$(ProjectDir)/application_code/segger;$(ProjectDir)/config_files;$(ProjectDir)/lib/FreeRTOS/include;$(ProjectDir)/lib/FreeRTOS/include/private;$(ProjectDir)/lib/FreeRTOS/portable/GCC/ARM_CM4F;$(ProjectDir)/lib/STM32F4xx;$(ProjectDir)/lib/STM32F4xx/STM32L4xx_HAL_Driver/Inc;$(ProjectDir)/lib/STM32F4xx/STM32L4xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/lib/STM32F4xx/CMSIS/Include;$(ProjectDir)/lib/STM32F4xx/CMSIS/Device/ST/STM32L4xx/Include"
       debug_register_definition_file="$(ProjectDir)/devicesupport/STM32L4x5_Registers.xml"
       debug_target_connection="J-Link"
       gcc_entry_point="Reset_Handler"
-      linker_memory_map_file="$(ProjectDir)/lib/stm32l475_discovery/es/STM32L475VG_MemoryMap.xml"
+      linker_memory_map_file="$(ProjectDir)/lib/STM32F4xx/es/STM32L475VG_MemoryMap.xml"
       linker_printf_fmt_level="long"
       linker_printf_width_precision_supported="Yes"
       linker_scanf_fmt_level="int"
-      linker_section_placement_file="$(ProjectDir)/lib/stm32l475_discovery/es/flash_placement.xml"
+      linker_section_placement_file="$(ProjectDir)/lib/STM32F4xx/es/flash_placement.xml"
       project_directory=""
       project_type="Executable"
       speed="1000"
       target_reset_script="Reset();"
-      target_script_file="$(ProjectDir)/lib/stm32l475_discovery/es/STM32L4xx_Target.js"
+      target_script_file="$(ProjectDir)/lib/STM32F4xx/es/STM32L4xx_Target.js"
       target_trace_initialize_script="EnableTrace(&quot;$(TraceInterfaceType)&quot;)" />
     <folder
       Name="config_files"
@@ -60,10 +60,10 @@
         <file file_name="lib/FreeRTOS/portable/MemMang/heap_5.c" />
       </folder>
       <folder
-        Name="stm32l475_discovery"
+        Name="STM32F4xx"
         exclude=""
         filter=""
-        path="lib/stm32l475_discovery"
+        path="lib/STM32F4xx"
         recurse="Yes" />
     </folder>
   </project>
