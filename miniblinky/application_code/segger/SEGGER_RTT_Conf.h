@@ -5,7 +5,7 @@
 *                                                                    *
 *            (c) 2014 - 2018 SEGGER Microcontroller GmbH             *
 *                                                                    *
-*           www.segger.com     Support: support@segger.com           *
+*       www.segger.com     Support: support@segger.com               *
 *                                                                    *
 **********************************************************************
 *                                                                    *
@@ -44,7 +44,7 @@ File    : SEGGER_RTT_Conf.h
 Purpose : Implementation of SEGGER real-time transfer (RTT) which
           allows real-time communication on targets which support
           debugger memory accesses while the CPU is running.
-Revision: $Rev: 12804 $
+Revision: $Rev: 7859 $
 
 */
 

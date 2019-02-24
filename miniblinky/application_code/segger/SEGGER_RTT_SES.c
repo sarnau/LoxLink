@@ -5,7 +5,7 @@
 *                                                                    *
 *            (c) 2014 - 2018 SEGGER Microcontroller GmbH             *
 *                                                                    *
-*           www.segger.com     Support: support@segger.com           *
+*       www.segger.com     Support: support@segger.com               *
 *                                                                    *
 **********************************************************************
 *                                                                    *
