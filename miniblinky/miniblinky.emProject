@@ -31,28 +31,20 @@
       target_reset_script="Reset();"
       target_script_file="$(ProjectDir)/lib/STM32F1xx/es/STM32F1xx_Target.js"
       target_trace_initialize_script="EnableTrace(&quot;$(TraceInterfaceType)&quot;)" />
-    <folder Name="CMSIS Files">
-      <file file_name="lib/STM32F1xx/CMSIS/system_stm32f1xx.c" />
-    </folder>
     <folder
       Name="application_code"
       exclude="syscalls.c"
       filter="*.c;*.h;*.s"
       path="application_code"
       recurse="Yes" />
-    <folder Name="System Files">
-      <file file_name="lib/STM32F1xx/es/thumb_crt0.s" />
-      <file file_name="lib/STM32F1xx/es/STM32F1xx_Startup.s" />
-      <file file_name="lib/STM32F1xx/es/STM32F103xx_Vectors.s">
-        <configuration Name="Common" file_type="Assembly" />
-      </file>
+    <folder Name="lib">
+      <folder
+        Name="STM32F1xx"
+        exclude=""
+        filter=""
+        path="lib/STM32F1xx"
+        recurse="Yes" />
     </folder>
-    <folder
-      Name="STM32F1xx_HAL_Driver"
-      exclude=""
-      filter=""
-      path="lib/STM32F1xx/STM32F1xx_HAL_Driver"
-      recurse="Yes" />
   </project>
   <configuration
     Name="Debug"
