@@ -50,6 +50,7 @@ extern "C" {
 /**
   * @brief This is the list of modules to be used in the HAL driver
   */
+
 #define HAL_MODULE_ENABLED
 #define HAL_ADC_MODULE_ENABLED
 #define HAL_CAN_MODULE_ENABLED
@@ -99,37 +100,45 @@ extern "C" {
 #endif /* HSE_VALUE */
 
 #if !defined  (HSE_STARTUP_TIMEOUT)
-#define HSE_STARTUP_TIMEOUT    100U      /*!< Time out for HSE start up, in ms */
+  #define HSE_STARTUP_TIMEOUT    ((uint32_t)100U)   /*!< Time out for HSE start up, in ms */
 #endif /* HSE_STARTUP_TIMEOUT */
 
+/**
+  * @brief Internal Multiple Speed oscillator (MSI) default value.
+  *        This value is the default MSI range value after Reset.
+  */
+#if !defined  (MSI_VALUE)
+  #define MSI_VALUE    ((uint32_t)8000000U) /*!< Value of the Internal oscillator in Hz*/
+#endif /* MSI_VALUE */
 /**
   * @brief Internal High Speed oscillator (HSI) value.
   *        This value is used by the RCC HAL module to compute the system frequency
   *        (when HSI is used as system clock source, directly or through the PLL).
   */
 #if !defined  (HSI_VALUE)
-#define HSI_VALUE              8000000U  /*!< Value of the Internal oscillator in Hz */
+  #define HSI_VALUE    ((uint32_t)8000000U) /*!< Value of the Internal oscillator in Hz*/
 #endif /* HSI_VALUE */
 
 /**
   * @brief Internal Low Speed oscillator (LSI) value.
   */
 #if !defined  (LSI_VALUE)
-#define LSI_VALUE               32000U     /*!< LSI Typical Value in Hz */
+ #define LSI_VALUE  ((uint32_t)32000U)       /*!< LSI Typical Value in Hz*/
 #endif /* LSI_VALUE */                     /*!< Value of the Internal Low Speed oscillator in Hz
                                                 The real value may vary depending on the variations
                                                 in voltage and temperature. */
+
 /**
   * @brief External Low Speed oscillator (LSE) value.
   *        This value is used by the UART, RTC HAL module to compute the system frequency
   */
 #if !defined  (LSE_VALUE)
-#define LSE_VALUE               32768U    /*!< Value of the External Low Speed oscillator in Hz */
+  #define LSE_VALUE    ((uint32_t)32768U) /*!< Value of the External oscillator in Hz*/
 #endif /* LSE_VALUE */
 
 #if !defined  (LSE_STARTUP_TIMEOUT)
-#define LSE_STARTUP_TIMEOUT    5000U     /*!< Time out for LSE start up, in ms */
-#endif /* LSE_STARTUP_TIMEOUT */
+  #define LSE_STARTUP_TIMEOUT    ((uint32_t)5000)   /*!< Time out for LSE start up, in ms */
+#endif /* HSE_STARTUP_TIMEOUT */
 
 /* Tip: To avoid modifying this file each time you need to use different HSE,
    ===  you can define the HSE value in your toolchain compiler preprocessor. */
@@ -138,8 +147,9 @@ extern "C" {
 /**
   * @brief This is the HAL system configuration section
   */
-#define  VDD_VALUE                    3300U /*!< Value of VDD in mv */
-#define  TICK_INT_PRIORITY            0x0FU /*!< tick interrupt priority */
+  
+#define  VDD_VALUE					  ((uint32_t)3300U) /*!< Value of VDD in mv */           
+#define  TICK_INT_PRIORITY            ((uint32_t)0x0fU)    /*!< tick interrupt priority */            
 #define  USE_RTOS                     0U
 #define  PREFETCH_ENABLE              1U
 
@@ -148,7 +158,7 @@ extern "C" {
   * @brief Uncomment the line below to expanse the "assert_param" macro in the
   *        HAL drivers code
   */
-/* #define USE_FULL_ASSERT    1U */
+/* #define USE_FULL_ASSERT    1 */
 
 /* ################## Ethernet peripheral configuration ##################### */
 
@@ -368,13 +378,12 @@ extern "C" {
   *         If expr is true, it returns no value.
   * @retval None
   */
-#define assert_param(expr) ((expr) ? (void)0U : assert_failed((uint8_t *)__FILE__, __LINE__))
+  #define assert_param(expr) ((expr) ? (void)0 : assert_failed((uint8_t *)__FILE__, __LINE__))
 /* Exported functions ------------------------------------------------------- */
 void assert_failed(uint8_t *file, uint32_t line);
 #else
-#define assert_param(expr) ((void)0U)
+  #define assert_param(expr) ((void)0)
 #endif /* USE_FULL_ASSERT */
-
 
 #ifdef __cplusplus
 }
