@@ -48,7 +48,6 @@
   </project>
   <configuration
     Name="Debug"
-    arm_architecture="v7M"
     c_preprocessor_definitions="DEBUG"
     gcc_debugging_level="Level 3"
     gcc_optimization_level="None" />
