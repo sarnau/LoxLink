@@ -1,10 +1,10 @@
 /**
   ******************************************************************************
-  * @file    Cloud/AWS/Inc/stm32l4xx_it.h
+  * @file    Cloud/AWS/Src/stm32l4xx_it.c
   * @author  MCD Application Team
   * @version V1.0.1
   * @date    12-April-2017
-  * @brief   headers of the interrupt handlers.
+  * @brief   Interrupt service routines.
   ******************************************************************************
   * @attention
   *
@@ -45,46 +45,121 @@
   ******************************************************************************
   */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __STM32L4xx_IT_H
-#define __STM32L4xx_IT_H
-
-#ifdef __cplusplus
- extern "C" {
-#endif 
-
 /* Includes ------------------------------------------------------------------*/
-/* Exported types ------------------------------------------------------------*/
-/* Exported constants --------------------------------------------------------*/
-/* Exported macro ------------------------------------------------------------*/
-/* Exported functions ------------------------------------------------------- */
+#include "stm32l4xx_hal.h"
+#include "stm32l4xx.h"
+#include "stm32f1xx_hal_cortex.h"
 
-void NMI_Handler(void);
-void HardFault_Handler(void);
-void MemManage_Handler(void);
-void BusFault_Handler(void);
-void UsageFault_Handler(void);
-void SVC_Handler(void);
-void DebugMon_Handler(void);
-void PendSV_Handler(void);
-void SysTick_Handler(void);
-void EXTI4_IRQHandler(void);
-void DMA1_Channel4_IRQHandler(void);
-void DMA1_Channel5_IRQHandler(void);
-void DMA1_Channel6_IRQHandler(void);
-void DMA1_Channel7_IRQHandler(void);
-void EXTI9_5_IRQHandler(void);
-void I2C2_EV_IRQHandler(void);
-void I2C2_ER_IRQHandler(void);
-void USART3_IRQHandler(void);
-void EXTI15_10_IRQHandler(void);
-void DMA2_Channel1_IRQHandler(void);
-void DMA2_Channel2_IRQHandler(void);
+extern void xPortSysTickHandler( void );
 
-#ifdef __cplusplus
+
+/******************************************************************************/
+/*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
+/******************************************************************************/
+
+/**
+* @brief This function handles Non maskable interrupt.
+*/
+void NMI_Handler(void)
+{
 }
-#endif
 
-#endif /* __STM32L4xx_IT_H */
+/**
+* @brief This function handles Hard fault interrupt.
+*/
+/*
+void HardFault_Handler(void)
+{
+  while (1)
+  {
+  }
+}
+*/
+
+/**
+* @brief This function handles Memory management fault.
+*/
+void MemManage_Handler(void)
+{
+  while (1)
+  {
+  }
+}
+
+/**
+* @brief This function handles Prefetch fault, memory access fault.
+*/
+void BusFault_Handler(void)
+{
+  while (1)
+  {
+  }
+}
+
+/**
+* @brief This function handles Undefined instruction or illegal state.
+*/
+void UsageFault_Handler(void)
+{
+  while (1)
+  {
+  }
+}
+
+/**
+* @brief This function handles System service call via SWI instruction.
+*/
+/*void SVC_Handler(void) // AWS_EDIT
+{
+}*/
+
+/**
+* @brief This function handles Debug monitor.
+*/
+void DebugMon_Handler(void)
+{
+}
+
+/**
+* @brief This function handles Pendable request for system service.
+*/
+/*void PendSV_Handler(void)  // AWS_EDIT
+{
+}*/
+
+/**
+* @brief This function handles System tick timer.
+*/
+void SysTick_Handler(void)
+{
+  HAL_IncTick();
+  HAL_SYSTICK_IRQHandler();
+}
+
+/* When using the ST HAL, we must implement their systick callback. So, here,
+ * we simply call the RTOS systick handler that resides in the core level abstraction.
+ */
+
+void HAL_SYSTICK_Callback( void )
+{
+	xPortSysTickHandler( );
+}
+
+
+/******************************************************************************/
+/* STM32L4xx Peripheral Interrupt Handlers                                    */
+/* Add here the Interrupt Handlers for the used peripherals.                  */
+/* For the available peripheral interrupt handler names,                      */
+/* please refer to the startup file (startup_stm32l4xx.s).                    */
+/******************************************************************************/
+
+/**
+* @brief This function handles EXTI line[15:10] interrupts.
+*/
+void EXTI15_10_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
+}
+
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
