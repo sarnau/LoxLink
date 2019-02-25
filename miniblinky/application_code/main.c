@@ -13,13 +13,13 @@
 static void SetSysClockTo72(void);
 static void prvInitializeHeap(void);
 
-void printCPUInfo() {
+static void printCPUInfo() {
   uint32_t uid[3];
   HAL_GetUID(uid);
   printf("Clock:%dMHz/%dMHz FLASH:%dkb, Unique device ID:%x.%x.%x\n", SystemCoreClock / 1000000, HAL_RCC_GetSysClockFreq() / 1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
 }
 
-void vTaskCode(void *pvParameters) {
+static void vTaskCode(void *pvParameters) {
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   GPIO_InitTypeDef GPIO_Init;
