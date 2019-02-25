@@ -6,6 +6,10 @@
 #include <stdlib.h>
 #include <stm32f1xx.h>
 
+/* FreeRTOS includes. */
+#include "FreeRTOS.h"
+#include "task.h"
+
 void SysTick_Handler(void) {
   HAL_IncTick();
   HAL_SYSTICK_IRQHandler();
@@ -17,11 +21,18 @@ void printCPUInfo() {
   printf("Clock:%dMHz FLASH:%dkb, Unique device ID:%x.%x.%x\n", SystemCoreClock / 1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
 }
 
-void main(void) {
-  SystemCoreClockUpdate(); // update SystemCoreClock
-  HAL_Init();
+static void prvInitializeHeap(void) {
+  static uint8_t ucHeap1[configTOTAL_HEAP_SIZE];
 
-  printCPUInfo();
+  HeapRegion_t xHeapRegions[] =
+      {
+          {(unsigned char *)ucHeap1, sizeof(ucHeap1)},
+          {NULL, 0}};
+
+  vPortDefineHeapRegions(xHeapRegions);
+}
+
+void vTaskCode(void *pvParameters) {
 
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
@@ -32,10 +43,27 @@ void main(void) {
   GPIO_Init.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_Init);
 
-  while (1) {
+  // Block for 500ms.
+  const TickType_t xDelay = 500 / portTICK_PERIOD_MS;
+  for (;;) {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
-    HAL_Delay(1000);
+    vTaskDelay(xDelay);
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
-    HAL_Delay(1000);
+    vTaskDelay(xDelay);
   }
+}
+
+void main(void) {
+  SystemCoreClockUpdate(); // update SystemCoreClock
+  HAL_Init();
+
+  printCPUInfo();
+
+  prvInitializeHeap();
+
+  TaskHandle_t xHandle = NULL;
+  xTaskCreate(vTaskCode, "LEDBlink", configMINIMAL_STACK_SIZE, NULL, 8, &xHandle);
+  configASSERT(xHandle);
+
+  vTaskStartScheduler();
 }
