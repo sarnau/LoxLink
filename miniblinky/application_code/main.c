@@ -41,7 +41,6 @@ void vTaskCode(void *pvParameters) {
   while (1) {
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15));
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1));
-//    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
     vTaskDelay(xDelay);
   }
 }
