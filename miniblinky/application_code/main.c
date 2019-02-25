@@ -20,7 +20,6 @@ void printCPUInfo() {
 }
 
 void vTaskCode(void *pvParameters) {
-
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   GPIO_InitTypeDef GPIO_Init;
@@ -31,7 +30,7 @@ void vTaskCode(void *pvParameters) {
   HAL_GPIO_Init(GPIOB, &GPIO_Init);
 
   const TickType_t xDelay = 250 / portTICK_PERIOD_MS;
-  while(1) {
+  while (1) {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
     vTaskDelay(xDelay);
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
@@ -56,13 +55,10 @@ int main(void) {
   return 0;
 }
 
-
-
 void SysTick_Handler(void) {
   HAL_IncTick();
   HAL_SYSTICK_IRQHandler();
 }
-
 
 /**
   * @brief  Sets System clock frequency to 72MHz and configure HCLK, PCLK2 
@@ -123,10 +119,9 @@ static void SetSysClockTo72(void) {
 static void prvInitializeHeap(void) {
   static uint8_t ucHeap1[configTOTAL_HEAP_SIZE];
 
-  HeapRegion_t xHeapRegions[] =
-    {
-      {(unsigned char *)ucHeap1, sizeof(ucHeap1)},
-      {NULL, 0}};
+  HeapRegion_t xHeapRegions[] = {
+    {(unsigned char *)ucHeap1, sizeof(ucHeap1)},
+    {NULL, 0}};
 
   vPortDefineHeapRegions(xHeapRegions);
 }
