@@ -28,9 +28,7 @@ static void SetSysClockTo72(void)
   /* Wait till HSE is ready and if Time out is reached exit */
   do
   {
-    HSEStatus = RCC->CR & RCC_CR_HSERDY;
-    StartUpCounter++;  
-  } while((HSEStatus == 0) && (StartUpCounter != HSE_STARTUP_TIMEOUT));
+  } while(((RCC->CR & RCC_CR_HSERDY) == 0) && (StartUpCounter++ != HSE_STARTUP_TIMEOUT));
   if ((RCC->CR & RCC_CR_HSERDY) != RESET)
   {
     /* Enable Prefetch Buffer */
@@ -106,8 +104,7 @@ void vTaskCode(void *pvParameters) {
   GPIO_Init.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_Init);
 
-  // Block for 1000ms.
-  const TickType_t xDelay = 1000 / portTICK_PERIOD_MS;
+  const TickType_t xDelay = 250 / portTICK_PERIOD_MS;
   for (;;) {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
     vTaskDelay(xDelay);
