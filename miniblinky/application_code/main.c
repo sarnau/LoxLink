@@ -39,7 +39,7 @@ void vTaskCode(void *pvParameters) {
   }
 }
 
-void main(void) {
+int main(void) {
   SetSysClockTo72();
   SystemCoreClockUpdate();
   HAL_Init();
@@ -53,6 +53,7 @@ void main(void) {
   configASSERT(xHandle);
 
   vTaskStartScheduler();
+  return 0;
 }
 
 

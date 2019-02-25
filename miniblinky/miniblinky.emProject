@@ -67,5 +67,8 @@
     gcc_debugging_level="None"
     gcc_omit_frame_pointer="Yes"
     gcc_optimization_level="Level 1" />
-  <configuration Name="Common" arm_architecture="v7M" />
+  <configuration
+    Name="Common"
+    arm_architecture="v7M"
+    arm_compiler_variant="clang" />
 </solution>
