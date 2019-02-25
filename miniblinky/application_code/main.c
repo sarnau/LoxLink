@@ -10,6 +10,69 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+/**
+  * @brief  Sets System clock frequency to 72MHz and configure HCLK, PCLK2 
+  *         and PCLK1 prescalers. 
+  * @note   This function should be used only after reset.
+  * @param  None
+  * @retval None
+  */
+static void SetSysClockTo72(void)
+{
+  __IO uint32_t StartUpCounter = 0, HSEStatus = 0;
+  
+  /* SYSCLK, HCLK, PCLK2 and PCLK1 configuration ---------------------------*/    
+  /* Enable HSE */    
+  RCC->CR |= ((uint32_t)RCC_CR_HSEON);
+ 
+  /* Wait till HSE is ready and if Time out is reached exit */
+  do
+  {
+    HSEStatus = RCC->CR & RCC_CR_HSERDY;
+    StartUpCounter++;  
+  } while((HSEStatus == 0) && (StartUpCounter != HSE_STARTUP_TIMEOUT));
+  if ((RCC->CR & RCC_CR_HSERDY) != RESET)
+  {
+    /* Enable Prefetch Buffer */
+    FLASH->ACR |= FLASH_ACR_PRFTBE;
+
+    /* Flash 2 wait state */
+    FLASH->ACR &= (uint32_t)((uint32_t)~FLASH_ACR_LATENCY);
+    FLASH->ACR |= (uint32_t)FLASH_ACR_LATENCY_2;    
+
+    /* HCLK = SYSCLK */
+    RCC->CFGR |= (uint32_t)RCC_CFGR_HPRE_DIV1;
+      
+    /* PCLK2 = HCLK */
+    RCC->CFGR |= (uint32_t)RCC_CFGR_PPRE2_DIV1;
+    
+    /* PCLK1 = HCLK */
+    RCC->CFGR |= (uint32_t)RCC_CFGR_PPRE1_DIV2;
+
+    /*  PLL configuration: PLLCLK = HSE * 9 = 72 MHz */
+    RCC->CFGR &= (uint32_t)((uint32_t)~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLXTPRE |
+                                        RCC_CFGR_PLLMULL));
+    RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC | RCC_CFGR_PLLMULL9);
+
+    /* Enable PLL */
+    RCC->CR |= RCC_CR_PLLON;
+
+    /* Wait till PLL is ready */
+    while((RCC->CR & RCC_CR_PLLRDY) == 0)
+    {
+    }
+    
+    /* Select PLL as system clock source */
+    RCC->CFGR &= (uint32_t)((uint32_t)~(RCC_CFGR_SW));
+    RCC->CFGR |= (uint32_t)RCC_CFGR_SW_PLL;    
+
+    /* Wait till PLL is used as system clock source */
+    while ((RCC->CFGR & (uint32_t)RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL)
+    {
+    }
+  }
+}
+
 void SysTick_Handler(void) {
   HAL_IncTick();
   HAL_SYSTICK_IRQHandler();
@@ -18,7 +81,7 @@ void SysTick_Handler(void) {
 void printCPUInfo() {
   uint32_t uid[3];
   HAL_GetUID(uid);
-  printf("Clock:%dMHz FLASH:%dkb, Unique device ID:%x.%x.%x\n", SystemCoreClock / 1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
+  printf("Clock:%dMHz/%dMHz FLASH:%dkb, Unique device ID:%x.%x.%x\n", SystemCoreClock / 1000000, HAL_RCC_GetSysClockFreq() / 1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
 }
 
 static void prvInitializeHeap(void) {
@@ -43,8 +106,8 @@ void vTaskCode(void *pvParameters) {
   GPIO_Init.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_Init);
 
-  // Block for 500ms.
-  const TickType_t xDelay = 500 / portTICK_PERIOD_MS;
+  // Block for 1000ms.
+  const TickType_t xDelay = 1000 / portTICK_PERIOD_MS;
   for (;;) {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
     vTaskDelay(xDelay);
@@ -54,7 +117,8 @@ void vTaskCode(void *pvParameters) {
 }
 
 void main(void) {
-  SystemCoreClockUpdate(); // update SystemCoreClock
+  SetSysClockTo72();
+  SystemCoreClockUpdate();
   HAL_Init();
 
   printCPUInfo();
