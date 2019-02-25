@@ -23,17 +23,25 @@ void vTaskCode(void *pvParameters) {
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   GPIO_InitTypeDef GPIO_Init;
+  // 2 LEDs as outputs
   GPIO_Init.Pin = GPIO_PIN_13 | GPIO_PIN_14;
   GPIO_Init.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_Init.Pull = GPIO_NOPULL;
   GPIO_Init.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_Init);
 
-  const TickType_t xDelay = 250 / portTICK_PERIOD_MS;
+  // 2 buttons as inputs
+  GPIO_Init.Pin = GPIO_PIN_1 | GPIO_PIN_15;
+  GPIO_Init.Mode = GPIO_MODE_INPUT;
+  GPIO_Init.Pull = GPIO_PULLDOWN;
+  GPIO_Init.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_Init);
+
+  const TickType_t xDelay = 10 / portTICK_PERIOD_MS;
   while (1) {
-    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
-    vTaskDelay(xDelay);
-    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15));
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1));
+//    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
     vTaskDelay(xDelay);
   }
 }
