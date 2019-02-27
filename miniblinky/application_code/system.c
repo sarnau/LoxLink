@@ -1,7 +1,9 @@
-#include "stm32f1xx_hal.h"
-#include "stm32f1xx_hal_rcc.h"
+#include "stm32f1xx_hal_conf.h"
+#include "stm32f1xx_hal.h" // HAL_IncTick
 
-// Default implementation of the SysTick handler for the HAL
+/**
+* @brief This function handles System tick timer.
+*/
 void SysTick_Handler(void) {
   HAL_IncTick();
   HAL_SYSTICK_IRQHandler();

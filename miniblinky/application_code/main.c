@@ -1,7 +1,6 @@
-#include "stm32f1xx_hal.h"
-#include "stm32f1xx_hal_gpio.h"
-#include "stm32f1xx_hal_rcc.h"
-#include "stm32f1xx_ll_utils.h"
+#include "stm32f1xx_hal_conf.h"
+#include "stm32f1xx_hal.h" // HAL_GetUID()
+#include "stm32f1xx_ll_utils.h" // LL_GetFlashSize()
 #include <stdio.h>
 #include <stdlib.h>
 #include <stm32f1xx.h>
