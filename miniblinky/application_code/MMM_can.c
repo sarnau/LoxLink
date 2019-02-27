@@ -1,8 +1,6 @@
-#include <stm32f1xx.h>
-#include "stm32f1xx_hal_can.h"
+#include "MMM_can.h"
+
 #include "stm32f1xx_hal_conf.h"
-#include "stm32f1xx_hal_gpio.h"
-#include "stm32f1xx_hal_rcc.h"
 
 #define CAN_RX_GPIO_PIN GPIO_PIN_8
 #define CAN_TX_GPIO_PIN GPIO_PIN_9
@@ -10,7 +8,33 @@
 
 CAN_HandleTypeDef gCan;
 
-void MMM_can_init() {
+void MMM_CAN_ConfigFilter_internal(uint32_t filterBank, uint32_t filterId, uint32_t filterMaskId, uint32_t filterFIFOAssignment) {
+  filterId = (filterId << 3) | CAN_ID_EXT;
+  filterMaskId = (filterMaskId << 3) | CAN_ID_EXT;
+  CAN_FilterTypeDef filterInit = {
+    .FilterIdHigh = filterId >> 16,
+    .FilterIdLow = filterId & 0xFFFF,
+    .FilterMaskIdHigh = filterMaskId >> 16,
+    .FilterMaskIdLow = filterMaskId & 0xFFFF,
+    .FilterFIFOAssignment = filterFIFOAssignment,
+    .FilterBank = filterBank,
+    .FilterMode = CAN_FILTERMODE_IDMASK,
+    .FilterScale = CAN_FILTERSCALE_32BIT,
+    .FilterActivation = CAN_FILTER_ENABLE,
+    .SlaveStartFilterBank = 0,
+  };
+  HAL_CAN_ConfigFilter(&gCan, &filterInit);
+}
+
+void MMM_CAN_LoxNATFilter(uint32_t filterBank, uint8_t loxLink_or_Tree_ID, uint8_t natAddress, uint8_t fromServerFlag, uint32_t filterFIFOAssignment) {
+  MMM_CAN_ConfigFilter_internal(
+    filterBank,
+    ((loxLink_or_Tree_ID & 0x1F) << 24) | (fromServerFlag << 21) | (natAddress << 12),
+    0x1F2FF000,
+    filterFIFOAssignment);
+}
+
+void MMM_CAN_Init() {
   gCan.Instance = CAN1;
   gCan.Init.TimeTriggeredMode = DISABLE;
   gCan.Init.AutoBusOff = ENABLE;
@@ -30,48 +54,67 @@ void MMM_can_init() {
       ;
   }
 
-  CAN_FilterTypeDef filter;
-  filter.FilterActivation = DISABLE;
-  filter.FilterMode = CAN_FILTERMODE_IDMASK;
-  filter.FilterScale = CAN_FILTERSCALE_32BIT;
-  filter.FilterIdHigh = 0x0000;
-  filter.FilterIdLow = 0x0000;
-  filter.FilterMaskIdHigh = 0x0000;
-  filter.FilterMaskIdLow = 0x0000;
-  filter.FilterBank = 0;
-  filter.FilterFIFOAssignment = CAN_RX_FIFO0;
-  HAL_CAN_ConfigFilter(&gCan, &filter);
-
   HAL_CAN_Start(&gCan);
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_RX_FIFO0_MSG_PENDING);
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_TX_MAILBOX_EMPTY);
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR);
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR_WARNING);
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_BUSOFF);
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR_PASSIVE);
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_LAST_ERROR_CODE);
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_RX_FIFO0_MSG_PENDING); // FIFO 0 message pending interrupt
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_RX_FIFO1_MSG_PENDING); // FIFO 1 message pending interrupt
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_TX_MAILBOX_EMPTY); // Transmit mailbox empty interrupt
+  // notify on certain errors:
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR_PASSIVE); // Error passive interrupt
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_LAST_ERROR_CODE); // Last error code interrupt
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR); // Error Interrupt
 }
 
+/**
+  * @brief  Transmission Mailbox 0 complete callback.
+  * @param  hcan pointer to a CAN_HandleTypeDef structure that contains
+  *         the configuration information for the specified CAN.
+  * @retval None
+  */
 void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
   }
 }
 
+/**
+  * @brief  Transmission Mailbox 1 complete callback.
+  * @param  hcan pointer to a CAN_HandleTypeDef structure that contains
+  *         the configuration information for the specified CAN.
+  * @retval None
+  */
 void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
   }
 }
+
+/**
+  * @brief  Transmission Mailbox 2 complete callback.
+  * @param  hcan pointer to a CAN_HandleTypeDef structure that contains
+  *         the configuration information for the specified CAN.
+  * @retval None
+  */
 void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
   }
 }
 
+/**
+  * @brief  Error CAN callback.
+  * @param  hcan pointer to a CAN_HandleTypeDef structure that contains
+  *         the configuration information for the specified CAN.
+  * @retval None
+  */
 void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
   }
   HAL_CAN_ResetError(hcan);
 }
 
+/**
+  * @brief  Rx FIFO 0 message pending callback.
+  * @param  hcan pointer to a CAN_HandleTypeDef structure that contains
+  *         the configuration information for the specified CAN.
+  * @retval None
+  */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
   CAN_RxHeaderTypeDef rx_header;
   uint8_t rx_data[8];
@@ -80,6 +123,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
   }
 }
 
+/**
+  * @brief  Initializes the CAN MSP.
+  * @param  hcan pointer to a CAN_HandleTypeDef structure that contains
+  *         the configuration information for the specified CAN.
+  * @retval None
+  */
 void HAL_CAN_MspInit(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
 
@@ -109,6 +158,12 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef *hcan) {
   }
 }
 
+/**
+  * @brief  DeInitializes the CAN MSP.
+  * @param  hcan pointer to a CAN_HandleTypeDef structure that contains
+  *         the configuration information for the specified CAN.
+  * @retval None
+  */
 void HAL_CAN_MspDeInit(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
     __HAL_RCC_CAN1_CLK_DISABLE();
@@ -130,31 +185,27 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef *hcan) {
 /**
 * @brief This function handles USB high priority or CAN TX interrupts.
 */
-void CAN1_TX_IRQHandler(void)
-{
+void CAN1_TX_IRQHandler(void) {
   HAL_CAN_IRQHandler(&gCan);
 }
 
 /**
 * @brief This function handles USB low priority or CAN RX0 interrupts.
 */
-void CAN1_RX0_IRQHandler(void)
-{
+void CAN1_RX0_IRQHandler(void) {
   HAL_CAN_IRQHandler(&gCan);
 }
 
 /**
 * @brief This function handles CAN RX1 interrupt.
 */
-void CAN1_RX1_IRQHandler(void)
-{
+void CAN1_RX1_IRQHandler(void) {
   HAL_CAN_IRQHandler(&gCan);
 }
 
 /**
 * @brief This function handles CAN SCE interrupt.
 */
-void CAN1_SCE_IRQHandler(void)
-{
+void CAN1_SCE_IRQHandler(void) {
   HAL_CAN_IRQHandler(&gCan);
 }
