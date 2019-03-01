@@ -38,11 +38,12 @@ static void vTaskCode(void *pvParameters) {
   HAL_GPIO_Init(GPIOB, &GPIO_Init);
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
+  const TickType_t xDelay500ms = pdMS_TO_TICKS(500);
   while (1) {
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15));
     //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1));
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(500));
+    vTaskDelayUntil(&xLastWakeTime, xDelay500ms);
   }
 }
 
