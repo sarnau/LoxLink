@@ -13,7 +13,6 @@
 #include "MMM_can.h"
 
 void SystemClock_Config(void);
-void MMM_initialize_heap(void);
 
 static StaticQueue_t gKeyQueue;
 

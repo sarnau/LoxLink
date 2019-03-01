@@ -2,8 +2,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#include <stdio.h>
-
 void xPortSysTickHandler(void);
 
 /**
