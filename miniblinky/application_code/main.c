@@ -9,6 +9,9 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "MMM_can.h"
+
+
 void SetSysClockTo72(void);
 void MMM_initialize_heap(void);
 
@@ -48,14 +51,19 @@ int main(void) {
   SetSysClockTo72();
   SystemCoreClockUpdate();
   HAL_Init();
+
   MMM_initialize_heap();
 
   printCPUInfo();
+
+  MMM_CAN_Init();
 
   TaskHandle_t xHandle = NULL;
   xTaskCreate(vTaskCode, "LEDBlink", configMINIMAL_STACK_SIZE, NULL, 8, &xHandle);
   configASSERT(xHandle);
 
   vTaskStartScheduler();
+  for(;;) {
+  }
   return 0;
 }

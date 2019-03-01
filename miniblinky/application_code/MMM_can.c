@@ -2,9 +2,10 @@
 
 #include "stm32f1xx_hal_conf.h"
 
+#define CAN_GPIO_PORT   GPIOB
 #define CAN_RX_GPIO_PIN GPIO_PIN_8
 #define CAN_TX_GPIO_PIN GPIO_PIN_9
-#define CAN_BITRATE 125000
+#define CAN_BITRATE     125000
 
 CAN_HandleTypeDef gCan;
 
@@ -35,33 +36,65 @@ void MMM_CAN_LoxNATFilter(uint32_t filterBank, uint8_t loxLink_or_Tree_ID, uint8
 }
 
 void MMM_CAN_Init() {
+    // 72MHz/6/12 = 1MHz, CAN_SJW_1TQ / CAN_BS1_6TQ / CAN_BS2_5TQ
   gCan.Instance = CAN1;
   gCan.Init.TimeTriggeredMode = DISABLE;
-  gCan.Init.AutoBusOff = ENABLE;
+  gCan.Init.AutoBusOff = DISABLE;
   gCan.Init.AutoWakeUp = DISABLE;
   gCan.Init.AutoRetransmission = DISABLE;
   gCan.Init.ReceiveFifoLocked = DISABLE;
-  gCan.Init.TransmitFifoPriority = ENABLE;
+  gCan.Init.TransmitFifoPriority = DISABLE;
   gCan.Init.Mode = CAN_MODE_NORMAL;
 
   // CAN_SJW_1tq + CAN_BS1_10tq + CAN_BS2_5tq => 16tq => sample point = 68.75% =(1+10)/16
-  gCan.Init.Prescaler = HSE_VALUE / 16 / CAN_BITRATE; // 16tq (see above)
   gCan.Init.SyncJumpWidth = CAN_SJW_1TQ;
   gCan.Init.TimeSeg1 = CAN_BS1_10TQ;
   gCan.Init.TimeSeg2 = CAN_BS2_5TQ;
+  gCan.Init.Prescaler = SystemCoreClock / 16 / CAN_BITRATE; // 16tq (see above)
   if (HAL_CAN_Init(&gCan) != HAL_OK) {
     for (;;)
       ;
   }
 
-  HAL_CAN_Start(&gCan);
+//  MMM_CAN_ConfigFilter_internal(0, 0, 0, CAN_FILTER_FIFO0);
+  CAN_FilterTypeDef filterInit = {
+    .FilterIdHigh = 0x0000,
+    .FilterIdLow = 0x0000,
+    .FilterMaskIdHigh = 0x0000,
+    .FilterMaskIdLow = 0x0000,
+    .FilterFIFOAssignment = CAN_FILTER_FIFO0,
+    .FilterBank = 0,
+    .FilterMode = CAN_FILTERMODE_IDMASK,
+    .FilterScale = CAN_FILTERSCALE_32BIT,
+    .FilterActivation = CAN_FILTER_ENABLE,
+    .SlaveStartFilterBank = 0,
+  };
+  HAL_CAN_ConfigFilter(&gCan, &filterInit);
+
   HAL_CAN_ActivateNotification(&gCan, CAN_IT_RX_FIFO0_MSG_PENDING); // FIFO 0 message pending interrupt
   HAL_CAN_ActivateNotification(&gCan, CAN_IT_RX_FIFO1_MSG_PENDING); // FIFO 1 message pending interrupt
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_TX_MAILBOX_EMPTY); // Transmit mailbox empty interrupt
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_TX_MAILBOX_EMPTY);     // Transmit mailbox empty interrupt
   // notify on certain errors:
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR_PASSIVE); // Error passive interrupt
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR_PASSIVE);   // Error passive interrupt
   HAL_CAN_ActivateNotification(&gCan, CAN_IT_LAST_ERROR_CODE); // Last error code interrupt
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR); // Error Interrupt
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR);           // Error Interrupt
+  HAL_CAN_Start(&gCan);
+
+
+  printf("freeLevel %d\n", HAL_CAN_GetTxMailboxesFreeLevel(&gCan));
+  CAN_TxHeaderTypeDef hdr = {
+    .ExtId = 0x106ff0fd,
+    .IDE = CAN_ID_EXT,
+    .RTR = CAN_RTR_DATA,
+    .DLC = 8,
+    .TransmitGlobalTime = DISABLE,
+  };
+  uint8_t data[8] = { 0xff, 0x01, 0x00, 0x00, 0x6c, 0x10, 0x10, 0x13 };
+  uint32_t txMailbox = 0;
+  HAL_StatusTypeDef status = HAL_CAN_AddTxMessage(&gCan, &hdr, data, &txMailbox);
+  printf("status %d\n", status);
+  printf("txMailbox 0x%x\n", txMailbox);
+  printf("freeLevel %d\n", HAL_CAN_GetTxMailboxesFreeLevel(&gCan));
 }
 
 /**
@@ -105,6 +138,58 @@ void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan) {
   */
 void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
+    int ErrorStatus = hcan->ErrorCode;
+    if(ErrorStatus != HAL_CAN_ERROR_NONE) {
+        if(ErrorStatus & HAL_CAN_ERROR_EWG)
+            printf("HAL_CAN_ERROR_EWG,");
+        if(ErrorStatus & HAL_CAN_ERROR_EPV)
+            printf("HAL_CAN_ERROR_EPV,");
+        if(ErrorStatus & HAL_CAN_ERROR_BOF)
+            printf("HAL_CAN_ERROR_BOF,");
+        if(ErrorStatus & HAL_CAN_ERROR_STF)
+            printf("HAL_CAN_ERROR_STF,");
+        if(ErrorStatus & HAL_CAN_ERROR_FOR)
+            printf("HAL_CAN_ERROR_FOR,");
+        if(ErrorStatus & HAL_CAN_ERROR_ACK)
+            printf("HAL_CAN_ERROR_ACK,");
+        if(ErrorStatus & HAL_CAN_ERROR_BR)
+            printf("HAL_CAN_ERROR_BR,");
+        if(ErrorStatus & HAL_CAN_ERROR_BD)
+            printf("HAL_CAN_ERROR_BD,");
+        if(ErrorStatus & HAL_CAN_ERROR_CRC)
+            printf("HAL_CAN_ERROR_CRC,");
+        if(ErrorStatus & HAL_CAN_ERROR_RX_FOV0)
+            printf("HAL_CAN_ERROR_RX_FOV0,");
+        if(ErrorStatus & HAL_CAN_ERROR_RX_FOV1)
+            printf("HAL_CAN_ERROR_RX_FOV1,");
+        if(ErrorStatus & HAL_CAN_ERROR_TX_ALST0)
+            printf("HAL_CAN_ERROR_TX_ALST0,");
+        if(ErrorStatus & HAL_CAN_ERROR_TX_TERR0)
+            printf("HAL_CAN_ERROR_TX_TERR0,");
+        if(ErrorStatus & HAL_CAN_ERROR_TX_ALST1)
+            printf("HAL_CAN_ERROR_TX_ALST1,");
+        if(ErrorStatus & HAL_CAN_ERROR_TX_TERR1)
+            printf("HAL_CAN_ERROR_TX_TERR1,");
+        if(ErrorStatus & HAL_CAN_ERROR_TX_ALST0)
+            printf("HAL_CAN_ERROR_TX_ALST0,");
+        if(ErrorStatus & HAL_CAN_ERROR_TX_ALST2)
+            printf("HAL_CAN_ERROR_TX_ALST2,");
+        if(ErrorStatus & HAL_CAN_ERROR_TX_TERR2)
+            printf("HAL_CAN_ERROR_TX_TERR2,");
+        if(ErrorStatus & HAL_CAN_ERROR_TIMEOUT)
+            printf("HAL_CAN_ERROR_TIMEOUT,");
+        if(ErrorStatus & HAL_CAN_ERROR_NOT_INITIALIZED)
+            printf("HAL_CAN_ERROR_NOT_INITIALIZED,");
+        if(ErrorStatus & HAL_CAN_ERROR_NOT_READY)
+            printf("HAL_CAN_ERROR_NOT_READY,");
+        if(ErrorStatus & HAL_CAN_ERROR_NOT_STARTED)
+            printf("HAL_CAN_ERROR_NOT_STARTED,");
+        if(ErrorStatus & HAL_CAN_ERROR_PARAM)
+            printf("HAL_CAN_ERROR_PARAM,");
+        if(ErrorStatus & HAL_CAN_ERROR_INTERNAL)
+            printf("HAL_CAN_ERROR_INTERNAL,");
+        printf("\n");
+    }
   }
   HAL_CAN_ResetError(hcan);
 }
@@ -133,26 +218,23 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
 
     __HAL_RCC_CAN1_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
 
-    GPIO_InitTypeDef gpio;
-    gpio.Mode = GPIO_MODE_INPUT;
-    gpio.Speed = GPIO_SPEED_FREQ_HIGH;
-    gpio.Pull = GPIO_NOPULL;
-    gpio.Pin = CAN_RX_GPIO_PIN;
-    HAL_GPIO_Init(GPIOA, &gpio);
-    gpio.Mode = GPIO_MODE_AF_PP;
-    gpio.Speed = GPIO_SPEED_FREQ_HIGH;
-    gpio.Pull = GPIO_NOPULL;
-    gpio.Pin = CAN_TX_GPIO_PIN;
-    HAL_GPIO_Init(GPIOA, &gpio);
+    GPIO_InitTypeDef gpio = {
+        .Pin = CAN_RX_GPIO_PIN | CAN_TX_GPIO_PIN,
+        .Mode = GPIO_MODE_AF_PP,
+        .Speed = GPIO_SPEED_FREQ_HIGH,
+        .Pull = GPIO_NOPULL,
+    };
+    HAL_GPIO_Init(CAN_GPIO_PORT, &gpio);
 
     // interrupt init for CAN
-    HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
+    HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
     HAL_NVIC_SetPriority(CAN1_RX1_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(CAN1_RX1_IRQn);
-    HAL_NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
+    HAL_NVIC_SetPriority(CAN1_TX_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(CAN1_TX_IRQn);
     HAL_NVIC_SetPriority(CAN1_SCE_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(CAN1_SCE_IRQn);
   }
@@ -167,10 +249,10 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef *hcan) {
 void HAL_CAN_MspDeInit(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
     __HAL_RCC_CAN1_CLK_DISABLE();
-    HAL_GPIO_DeInit(GPIOA, CAN_RX_GPIO_PIN | CAN_TX_GPIO_PIN);
-    HAL_NVIC_DisableIRQ(USB_HP_CAN1_TX_IRQn);
-    HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
+    HAL_GPIO_DeInit(CAN_GPIO_PORT, CAN_RX_GPIO_PIN | CAN_TX_GPIO_PIN);
+    HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
     HAL_NVIC_DisableIRQ(CAN1_RX1_IRQn);
+    HAL_NVIC_DisableIRQ(CAN1_TX_IRQn);
     HAL_NVIC_DisableIRQ(CAN1_SCE_IRQn);
   }
 }
