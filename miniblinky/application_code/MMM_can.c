@@ -36,25 +36,33 @@ void MMM_CAN_LoxNATFilter(uint32_t filterBank, uint8_t loxLink_or_Tree_ID, uint8
 }
 
 void MMM_CAN_Init() {
-    // 72MHz/6/12 = 1MHz, CAN_SJW_1TQ / CAN_BS1_6TQ / CAN_BS2_5TQ
   gCan.Instance = CAN1;
   gCan.Init.TimeTriggeredMode = DISABLE;
-  gCan.Init.AutoBusOff = DISABLE;
+  gCan.Init.AutoBusOff = ENABLE;
   gCan.Init.AutoWakeUp = DISABLE;
   gCan.Init.AutoRetransmission = DISABLE;
   gCan.Init.ReceiveFifoLocked = DISABLE;
-  gCan.Init.TransmitFifoPriority = DISABLE;
+  gCan.Init.TransmitFifoPriority = ENABLE;
   gCan.Init.Mode = CAN_MODE_NORMAL;
 
   // CAN_SJW_1tq + CAN_BS1_10tq + CAN_BS2_5tq => 16tq => sample point = 68.75% =(1+10)/16
   gCan.Init.SyncJumpWidth = CAN_SJW_1TQ;
   gCan.Init.TimeSeg1 = CAN_BS1_10TQ;
   gCan.Init.TimeSeg2 = CAN_BS2_5TQ;
-  gCan.Init.Prescaler = SystemCoreClock / 16 / CAN_BITRATE; // 16tq (see above)
+  gCan.Init.Prescaler = 18;//SystemCoreClock/2 / 16 / CAN_BITRATE; // 16tq (see above)
   if (HAL_CAN_Init(&gCan) != HAL_OK) {
     for (;;)
       ;
   }
+
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_RX_FIFO0_MSG_PENDING); // FIFO 0 message pending interrupt
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_RX_FIFO1_MSG_PENDING); // FIFO 1 message pending interrupt
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_TX_MAILBOX_EMPTY);     // Transmit mailbox empty interrupt
+  // notify on certain errors:
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR_PASSIVE);   // Error passive interrupt
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_LAST_ERROR_CODE); // Last error code interrupt
+  HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR);           // Error Interrupt
+  HAL_CAN_Start(&gCan);
 
 //  MMM_CAN_ConfigFilter_internal(0, 0, 0, CAN_FILTER_FIFO0);
   CAN_FilterTypeDef filterInit = {
@@ -70,15 +78,6 @@ void MMM_CAN_Init() {
     .SlaveStartFilterBank = 0,
   };
   HAL_CAN_ConfigFilter(&gCan, &filterInit);
-
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_RX_FIFO0_MSG_PENDING); // FIFO 0 message pending interrupt
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_RX_FIFO1_MSG_PENDING); // FIFO 1 message pending interrupt
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_TX_MAILBOX_EMPTY);     // Transmit mailbox empty interrupt
-  // notify on certain errors:
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR_PASSIVE);   // Error passive interrupt
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_LAST_ERROR_CODE); // Last error code interrupt
-  HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR);           // Error Interrupt
-  HAL_CAN_Start(&gCan);
 
 
   printf("freeLevel %d\n", HAL_CAN_GetTxMailboxesFreeLevel(&gCan));
@@ -205,6 +204,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
   uint8_t rx_data[8];
   HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);
   if (hcan->Instance == CAN1) {
+    printf("EXTID:%x IDE:%d RTR:%d DLC:%d DATA:%x.%x.%x.%x.%x.%x.%x.%x\n", rx_header.ExtId, rx_header.IDE, rx_header.RTR, rx_header.DLC, rx_data[0], rx_data[1], rx_data[2], rx_data[3], rx_data[4], rx_data[5], rx_data[6], rx_data[7]);
   }
 }
 
@@ -220,13 +220,20 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef *hcan) {
     __HAL_RCC_CAN1_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
-    GPIO_InitTypeDef gpio = {
-        .Pin = CAN_RX_GPIO_PIN | CAN_TX_GPIO_PIN,
-        .Mode = GPIO_MODE_AF_PP,
-        .Speed = GPIO_SPEED_FREQ_HIGH,
+    GPIO_InitTypeDef gpioRX = {
+        .Pin = CAN_RX_GPIO_PIN,
+        .Mode = GPIO_MODE_INPUT,
         .Pull = GPIO_NOPULL,
     };
-    HAL_GPIO_Init(CAN_GPIO_PORT, &gpio);
+    HAL_GPIO_Init(CAN_GPIO_PORT, &gpioRX);
+    GPIO_InitTypeDef gpioTX = {
+        .Pin = CAN_TX_GPIO_PIN,
+        .Mode = GPIO_MODE_AF_PP,
+        .Speed = GPIO_SPEED_FREQ_HIGH,
+    };
+    HAL_GPIO_Init(CAN_GPIO_PORT, &gpioTX);
+
+    __HAL_AFIO_REMAP_CAN1_2();
 
     // interrupt init for CAN
     HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 0, 0);

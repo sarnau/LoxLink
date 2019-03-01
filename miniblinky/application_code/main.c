@@ -12,7 +12,7 @@
 #include "MMM_can.h"
 
 
-void SetSysClockTo72(void);
+void SystemClock_Config(void);
 void MMM_initialize_heap(void);
 
 static void printCPUInfo() {
@@ -48,9 +48,8 @@ static void vTaskCode(void *pvParameters) {
 }
 
 int main(void) {
-  SetSysClockTo72();
-  SystemCoreClockUpdate();
   HAL_Init();
+  SystemClock_Config();
 
   MMM_initialize_heap();
 
