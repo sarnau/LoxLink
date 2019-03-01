@@ -26,6 +26,19 @@ static void vLEDBlink(void *pvParameters) {
     if (xQueueReceive(&gKeyQueue, &key, xDelay500ms)) {
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, (key & 1) == 1);
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, (key & 2) == 2);
+      if (key == 3) {
+        CAN_TxHeaderTypeDef hdr = {
+          .ExtId = 0x106ff0fd,
+          .IDE = CAN_ID_EXT,
+          .RTR = CAN_RTR_DATA,
+          .DLC = 8,
+          .TransmitGlobalTime = DISABLE,
+        };
+        uint8_t data[8] = {0xff, 0x01, 0x00, 0x00, 0x6c, 0x10, 0x10, 0x13};
+        uint32_t txMailbox = 0;
+        HAL_StatusTypeDef status = HAL_CAN_AddTxMessage(&gCan, &hdr, data, &txMailbox);
+        //printf("status = %d\n", status);
+      }
     }
   }
 }
