@@ -76,21 +76,6 @@ void MMM_CAN_Init() {
     .SlaveStartFilterBank = 0,
   };
   HAL_CAN_ConfigFilter(&gCan, &filterInit);
-
-  //  printf("freeLevel %d\n", HAL_CAN_GetTxMailboxesFreeLevel(&gCan));
-  //  CAN_TxHeaderTypeDef hdr = {
-  //    .ExtId = 0x106ff0fd,
-  //    .IDE = CAN_ID_EXT,
-  //    .RTR = CAN_RTR_DATA,
-  //    .DLC = 8,
-  //    .TransmitGlobalTime = DISABLE,
-  //  };
-  //  uint8_t data[8] = {0xff, 0x01, 0x00, 0x00, 0x6c, 0x10, 0x10, 0x13};
-  //  uint32_t txMailbox = 0;
-  //  HAL_StatusTypeDef status = HAL_CAN_AddTxMessage(&gCan, &hdr, data, &txMailbox);
-  //  printf("status %d\n", status);
-  //  printf("txMailbox 0x%x\n", txMailbox);
-  //  printf("freeLevel %d\n", HAL_CAN_GetTxMailboxesFreeLevel(&gCan));
 }
 
 /**
