@@ -59,7 +59,6 @@ int main(void) {
   xTaskCreateStatic(vTaskCode, "LEDBlink", configMINIMAL_STACK_SIZE, NULL, 3, sLEDBlinkStack, &sLEDBlinkTask);
 
   vTaskStartScheduler();
-  for(;;) {
-  }
+  NVIC_SystemReset(); // should never reach this point
   return 0;
 }
