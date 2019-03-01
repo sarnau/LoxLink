@@ -1,5 +1,5 @@
-#include "stm32f1xx_hal_conf.h"
 #include "stm32f1xx_hal.h" // HAL_GetUID()
+#include "stm32f1xx_hal_conf.h"
 #include "stm32f1xx_ll_utils.h" // LL_GetFlashSize()
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +10,6 @@
 #include "task.h"
 
 #include "MMM_can.h"
-
 
 void SystemClock_Config(void);
 void MMM_initialize_heap(void);
@@ -38,11 +37,12 @@ static void vTaskCode(void *pvParameters) {
   GPIO_Init.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_Init);
 
-  const TickType_t xDelay = 10 / portTICK_PERIOD_MS;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
   while (1) {
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15));
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1));
-    vTaskDelay(xDelay);
+    //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1));
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(500));
   }
 }
 

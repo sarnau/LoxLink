@@ -75,6 +75,7 @@
 #define configGENERATE_RUN_TIME_STATS                0
 #define configOVERRIDE_DEFAULT_TICK_CONFIGURATION    1
 #define configRECORD_STACK_HIGH_ADDRESS              1
+#define configSUPPORT_DYNAMIC_ALLOCATION             0 // we do not need dynamic tasks, etc
 
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES                        0

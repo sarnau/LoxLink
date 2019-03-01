@@ -2,10 +2,10 @@
 
 #include "stm32f1xx_hal_conf.h"
 
-#define CAN_GPIO_PORT   GPIOB
+#define CAN_GPIO_PORT GPIOB
 #define CAN_RX_GPIO_PIN GPIO_PIN_8
 #define CAN_TX_GPIO_PIN GPIO_PIN_9
-#define CAN_BITRATE     125000
+#define CAN_BITRATE 125000
 
 CAN_HandleTypeDef gCan;
 
@@ -49,7 +49,7 @@ void MMM_CAN_Init() {
   gCan.Init.SyncJumpWidth = CAN_SJW_1TQ;
   gCan.Init.TimeSeg1 = CAN_BS1_10TQ;
   gCan.Init.TimeSeg2 = CAN_BS2_5TQ;
-  gCan.Init.Prescaler = 18;//SystemCoreClock/2 / 16 / CAN_BITRATE; // 16tq (see above)
+  gCan.Init.Prescaler = 18; //SystemCoreClock/2 / 16 / CAN_BITRATE; // 16tq (see above)
   if (HAL_CAN_Init(&gCan) != HAL_OK) {
     for (;;)
       ;
@@ -64,7 +64,7 @@ void MMM_CAN_Init() {
   HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR);           // Error Interrupt
   HAL_CAN_Start(&gCan);
 
-//  MMM_CAN_ConfigFilter_internal(0, 0, 0, CAN_FILTER_FIFO0);
+  //  MMM_CAN_ConfigFilter_internal(0, 0, 0, CAN_FILTER_FIFO0);
   CAN_FilterTypeDef filterInit = {
     .FilterIdHigh = 0x0000,
     .FilterIdLow = 0x0000,
@@ -79,7 +79,6 @@ void MMM_CAN_Init() {
   };
   HAL_CAN_ConfigFilter(&gCan, &filterInit);
 
-
   printf("freeLevel %d\n", HAL_CAN_GetTxMailboxesFreeLevel(&gCan));
   CAN_TxHeaderTypeDef hdr = {
     .ExtId = 0x106ff0fd,
@@ -88,7 +87,7 @@ void MMM_CAN_Init() {
     .DLC = 8,
     .TransmitGlobalTime = DISABLE,
   };
-  uint8_t data[8] = { 0xff, 0x01, 0x00, 0x00, 0x6c, 0x10, 0x10, 0x13 };
+  uint8_t data[8] = {0xff, 0x01, 0x00, 0x00, 0x6c, 0x10, 0x10, 0x13};
   uint32_t txMailbox = 0;
   HAL_StatusTypeDef status = HAL_CAN_AddTxMessage(&gCan, &hdr, data, &txMailbox);
   printf("status %d\n", status);
@@ -138,56 +137,56 @@ void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan) {
 void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
     int ErrorStatus = hcan->ErrorCode;
-    if(ErrorStatus != HAL_CAN_ERROR_NONE) {
-        if(ErrorStatus & HAL_CAN_ERROR_EWG)
-            printf("HAL_CAN_ERROR_EWG,");
-        if(ErrorStatus & HAL_CAN_ERROR_EPV)
-            printf("HAL_CAN_ERROR_EPV,");
-        if(ErrorStatus & HAL_CAN_ERROR_BOF)
-            printf("HAL_CAN_ERROR_BOF,");
-        if(ErrorStatus & HAL_CAN_ERROR_STF)
-            printf("HAL_CAN_ERROR_STF,");
-        if(ErrorStatus & HAL_CAN_ERROR_FOR)
-            printf("HAL_CAN_ERROR_FOR,");
-        if(ErrorStatus & HAL_CAN_ERROR_ACK)
-            printf("HAL_CAN_ERROR_ACK,");
-        if(ErrorStatus & HAL_CAN_ERROR_BR)
-            printf("HAL_CAN_ERROR_BR,");
-        if(ErrorStatus & HAL_CAN_ERROR_BD)
-            printf("HAL_CAN_ERROR_BD,");
-        if(ErrorStatus & HAL_CAN_ERROR_CRC)
-            printf("HAL_CAN_ERROR_CRC,");
-        if(ErrorStatus & HAL_CAN_ERROR_RX_FOV0)
-            printf("HAL_CAN_ERROR_RX_FOV0,");
-        if(ErrorStatus & HAL_CAN_ERROR_RX_FOV1)
-            printf("HAL_CAN_ERROR_RX_FOV1,");
-        if(ErrorStatus & HAL_CAN_ERROR_TX_ALST0)
-            printf("HAL_CAN_ERROR_TX_ALST0,");
-        if(ErrorStatus & HAL_CAN_ERROR_TX_TERR0)
-            printf("HAL_CAN_ERROR_TX_TERR0,");
-        if(ErrorStatus & HAL_CAN_ERROR_TX_ALST1)
-            printf("HAL_CAN_ERROR_TX_ALST1,");
-        if(ErrorStatus & HAL_CAN_ERROR_TX_TERR1)
-            printf("HAL_CAN_ERROR_TX_TERR1,");
-        if(ErrorStatus & HAL_CAN_ERROR_TX_ALST0)
-            printf("HAL_CAN_ERROR_TX_ALST0,");
-        if(ErrorStatus & HAL_CAN_ERROR_TX_ALST2)
-            printf("HAL_CAN_ERROR_TX_ALST2,");
-        if(ErrorStatus & HAL_CAN_ERROR_TX_TERR2)
-            printf("HAL_CAN_ERROR_TX_TERR2,");
-        if(ErrorStatus & HAL_CAN_ERROR_TIMEOUT)
-            printf("HAL_CAN_ERROR_TIMEOUT,");
-        if(ErrorStatus & HAL_CAN_ERROR_NOT_INITIALIZED)
-            printf("HAL_CAN_ERROR_NOT_INITIALIZED,");
-        if(ErrorStatus & HAL_CAN_ERROR_NOT_READY)
-            printf("HAL_CAN_ERROR_NOT_READY,");
-        if(ErrorStatus & HAL_CAN_ERROR_NOT_STARTED)
-            printf("HAL_CAN_ERROR_NOT_STARTED,");
-        if(ErrorStatus & HAL_CAN_ERROR_PARAM)
-            printf("HAL_CAN_ERROR_PARAM,");
-        if(ErrorStatus & HAL_CAN_ERROR_INTERNAL)
-            printf("HAL_CAN_ERROR_INTERNAL,");
-        printf("\n");
+    if (ErrorStatus != HAL_CAN_ERROR_NONE) {
+      if (ErrorStatus & HAL_CAN_ERROR_EWG)
+        printf("HAL_CAN_ERROR_EWG,");
+      if (ErrorStatus & HAL_CAN_ERROR_EPV)
+        printf("HAL_CAN_ERROR_EPV,");
+      if (ErrorStatus & HAL_CAN_ERROR_BOF)
+        printf("HAL_CAN_ERROR_BOF,");
+      if (ErrorStatus & HAL_CAN_ERROR_STF)
+        printf("HAL_CAN_ERROR_STF,");
+      if (ErrorStatus & HAL_CAN_ERROR_FOR)
+        printf("HAL_CAN_ERROR_FOR,");
+      if (ErrorStatus & HAL_CAN_ERROR_ACK)
+        printf("HAL_CAN_ERROR_ACK,");
+      if (ErrorStatus & HAL_CAN_ERROR_BR)
+        printf("HAL_CAN_ERROR_BR,");
+      if (ErrorStatus & HAL_CAN_ERROR_BD)
+        printf("HAL_CAN_ERROR_BD,");
+      if (ErrorStatus & HAL_CAN_ERROR_CRC)
+        printf("HAL_CAN_ERROR_CRC,");
+      if (ErrorStatus & HAL_CAN_ERROR_RX_FOV0)
+        printf("HAL_CAN_ERROR_RX_FOV0,");
+      if (ErrorStatus & HAL_CAN_ERROR_RX_FOV1)
+        printf("HAL_CAN_ERROR_RX_FOV1,");
+      if (ErrorStatus & HAL_CAN_ERROR_TX_ALST0)
+        printf("HAL_CAN_ERROR_TX_ALST0,");
+      if (ErrorStatus & HAL_CAN_ERROR_TX_TERR0)
+        printf("HAL_CAN_ERROR_TX_TERR0,");
+      if (ErrorStatus & HAL_CAN_ERROR_TX_ALST1)
+        printf("HAL_CAN_ERROR_TX_ALST1,");
+      if (ErrorStatus & HAL_CAN_ERROR_TX_TERR1)
+        printf("HAL_CAN_ERROR_TX_TERR1,");
+      if (ErrorStatus & HAL_CAN_ERROR_TX_ALST0)
+        printf("HAL_CAN_ERROR_TX_ALST0,");
+      if (ErrorStatus & HAL_CAN_ERROR_TX_ALST2)
+        printf("HAL_CAN_ERROR_TX_ALST2,");
+      if (ErrorStatus & HAL_CAN_ERROR_TX_TERR2)
+        printf("HAL_CAN_ERROR_TX_TERR2,");
+      if (ErrorStatus & HAL_CAN_ERROR_TIMEOUT)
+        printf("HAL_CAN_ERROR_TIMEOUT,");
+      if (ErrorStatus & HAL_CAN_ERROR_NOT_INITIALIZED)
+        printf("HAL_CAN_ERROR_NOT_INITIALIZED,");
+      if (ErrorStatus & HAL_CAN_ERROR_NOT_READY)
+        printf("HAL_CAN_ERROR_NOT_READY,");
+      if (ErrorStatus & HAL_CAN_ERROR_NOT_STARTED)
+        printf("HAL_CAN_ERROR_NOT_STARTED,");
+      if (ErrorStatus & HAL_CAN_ERROR_PARAM)
+        printf("HAL_CAN_ERROR_PARAM,");
+      if (ErrorStatus & HAL_CAN_ERROR_INTERNAL)
+        printf("HAL_CAN_ERROR_INTERNAL,");
+      printf("\n");
     }
   }
   HAL_CAN_ResetError(hcan);
@@ -221,15 +220,15 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef *hcan) {
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
     GPIO_InitTypeDef gpioRX = {
-        .Pin = CAN_RX_GPIO_PIN,
-        .Mode = GPIO_MODE_INPUT,
-        .Pull = GPIO_NOPULL,
+      .Pin = CAN_RX_GPIO_PIN,
+      .Mode = GPIO_MODE_INPUT,
+      .Pull = GPIO_NOPULL,
     };
     HAL_GPIO_Init(CAN_GPIO_PORT, &gpioRX);
     GPIO_InitTypeDef gpioTX = {
-        .Pin = CAN_TX_GPIO_PIN,
-        .Mode = GPIO_MODE_AF_PP,
-        .Speed = GPIO_SPEED_FREQ_HIGH,
+      .Pin = CAN_TX_GPIO_PIN,
+      .Mode = GPIO_MODE_AF_PP,
+      .Speed = GPIO_SPEED_FREQ_HIGH,
     };
     HAL_GPIO_Init(CAN_GPIO_PORT, &gpioTX);
 

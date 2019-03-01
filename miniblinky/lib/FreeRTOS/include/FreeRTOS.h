@@ -851,7 +851,7 @@ extern "C" {
 
 #ifndef configSUPPORT_DYNAMIC_ALLOCATION
 	/* Defaults to 1 for backward compatibility. */
-	#define configSUPPORT_DYNAMIC_ALLOCATION 0
+	#define configSUPPORT_DYNAMIC_ALLOCATION 1
 #endif
 
 #ifndef configSTACK_DEPTH_TYPE
