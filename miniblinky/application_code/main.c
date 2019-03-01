@@ -50,7 +50,7 @@ int main(void) {
 
   uint32_t uid[3];
   HAL_GetUID(uid);
-  printf("Clock:%dMHz/%dMHz FLASH:%dkb, Unique device ID:%x.%x.%x\n", SystemCoreClock / 1000000, HAL_RCC_GetSysClockFreq() / 1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
+  printf("Clock:%dMHz/%dMHz FLASH:%dkb, Unique device ID:%08x.%08x.%08x\n", SystemCoreClock / 1000000, HAL_RCC_GetSysClockFreq() / 1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
 
   MMM_CAN_Init();
 
