@@ -201,7 +201,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
   uint8_t rx_data[8];
   HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);
   if (hcan->Instance == CAN1) {
-    printf("EXTID:%x IDE:%d RTR:%d DLC:%d DATA:%02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x\n", rx_header.ExtId, rx_header.IDE, rx_header.RTR, rx_header.DLC, rx_data[0], rx_data[1], rx_data[2], rx_data[3], rx_data[4], rx_data[5], rx_data[6], rx_data[7]);
+    if(rx_header.IDE == CAN_ID_EXT && rx_header.RTR == CAN_RTR_DATA && rx_header.DLC == 8) { // only standard Loxone packages
+        printf("%08x %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x\n", rx_header.ExtId, rx_data[0], rx_data[1], rx_data[2], rx_data[3], rx_data[4], rx_data[5], rx_data[6], rx_data[7]);
+    }
   }
 }
 
