@@ -36,7 +36,6 @@ static void vTaskCode(void *pvParameters) {
   GPIO_Init.Pin = GPIO_PIN_1 | GPIO_PIN_15;
   GPIO_Init.Mode = GPIO_MODE_INPUT;
   GPIO_Init.Pull = GPIO_PULLDOWN;
-  GPIO_Init.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_Init);
 
   const TickType_t xDelay = 10 / portTICK_PERIOD_MS;
@@ -51,15 +50,13 @@ int main(void) {
   HAL_Init();
   SystemClock_Config();
 
-  MMM_initialize_heap();
-
   printCPUInfo();
 
   MMM_CAN_Init();
 
-  TaskHandle_t xHandle = NULL;
-  xTaskCreate(vTaskCode, "LEDBlink", configMINIMAL_STACK_SIZE, NULL, 8, &xHandle);
-  configASSERT(xHandle);
+  static StackType_t sLEDBlinkStack[configMINIMAL_STACK_SIZE];
+  static StaticTask_t sLEDBlinkTask;
+  xTaskCreateStatic(vTaskCode, "LEDBlink", configMINIMAL_STACK_SIZE, NULL, 3, sLEDBlinkStack, &sLEDBlinkTask);
 
   vTaskStartScheduler();
   for(;;) {

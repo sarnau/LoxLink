@@ -6,18 +6,6 @@
 
 void xPortSysTickHandler(void);
 
-/*-----------------------------------------------------------*/
-
-void MMM_initialize_heap(void) {
-  static uint8_t ucHeap1[configTOTAL_HEAP_SIZE];
-
-  HeapRegion_t xHeapRegions[] = {
-    {(unsigned char *)ucHeap1, sizeof(ucHeap1)},
-    {NULL, 0}};
-
-  vPortDefineHeapRegions(xHeapRegions);
-}
-
 /**
   * @brief  SYSTICK callback.
   * @retval None

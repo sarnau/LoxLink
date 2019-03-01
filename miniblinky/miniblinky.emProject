@@ -46,7 +46,6 @@
         <file file_name="lib/FreeRTOS/tasks.c" />
         <file file_name="lib/FreeRTOS/timers.c" />
         <file file_name="lib/FreeRTOS/portable/GCC/ARM_CM3/port.c" />
-        <file file_name="lib/FreeRTOS/portable/MemMang/heap_5.c" />
       </folder>
       <folder
         Name="STM32F1xx"
