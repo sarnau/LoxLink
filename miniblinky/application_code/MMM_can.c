@@ -49,7 +49,7 @@ void MMM_CAN_Init() {
   gCan.Init.SyncJumpWidth = CAN_SJW_1TQ;
   gCan.Init.TimeSeg1 = CAN_BS1_10TQ;
   gCan.Init.TimeSeg2 = CAN_BS2_5TQ;
-  gCan.Init.Prescaler = 18; //SystemCoreClock/2 / 16 / CAN_BITRATE; // 16tq (see above)
+  gCan.Init.Prescaler = (SystemCoreClock/2) / 16 / CAN_BITRATE; // 16tq (see above) (SystemCoreClock / 2 = PCLK1 => APB1 = 36MHz)
   if (HAL_CAN_Init(&gCan) != HAL_OK) {
     for (;;)
       ;
@@ -64,7 +64,7 @@ void MMM_CAN_Init() {
   HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR);           // Error Interrupt
   HAL_CAN_Start(&gCan);
 
-  //  MMM_CAN_ConfigFilter_internal(0, 0, 0, CAN_FILTER_FIFO0);
+  // At least one filter is required to be able to receive data.
   CAN_FilterTypeDef filterInit = {
     .FilterIdHigh = 0x0000,
     .FilterIdLow = 0x0000,
