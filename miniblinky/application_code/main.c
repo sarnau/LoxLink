@@ -17,12 +17,6 @@ void MMM_initialize_heap(void);
 
 static StaticQueue_t gKeyQueue;
 
-static void printCPUInfo() {
-  uint32_t uid[3];
-  HAL_GetUID(uid);
-  printf("Clock:%dMHz/%dMHz FLASH:%dkb, Unique device ID:%x.%x.%x\n", SystemCoreClock / 1000000, HAL_RCC_GetSysClockFreq() / 1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
-}
-
 static void vLEDBlink(void *pvParameters) {
   //TickType_t xLastWakeTime = xTaskGetTickCount();
   const TickType_t xDelay500ms = pdMS_TO_TICKS(500);
@@ -55,7 +49,9 @@ int main(void) {
   HAL_Init();
   SystemClock_Config();
 
-  printCPUInfo();
+  uint32_t uid[3];
+  HAL_GetUID(uid);
+  printf("Clock:%dMHz/%dMHz FLASH:%dkb, Unique device ID:%x.%x.%x\n", SystemCoreClock / 1000000, HAL_RCC_GetSysClockFreq() / 1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
 
   MMM_CAN_Init();
 
@@ -75,7 +71,8 @@ int main(void) {
   GPIO_Init.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_Init);
 
-  static uint8_t sKeyQueueBuffer[32];
+  // queue for 8 key-presses
+  static uint8_t sKeyQueueBuffer[8];
   static StaticQueue_t sKeyQueue;
   xQueueCreateStatic(sizeof(sKeyQueueBuffer) / sizeof(sKeyQueueBuffer[0]), sizeof(sKeyQueueBuffer[0]), sKeyQueueBuffer, &gKeyQueue);
 
