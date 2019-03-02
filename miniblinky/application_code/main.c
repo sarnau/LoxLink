@@ -12,16 +12,20 @@
 
 #include "MMM_can.h"
 
+
 void SystemClock_Config(void);
 
 static StaticQueue_t gKeyQueue;
 
 static void vLEDBlink(void *pvParameters) {
-  //TickType_t xLastWakeTime = xTaskGetTickCount();
+  TickType_t xLastWakeTime = xTaskGetTickCount();
   const TickType_t xDelay500ms = pdMS_TO_TICKS(500);
   while (1) {
+#if 0
+    printf("A");
     //HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
-    //vTaskDelayUntil(&xLastWakeTime, xDelay500ms);
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
+#else
     uint8_t key;
     if (xQueueReceive(&gKeyQueue, &key, xDelay500ms)) {
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, (key & 1) == 1);
@@ -40,6 +44,7 @@ static void vLEDBlink(void *pvParameters) {
         //printf("status = %d\n", status);
       }
     }
+#endif
   }
 }
 
@@ -48,12 +53,18 @@ static void vKeyCheck(void *pvParameters) {
   const TickType_t xDelay10ms = pdMS_TO_TICKS(10);
   uint8_t lastKey = 0;
   while (1) {
+#if 0
+    printf("B");
+    //HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
+#else
     uint8_t key = (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15) << 1) | (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1) << 0);
     if (key != lastKey) {
       lastKey = key;
       xQueueSend(&gKeyQueue, &key, 0);
     }
     vTaskDelay(xDelay10ms);
+#endif
   }
 }
 
@@ -90,11 +101,11 @@ int main(void) {
 
   static StackType_t sLEDBlinkStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sLEDBlinkTask;
-  xTaskCreateStatic(vLEDBlink, "LEDBlink", configMINIMAL_STACK_SIZE, NULL, 3, sLEDBlinkStack, &sLEDBlinkTask);
+  xTaskCreateStatic(vLEDBlink, "LEDBlink", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES-1, sLEDBlinkStack, &sLEDBlinkTask);
 
   static StackType_t sKeyCheckStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sKeyCheckTask;
-  xTaskCreateStatic(vKeyCheck, "KeyCheck", configMINIMAL_STACK_SIZE, NULL, 3, sKeyCheckStack, &sKeyCheckTask);
+  xTaskCreateStatic(vKeyCheck, "KeyCheck", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES-1, sKeyCheckStack, &sKeyCheckTask);
 
   vTaskStartScheduler();
   NVIC_SystemReset(); // should never reach this point

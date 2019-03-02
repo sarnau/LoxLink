@@ -1,5 +1,0 @@
-<!DOCTYPE Board_Memory_Definition_File>
-<root name="STM32L475VG">
-  <MemorySegment name="FLASH"     start="0x08000000" size="0x00064000" access="ReadOnly" />
-  <MemorySegment name="RAM"       start="0x20000000" size="0x00006000" access="Read/Write" />  
-</root>
