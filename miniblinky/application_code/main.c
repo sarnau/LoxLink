@@ -28,8 +28,8 @@ static void vLEDBlink(void *pvParameters) {
 #else
     uint8_t key;
     if (xQueueReceive(&gKeyQueue, &key, xDelay500ms)) {
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, (key & 1) == 1);
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, (key & 2) == 2);
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, !((key & 1) == 1)); // 0=LED on, 1=LED off
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, !((key & 2) == 2)); // 0=LED on, 1=LED off
       if (key == 3) {
         CAN_TxHeaderTypeDef hdr = {
           .ExtId = 0x106ff0fd,
@@ -58,7 +58,7 @@ static void vKeyCheck(void *pvParameters) {
     //HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
 #else
-    uint8_t key = (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15) << 1) | (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1) << 0);
+    uint8_t key = ~((HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15) << 1) | (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1) << 0)) & 3; // 0=Button pressed, 1=Button released
     if (key != lastKey) {
       lastKey = key;
       xQueueSend(&gKeyQueue, &key, 0);
