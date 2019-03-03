@@ -40,7 +40,7 @@ static void vMainTask(void *pvParameters) {
       }
     }
     if (uxBits & eMainEvents_1sTimer) {
-      //printf("Ticks %d\n", HAL_GetTick());
+      printf("Ticks %d\n", HAL_GetTick());
     }
   }
 }
