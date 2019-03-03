@@ -20,10 +20,7 @@ EventGroupHandle_t gEventGroup;
 static void vMainTsask(void *pvParameters) {
   const TickType_t xDelay1000ms = pdMS_TO_TICKS(1000);
   while (1) {
-    EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, (eMainEvents_buttonLeft | eMainEvents_buttonRight | eMainEvents_anyButtonPressed) | eMainEvents_LoxCanMessageReceived | eMainEvents_1sTimer, pdTRUE, pdFALSE, xDelay1000ms);
-    if (uxBits == 0) {
-      continue;
-    }
+    EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, (eMainEvents_buttonLeft | eMainEvents_buttonRight | eMainEvents_anyButtonPressed) | eMainEvents_LoxCanMessageReceived | eMainEvents_1sTimer, pdTRUE, pdFALSE, portMAX_DELAY);
     if (uxBits & eMainEvents_anyButtonPressed) {
       uint8_t keyBitmask = uxBits & (eMainEvents_buttonLeft | eMainEvents_buttonRight);
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, !((keyBitmask & 1) == 1)); // 0=LED on, 1=LED off
