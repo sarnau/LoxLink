@@ -111,18 +111,18 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef *hadc) {
   * @param None
   * @retval None
   */
-static ADC_HandleTypeDef gADC1;
-
 static float MX_read_temperature(void) {
+  static ADC_HandleTypeDef sADC1;
+
   /** Common config */
-  gADC1.Instance = ADC1;
-  gADC1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  gADC1.Init.ContinuousConvMode = DISABLE;
-  gADC1.Init.DiscontinuousConvMode = DISABLE;
-  gADC1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  gADC1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  gADC1.Init.NbrOfConversion = 1;
-  if (HAL_ADC_Init(&gADC1) != HAL_OK) {
+  sADC1.Instance = ADC1;
+  sADC1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  sADC1.Init.ContinuousConvMode = DISABLE;
+  sADC1.Init.DiscontinuousConvMode = DISABLE;
+  sADC1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  sADC1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  sADC1.Init.NbrOfConversion = 1;
+  if (HAL_ADC_Init(&sADC1) != HAL_OK) {
     /* Loop forever */
     for (;;)
       ;
@@ -132,23 +132,23 @@ static float MX_read_temperature(void) {
   sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
-  if (HAL_ADC_ConfigChannel(&gADC1, &sConfig) != HAL_OK) {
+  if (HAL_ADC_ConfigChannel(&sADC1, &sConfig) != HAL_OK) {
     /* Loop forever */
     for (;;)
       ;
   }
 
-  while (HAL_ADCEx_Calibration_Start(&gADC1) != HAL_OK)
+  while (HAL_ADCEx_Calibration_Start(&sADC1) != HAL_OK)
     ;
-  HAL_ADC_Start(&gADC1);
-  while (HAL_ADC_PollForConversion(&gADC1, 0) != HAL_OK)
+  HAL_ADC_Start(&sADC1);
+  while (HAL_ADC_PollForConversion(&sADC1, 0) != HAL_OK)
     ;
-  uint16_t adcValue = HAL_ADC_GetValue(&gADC1);
+  uint16_t adcValue = HAL_ADC_GetValue(&sADC1);
   const float AVG_SLOPE = 4.3E-03;
   const float V25 = 1.43;
   const float ADC_TO_VOLT = 3.3 / 4096;
   float temp = (V25 - adcValue * ADC_TO_VOLT) / AVG_SLOPE + 25.0f;
-  HAL_ADC_Stop(&gADC1);
+  HAL_ADC_Stop(&sADC1);
   return temp;
 }
 
