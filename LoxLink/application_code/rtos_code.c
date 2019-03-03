@@ -2,7 +2,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-void xPortSysTickHandler(void);
+extern void xPortSysTickHandler(void);
 
 /**
   * @brief  SYSTICK callback.

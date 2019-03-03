@@ -1,4 +1,5 @@
 #include "MMM_can.h"
+#include "main.h"
 
 #include <string.h>
 
@@ -6,8 +7,6 @@
 #define CAN_RX_GPIO_PIN GPIO_PIN_8
 #define CAN_TX_GPIO_PIN GPIO_PIN_9
 #define CAN_BITRATE 125000
-
-extern EventGroupHandle_t gEventGroup;
 
 CAN_HandleTypeDef gCan;
 StaticQueue_t gCanReceiveQueue;

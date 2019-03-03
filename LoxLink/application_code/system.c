@@ -51,10 +51,8 @@ void SystemClock_Config(void) {
   }
 }
 
-void assert_failed(uint8_t *file, uint32_t line)
-{
-    printf("assert_failed(\"%s\", %d)\n", file, line);
-    for (;;) {
-    }
+void assert_failed(uint8_t *file, uint32_t line) {
+  printf("assert_failed(\"%s\", %d)\n", file, line);
+  for (;;) {
+  }
 }
-

@@ -1,6 +1,6 @@
 <!DOCTYPE CrossStudio_Project_File>
-<solution Name="miniblinky" target="8" version="2">
-  <project Name="miniblinky">
+<solution Name="LoxLink" target="8" version="2">
+  <project Name="LoxLink">
     <configuration
       Name="Common"
       Placement="Flash"

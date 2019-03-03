@@ -12,12 +12,12 @@
 #include "task.h"
 
 #include "MMM_can.h"
-
-void SystemClock_Config(void);
+#include "main.h"
+#include "system.h"
 
 EventGroupHandle_t gEventGroup;
 
-static void vLEDBlink(void *pvParameters) {
+static void vMainTsask(void *pvParameters) {
   const TickType_t xDelay1000ms = pdMS_TO_TICKS(1000);
   while (1) {
     EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, 7 | 0x100, pdTRUE, pdFALSE, xDelay1000ms);
@@ -89,9 +89,9 @@ int main(void) {
   static StaticEventGroup_t sEventGroup;
   gEventGroup = xEventGroupCreateStatic(&sEventGroup);
 
-  static StackType_t sLEDBlinkStack[configMINIMAL_STACK_SIZE];
-  static StaticTask_t sLEDBlinkTask;
-  xTaskCreateStatic(vLEDBlink, "LEDBlink", configMINIMAL_STACK_SIZE, NULL, 1, sLEDBlinkStack, &sLEDBlinkTask);
+  static StackType_t sMainTaskStack[configMINIMAL_STACK_SIZE];
+  static StaticTask_t sMainTask;
+  xTaskCreateStatic(vMainTsask, "MainTask", configMINIMAL_STACK_SIZE, NULL, 1, sMainTaskStack, &sMainTask);
 
   static StackType_t sKeyCheckStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sKeyCheckTask;
