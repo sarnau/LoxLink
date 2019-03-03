@@ -25,8 +25,6 @@ static void vMainTask(void *pvParameters) {
     EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, (eMainEvents_buttonLeft | eMainEvents_buttonRight | eMainEvents_anyButtonPressed) | eMainEvents_LoxCanMessageReceived | eMainEvents_1sTimer, pdTRUE, pdFALSE, portMAX_DELAY);
     if (uxBits & eMainEvents_anyButtonPressed) {
       uint8_t keyBitmask = uxBits & (eMainEvents_buttonLeft | eMainEvents_buttonRight);
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, !((keyBitmask & 1) == 1)); // 0=LED on, 1=LED off
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, !((keyBitmask & 2) == 2)); // 0=LED on, 1=LED off
       if (keyBitmask == 3) {
         const LoxCanMessage msg = {
           .identifier = 0x106ff0fd,
@@ -42,28 +40,26 @@ static void vMainTask(void *pvParameters) {
       }
     }
     if (uxBits & eMainEvents_1sTimer) {
-      printf("Ticks %d\n", HAL_GetTick());
+      //printf("Ticks %d\n", HAL_GetTick());
     }
   }
 }
 
-static void vMainTaskB(void *pvParameters) {
+static void vLEDTask(void *pvParameters) {
   while (1) {
-    EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, (eMainEvents_buttonLeft | eMainEvents_buttonRight | eMainEvents_anyButtonPressed) | eMainEvents_LoxCanMessageReceived | eMainEvents_1sTimer, pdTRUE, pdFALSE, portMAX_DELAY);
+    EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, (eMainEvents_buttonLeft | eMainEvents_buttonRight | eMainEvents_anyButtonPressed) | eMainEvents_1sTimer, pdTRUE, pdFALSE, portMAX_DELAY);
     if (uxBits & eMainEvents_anyButtonPressed) {
       uint8_t keyBitmask = uxBits & (eMainEvents_buttonLeft | eMainEvents_buttonRight);
-      printf("keyBitmask = %x\n", keyBitmask);
-    }
-    if (uxBits & eMainEvents_LoxCanMessageReceived) {
-      //printf("LoxCanMessageReceived\n");
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, !((keyBitmask & 1) == 1)); // 0=LED on, 1=LED off
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, !((keyBitmask & 2) == 2)); // 0=LED on, 1=LED off
     }
     if (uxBits & eMainEvents_1sTimer) {
-      //printf("B %d\n", HAL_GetTick());
+      //printf("Ticks %d (LED)\n", HAL_GetTick());
     }
   }
 }
 
-static void vKeyCheck(void *pvParameters) {
+static void vKeyInputTask(void *pvParameters) {
   const TickType_t xDelay50ms = pdMS_TO_TICKS(50);
   eMainEvents lastMainEventMask = 0;
   while (1) {
@@ -186,15 +182,15 @@ int main(void) {
 
   static StackType_t sMainTaskStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sMainTask;
-  xTaskCreateStatic(vMainTask, "MainTaskA", configMINIMAL_STACK_SIZE, NULL, 2, sMainTaskStack, &sMainTask);
+  xTaskCreateStatic(vMainTask, "MainTask", configMINIMAL_STACK_SIZE, NULL, 2, sMainTaskStack, &sMainTask);
 
-  static StackType_t sMainTaskStackB[configMINIMAL_STACK_SIZE];
-  static StaticTask_t sMainTaskB;
-  xTaskCreateStatic(vMainTaskB, "MainTaskB", configMINIMAL_STACK_SIZE, NULL, 1, sMainTaskStackB, &sMainTaskB);
+  static StackType_t sLEDTaskStack[configMINIMAL_STACK_SIZE];
+  static StaticTask_t sLEDTask;
+  xTaskCreateStatic(vLEDTask, "LEDTask", configMINIMAL_STACK_SIZE, NULL, 1, sLEDTaskStack, &sLEDTask);
 
-  static StackType_t sKeyCheckStack[configMINIMAL_STACK_SIZE];
-  static StaticTask_t sKeyCheckTask;
-  xTaskCreateStatic(vKeyCheck, "KeyCheck", configMINIMAL_STACK_SIZE, NULL, 1, sKeyCheckStack, &sKeyCheckTask);
+  static StackType_t sKeyInputTaskStack[configMINIMAL_STACK_SIZE];
+  static StaticTask_t sKeyInputTaskTask;
+  xTaskCreateStatic(vKeyInputTask, "KeyInputTask", configMINIMAL_STACK_SIZE, NULL, 1, sKeyInputTaskStack, &sKeyInputTaskTask);
 
   vTaskStartScheduler();
   NVIC_SystemReset(); // should never reach this point
