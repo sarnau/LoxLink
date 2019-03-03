@@ -20,12 +20,12 @@ EventGroupHandle_t gEventGroup;
 static void vMainTsask(void *pvParameters) {
   const TickType_t xDelay1000ms = pdMS_TO_TICKS(1000);
   while (1) {
-    EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, 7 | 0x100, pdTRUE, pdFALSE, xDelay1000ms);
+    EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, (eMainEvents_buttonLeft | eMainEvents_buttonRight | eMainEvents_anyButtonPressed) | eMainEvents_LoxCanMessageReceived | eMainEvents_1sTimer, pdTRUE, pdFALSE, xDelay1000ms);
     if (uxBits == 0) {
-      printf("%d\n", HAL_GetTick());
+      continue;
     }
-    if (uxBits & 4) {
-      uint8_t keyBitmask = uxBits & 3;
+    if (uxBits & eMainEvents_anyButtonPressed) {
+      uint8_t keyBitmask = uxBits & (eMainEvents_buttonLeft | eMainEvents_buttonRight);
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, !((keyBitmask & 1) == 1)); // 0=LED on, 1=LED off
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, !((keyBitmask & 2) == 2)); // 0=LED on, 1=LED off
       if (keyBitmask == 3) {
@@ -36,23 +36,30 @@ static void vMainTsask(void *pvParameters) {
         MMM_CAN_Send(&msg);
       }
     }
-    if (uxBits & 0x100) {
+    if (uxBits & eMainEvents_LoxCanMessageReceived) {
       LoxCanMessage msg;
       while (xQueueReceive(&gCanReceiveQueue, &msg, 0)) {
         printf("%08x %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x\n", msg.identifier, msg.data[0], msg.data[1], msg.data[2], msg.data[3], msg.data[4], msg.data[5], msg.data[6], msg.data[7]);
       }
+    }
+    if (uxBits & eMainEvents_1sTimer) {
+      printf("%d\n", HAL_GetTick());
     }
   }
 }
 
 static void vKeyCheck(void *pvParameters) {
   const TickType_t xDelay50ms = pdMS_TO_TICKS(50);
-  uint8_t lastKey = 0;
+  eMainEvents lastMainEventMask = 0;
   while (1) {
-    uint8_t key = ~((HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15) << 1) | (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1) << 0)) & 3; // 0=Button pressed, 1=Button released
-    if (key != lastKey) {
-      lastKey = key;
-      xEventGroupSetBits(gEventGroup, key | 4);
+    eMainEvents eventMask = eMainEvents_anyButtonPressed;
+    if (!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1)) // 0=Button pressed, 1=Button released
+      eventMask |= eMainEvents_buttonLeft;
+    if (!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15))
+      eventMask |= eMainEvents_buttonRight;
+    if (eventMask != lastMainEventMask) {
+      lastMainEventMask = eventMask;
+      xEventGroupSetBits(gEventGroup, eventMask);
     }
     vTaskDelay(xDelay50ms);
   }

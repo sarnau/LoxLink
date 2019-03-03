@@ -10,6 +10,15 @@ extern "C" {
 
 extern EventGroupHandle_t gEventGroup;
 
+typedef enum {
+  eMainEvents_buttonLeft = 0x0001,
+  eMainEvents_buttonRight = 0x0002,
+  eMainEvents_anyButtonPressed = 0x0080,
+  eMainEvents_LoxCanMessageReceived = 0x0100,
+  eMainEvents_1sTimer = 0x2000,
+  eMainEvents_10msTimer = 0x4000,
+} eMainEvents;
+
 #ifdef __cplusplus
 }
 #endif

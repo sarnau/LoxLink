@@ -1,5 +1,6 @@
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
+#include "main.h"
 #include "task.h"
 
 extern void xPortSysTickHandler(void);
@@ -10,6 +11,18 @@ extern void xPortSysTickHandler(void);
   */
 void HAL_SYSTICK_Callback(void) {
   xPortSysTickHandler();
+
+  BaseType_t xResult = pdFAIL;
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  static uint32_t sMsCounter;
+  if (!(sMsCounter % 10))
+    xResult = xEventGroupSetBitsFromISR(gEventGroup, eMainEvents_10msTimer, &xHigherPriorityTaskWoken);
+  if (!(sMsCounter % 1000u))
+    xResult = xEventGroupSetBitsFromISR(gEventGroup, eMainEvents_1sTimer, &xHigherPriorityTaskWoken);
+  ++sMsCounter;
+  if (xResult != pdFAIL) {
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+  }
 }
 
 /*-----------------------------------------------------------*/

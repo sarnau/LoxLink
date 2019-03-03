@@ -218,7 +218,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
       BaseType_t xHigherPriorityTaskWoken = pdFALSE;
       BaseType_t xResult = xQueueSendToBackFromISR(&gCanReceiveQueue, &msg, &xHigherPriorityTaskWoken);
       assert_param(xResult != pdFAIL);
-      xResult = xEventGroupSetBitsFromISR(gEventGroup, 0x100, &xHigherPriorityTaskWoken);
+      xResult = xEventGroupSetBitsFromISR(gEventGroup, eMainEvents_LoxCanMessageReceived, &xHigherPriorityTaskWoken);
       if (xResult != pdFAIL) {
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
       }
