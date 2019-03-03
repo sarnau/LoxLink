@@ -54,8 +54,8 @@ void MMM_CAN_FilterLoxNAT(uint32_t filterBank, uint8_t loxLink_or_Tree_ID, uint8
     filterFIFOAssignment);
 }
 
-void MMM_CAN_Send(LoxCanMessage *msg) {
-  CAN_TxHeaderTypeDef hdr = {
+void MMM_CAN_Send(const LoxCanMessage *msg) {
+  const CAN_TxHeaderTypeDef hdr = {
     .ExtId = msg->identifier,
     .IDE = CAN_ID_EXT,
     .RTR = CAN_RTR_DATA,

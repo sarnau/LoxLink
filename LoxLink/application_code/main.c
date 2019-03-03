@@ -1,6 +1,7 @@
 #include "stm32f1xx_hal.h" // HAL_GetUID()
 #include "stm32f1xx_hal_conf.h"
 #include "stm32f1xx_ll_utils.h" // LL_GetFlashSize()
+#include "stm32f1xx_ll_bus.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stm32f1xx.h>
@@ -17,8 +18,7 @@
 
 EventGroupHandle_t gEventGroup;
 
-static void vMainTsask(void *pvParameters) {
-  const TickType_t xDelay1000ms = pdMS_TO_TICKS(1000);
+static void vMainTask(void *pvParameters) {
   while (1) {
     EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, (eMainEvents_buttonLeft | eMainEvents_buttonRight | eMainEvents_anyButtonPressed) | eMainEvents_LoxCanMessageReceived | eMainEvents_1sTimer, pdTRUE, pdFALSE, portMAX_DELAY);
     if (uxBits & eMainEvents_anyButtonPressed) {
@@ -26,7 +26,7 @@ static void vMainTsask(void *pvParameters) {
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, !((keyBitmask & 1) == 1)); // 0=LED on, 1=LED off
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, !((keyBitmask & 2) == 2)); // 0=LED on, 1=LED off
       if (keyBitmask == 3) {
-        LoxCanMessage msg = {
+        const LoxCanMessage msg = {
           .identifier = 0x106ff0fd,
           .data = {0xff, 0x01, 0x00, 0x00, 0x6c, 0x10, 0x10, 0x13},
         };
@@ -40,7 +40,23 @@ static void vMainTsask(void *pvParameters) {
       }
     }
     if (uxBits & eMainEvents_1sTimer) {
-      printf("%d\n", HAL_GetTick());
+      printf("A %d\n", HAL_GetTick());
+    }
+  }
+}
+
+static void vMainTaskB(void *pvParameters) {
+  while (1) {
+    EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, (eMainEvents_buttonLeft | eMainEvents_buttonRight | eMainEvents_anyButtonPressed) | eMainEvents_LoxCanMessageReceived | eMainEvents_1sTimer, pdTRUE, pdFALSE, portMAX_DELAY);
+    if (uxBits & eMainEvents_anyButtonPressed) {
+      uint8_t keyBitmask = uxBits & (eMainEvents_buttonLeft | eMainEvents_buttonRight);
+      printf("keyBitmask = %x\n", keyBitmask);
+    }
+    if (uxBits & eMainEvents_LoxCanMessageReceived) {
+      printf("LoxCanMessageReceived\n");
+    }
+    if (uxBits & eMainEvents_1sTimer) {
+      printf("B %d\n", HAL_GetTick());
     }
   }
 }
@@ -95,7 +111,11 @@ int main(void) {
 
   static StackType_t sMainTaskStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sMainTask;
-  xTaskCreateStatic(vMainTsask, "MainTask", configMINIMAL_STACK_SIZE, NULL, 1, sMainTaskStack, &sMainTask);
+  xTaskCreateStatic(vMainTask, "MainTaskA", configMINIMAL_STACK_SIZE, NULL, 2, sMainTaskStack, &sMainTask);
+
+  static StackType_t sMainTaskStackB[configMINIMAL_STACK_SIZE];
+  static StaticTask_t sMainTaskB;
+  xTaskCreateStatic(vMainTaskB, "MainTaskB", configMINIMAL_STACK_SIZE, NULL, 1, sMainTaskStackB, &sMainTaskB);
 
   static StackType_t sKeyCheckStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sKeyCheckTask;
