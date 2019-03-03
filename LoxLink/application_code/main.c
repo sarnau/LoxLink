@@ -1,7 +1,7 @@
 #include "stm32f1xx_hal.h" // HAL_GetUID()
 #include "stm32f1xx_hal_conf.h"
-#include "stm32f1xx_ll_utils.h" // LL_GetFlashSize()
 #include "stm32f1xx_ll_bus.h"
+#include "stm32f1xx_ll_utils.h" // LL_GetFlashSize()
 #include <stdio.h>
 #include <stdlib.h>
 #include <stm32f1xx.h>
@@ -14,11 +14,13 @@
 
 #include "MMM_can.h"
 #include "main.h"
+#include "rtos_code.h"
 #include "system.h"
 
 EventGroupHandle_t gEventGroup;
 
 static void vMainTask(void *pvParameters) {
+  xFreeRTOSActive = pdTRUE; // if the boot takes too long, the SysTick ISR will trigger a crash in FreeRTOS, if it is not already initialized.
   while (1) {
     EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, (eMainEvents_buttonLeft | eMainEvents_buttonRight | eMainEvents_anyButtonPressed) | eMainEvents_LoxCanMessageReceived | eMainEvents_1sTimer, pdTRUE, pdFALSE, portMAX_DELAY);
     if (uxBits & eMainEvents_anyButtonPressed) {
@@ -40,7 +42,7 @@ static void vMainTask(void *pvParameters) {
       }
     }
     if (uxBits & eMainEvents_1sTimer) {
-      printf("A %d\n", HAL_GetTick());
+      printf("Ticks %d\n", HAL_GetTick());
     }
   }
 }
@@ -53,10 +55,10 @@ static void vMainTaskB(void *pvParameters) {
       printf("keyBitmask = %x\n", keyBitmask);
     }
     if (uxBits & eMainEvents_LoxCanMessageReceived) {
-      printf("LoxCanMessageReceived\n");
+      //printf("LoxCanMessageReceived\n");
     }
     if (uxBits & eMainEvents_1sTimer) {
-      printf("B %d\n", HAL_GetTick());
+      //printf("B %d\n", HAL_GetTick());
     }
   }
 }
@@ -78,13 +80,86 @@ static void vKeyCheck(void *pvParameters) {
   }
 }
 
+/**
+* @brief ADC MSP Initialization
+* This function configures the hardware resources used in this example
+* @param hadc: ADC handle pointer
+* @retval None
+*/
+void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc) {
+  if (hadc->Instance == ADC1) {
+    /* Peripheral clock enable */
+    __HAL_RCC_ADC1_CLK_ENABLE();
+  }
+}
+
+/**
+* @brief ADC MSP De-Initialization
+* This function freeze the hardware resources used in this example
+* @param hadc: ADC handle pointer
+* @retval None
+*/
+void HAL_ADC_MspDeInit(ADC_HandleTypeDef *hadc) {
+  if (hadc->Instance == ADC1) {
+    /* Peripheral clock disable */
+    __HAL_RCC_ADC1_CLK_DISABLE();
+  }
+}
+
+/**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static ADC_HandleTypeDef gADC1;
+
+static float MX_read_temperature(void) {
+  /** Common config */
+  gADC1.Instance = ADC1;
+  gADC1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  gADC1.Init.ContinuousConvMode = DISABLE;
+  gADC1.Init.DiscontinuousConvMode = DISABLE;
+  gADC1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  gADC1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  gADC1.Init.NbrOfConversion = 1;
+  if (HAL_ADC_Init(&gADC1) != HAL_OK) {
+    /* Loop forever */
+    for (;;)
+      ;
+  }
+  /** Configure Regular Channel */
+  ADC_ChannelConfTypeDef sConfig = {0};
+  sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
+  if (HAL_ADC_ConfigChannel(&gADC1, &sConfig) != HAL_OK) {
+    /* Loop forever */
+    for (;;)
+      ;
+  }
+
+  while (HAL_ADCEx_Calibration_Start(&gADC1) != HAL_OK)
+    ;
+  HAL_ADC_Start(&gADC1);
+  while (HAL_ADC_PollForConversion(&gADC1, 0) != HAL_OK)
+    ;
+  uint16_t adcValue = HAL_ADC_GetValue(&gADC1);
+  const float AVG_SLOPE = 4.3E-03;
+  const float V25 = 1.43;
+  const float ADC_TO_VOLT = 3.3 / 4096;
+  float temp = (V25 - adcValue * ADC_TO_VOLT) / AVG_SLOPE + 25.0f;
+  HAL_ADC_Stop(&gADC1);
+  return temp;
+}
+
 int main(void) {
   HAL_Init();
   SystemClock_Config();
 
   uint32_t uid[3];
   HAL_GetUID(uid);
-  printf("Clock:%dMHz/%dMHz FLASH:%dkb, Unique device ID:%08x.%08x.%08x\n", SystemCoreClock / 1000000, HAL_RCC_GetSysClockFreq() / 1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
+  printf("SysClock:%dMHz HCLK:%dMHz PCLK1:%dMHz PCLK2:%dMHz FLASH:%dkb, Unique device ID:%08x.%08x.%08x\n", HAL_RCC_GetSysClockFreq() / 1000000, HAL_RCC_GetHCLKFreq() / 1000000, HAL_RCC_GetPCLK1Freq() / 1000000, HAL_RCC_GetPCLK2Freq() / 1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
+  printf("ADC_TEMPSENSOR: %.2fC\n", MX_read_temperature());
 
   MMM_CAN_Init();
   //MMM_CAN_FilterLoxNAT(0, 0x10, 0xFF, 1, CAN_FILTER_FIFO0);

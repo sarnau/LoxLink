@@ -85,7 +85,7 @@ void MMM_CAN_Init() {
   gCan.Init.SyncJumpWidth = CAN_SJW_1TQ;
   gCan.Init.TimeSeg1 = CAN_BS1_10TQ;
   gCan.Init.TimeSeg2 = CAN_BS2_5TQ;
-  gCan.Init.Prescaler = (SystemCoreClock / 2) / 16 / CAN_BITRATE; // 16tq (see above) (SystemCoreClock / 2 = PCLK1 => APB1 = 36MHz)
+  gCan.Init.Prescaler = HAL_RCC_GetPCLK1Freq() / 16 / CAN_BITRATE; // 16tq (see above)
   if (HAL_CAN_Init(&gCan) != HAL_OK) {
     for (;;)
       ;

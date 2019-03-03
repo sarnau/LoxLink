@@ -2,14 +2,19 @@
 #include "FreeRTOS.h"
 #include "main.h"
 #include "task.h"
+#include "rtos_code.h"
 
 extern void xPortSysTickHandler(void);
+
+PRIVILEGED_DATA volatile BaseType_t xFreeRTOSActive = pdFALSE;
 
 /**
   * @brief  SYSTICK callback.
   * @retval None
   */
 void HAL_SYSTICK_Callback(void) {
+  if (!xFreeRTOSActive) // This avoids a crash in xPortSysTickHandler, if the scheduler is started after a longer than normal boot time
+    return;
   xPortSysTickHandler();
 
   BaseType_t xResult = pdFAIL;
