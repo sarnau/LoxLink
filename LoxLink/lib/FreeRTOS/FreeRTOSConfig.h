@@ -98,6 +98,7 @@
 #define INCLUDE_xTaskGetSchedulerState               0
 #define INCLUDE_xTaskGetIdleTaskHandle               0
 #define INCLUDE_pxTaskGetStackStart                  0
+#define INCLUDE_xTimerPendFunctionCall               1
 
 /* Cortex-M specific definitions. */
 #ifdef __NVIC_PRIO_BITS

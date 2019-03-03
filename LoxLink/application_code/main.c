@@ -7,64 +7,54 @@
 
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
+#include "event_groups.h"
 #include "queue.h"
 #include "task.h"
 
 #include "MMM_can.h"
 
-
 void SystemClock_Config(void);
 
-static StaticQueue_t gKeyQueue;
+EventGroupHandle_t gEventGroup;
 
 static void vLEDBlink(void *pvParameters) {
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-  const TickType_t xDelay500ms = pdMS_TO_TICKS(500);
+  const TickType_t xDelay1000ms = pdMS_TO_TICKS(1000);
   while (1) {
-#if 0
-    printf("A");
-    //HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
-#else
-    uint8_t key;
-    if (xQueueReceive(&gKeyQueue, &key, xDelay500ms)) {
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, !((key & 1) == 1)); // 0=LED on, 1=LED off
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, !((key & 2) == 2)); // 0=LED on, 1=LED off
-      if (key == 3) {
-        CAN_TxHeaderTypeDef hdr = {
-          .ExtId = 0x106ff0fd,
-          .IDE = CAN_ID_EXT,
-          .RTR = CAN_RTR_DATA,
-          .DLC = 8,
-          .TransmitGlobalTime = DISABLE,
+    EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, 7 | 0x100, pdTRUE, pdFALSE, xDelay1000ms);
+    if (uxBits == 0) {
+      printf("%d\n", HAL_GetTick());
+    }
+    if (uxBits & 4) {
+      uint8_t keyBitmask = uxBits & 3;
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, !((keyBitmask & 1) == 1)); // 0=LED on, 1=LED off
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, !((keyBitmask & 2) == 2)); // 0=LED on, 1=LED off
+      if (keyBitmask == 3) {
+        LoxCanMessage msg = {
+          .identifier = 0x106ff0fd,
+          .data = {0xff, 0x01, 0x00, 0x00, 0x6c, 0x10, 0x10, 0x13},
         };
-        uint8_t data[8] = {0xff, 0x01, 0x00, 0x00, 0x6c, 0x10, 0x10, 0x13};
-        uint32_t txMailbox = 0;
-        HAL_StatusTypeDef status = HAL_CAN_AddTxMessage(&gCan, &hdr, data, &txMailbox);
-        //printf("status = %d\n", status);
+        MMM_CAN_Send(&msg);
       }
     }
-#endif
+    if (uxBits & 0x100) {
+      LoxCanMessage msg;
+      while (xQueueReceive(&gCanReceiveQueue, &msg, 0)) {
+        printf("%08x %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x\n", msg.identifier, msg.data[0], msg.data[1], msg.data[2], msg.data[3], msg.data[4], msg.data[5], msg.data[6], msg.data[7]);
+      }
+    }
   }
 }
 
 static void vKeyCheck(void *pvParameters) {
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-  const TickType_t xDelay10ms = pdMS_TO_TICKS(10);
+  const TickType_t xDelay50ms = pdMS_TO_TICKS(50);
   uint8_t lastKey = 0;
   while (1) {
-#if 0
-    printf("B");
-    //HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
-#else
     uint8_t key = ~((HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15) << 1) | (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1) << 0)) & 3; // 0=Button pressed, 1=Button released
     if (key != lastKey) {
       lastKey = key;
-      xQueueSend(&gKeyQueue, &key, 0);
+      xEventGroupSetBits(gEventGroup, key | 4);
     }
-    vTaskDelay(xDelay10ms);
-#endif
+    vTaskDelay(xDelay50ms);
   }
 }
 
@@ -77,6 +67,8 @@ int main(void) {
   printf("Clock:%dMHz/%dMHz FLASH:%dkb, Unique device ID:%08x.%08x.%08x\n", SystemCoreClock / 1000000, HAL_RCC_GetSysClockFreq() / 1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
 
   MMM_CAN_Init();
+  //MMM_CAN_FilterLoxNAT(0, 0x10, 0xFF, 1, CAN_FILTER_FIFO0);
+  MMM_CAN_FilterAllowAll(0);
 
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
@@ -94,18 +86,16 @@ int main(void) {
   GPIO_Init.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_Init);
 
-  // queue for 8 key-presses
-  static uint8_t sKeyQueueBuffer[8];
-  static StaticQueue_t sKeyQueue;
-  xQueueCreateStatic(sizeof(sKeyQueueBuffer) / sizeof(sKeyQueueBuffer[0]), sizeof(sKeyQueueBuffer[0]), sKeyQueueBuffer, &gKeyQueue);
+  static StaticEventGroup_t sEventGroup;
+  gEventGroup = xEventGroupCreateStatic(&sEventGroup);
 
   static StackType_t sLEDBlinkStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sLEDBlinkTask;
-  xTaskCreateStatic(vLEDBlink, "LEDBlink", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES-1, sLEDBlinkStack, &sLEDBlinkTask);
+  xTaskCreateStatic(vLEDBlink, "LEDBlink", configMINIMAL_STACK_SIZE, NULL, 1, sLEDBlinkStack, &sLEDBlinkTask);
 
   static StackType_t sKeyCheckStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sKeyCheckTask;
-  xTaskCreateStatic(vKeyCheck, "KeyCheck", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES-1, sKeyCheckStack, &sKeyCheckTask);
+  xTaskCreateStatic(vKeyCheck, "KeyCheck", configMINIMAL_STACK_SIZE, NULL, 1, sKeyCheckStack, &sKeyCheckTask);
 
   vTaskStartScheduler();
   NVIC_SystemReset(); // should never reach this point

@@ -1,11 +1,16 @@
 #include "MMM_can.h"
 
+#include <string.h>
+
 #define CAN_GPIO_PORT GPIOB
 #define CAN_RX_GPIO_PIN GPIO_PIN_8
 #define CAN_TX_GPIO_PIN GPIO_PIN_9
 #define CAN_BITRATE 125000
 
+extern EventGroupHandle_t gEventGroup;
+
 CAN_HandleTypeDef gCan;
+StaticQueue_t gCanReceiveQueue;
 
 void MMM_CAN_ConfigFilter_internal(uint32_t filterBank, uint32_t filterId, uint32_t filterMaskId, uint32_t filterFIFOAssignment) {
   filterId = (filterId << 3) | CAN_ID_EXT;
@@ -25,7 +30,24 @@ void MMM_CAN_ConfigFilter_internal(uint32_t filterBank, uint32_t filterId, uint3
   HAL_CAN_ConfigFilter(&gCan, &filterInit);
 }
 
-void MMM_CAN_LoxNATFilter(uint32_t filterBank, uint8_t loxLink_or_Tree_ID, uint8_t natAddress, uint8_t fromServerFlag, uint32_t filterFIFOAssignment) {
+// This Filter is a default filter, which allows to listen to all extended messages on the CAN bus
+void MMM_CAN_FilterAllowAll(uint32_t filterBank) {
+  CAN_FilterTypeDef filterInit = {
+    .FilterIdHigh = 0x0000,
+    .FilterIdLow = 0x0000,
+    .FilterMaskIdHigh = 0x0000,
+    .FilterMaskIdLow = 0x0000,
+    .FilterFIFOAssignment = CAN_FILTER_FIFO0,
+    .FilterBank = filterBank,
+    .FilterMode = CAN_FILTERMODE_IDMASK,
+    .FilterScale = CAN_FILTERSCALE_32BIT,
+    .FilterActivation = CAN_FILTER_ENABLE,
+    .SlaveStartFilterBank = 0,
+  };
+  HAL_CAN_ConfigFilter(&gCan, &filterInit);
+}
+
+void MMM_CAN_FilterLoxNAT(uint32_t filterBank, uint8_t loxLink_or_Tree_ID, uint8_t natAddress, uint8_t fromServerFlag, uint32_t filterFIFOAssignment) {
   MMM_CAN_ConfigFilter_internal(
     filterBank,
     ((loxLink_or_Tree_ID & 0x1F) << 24) | (fromServerFlag << 21) | (natAddress << 12),
@@ -33,7 +55,24 @@ void MMM_CAN_LoxNATFilter(uint32_t filterBank, uint8_t loxLink_or_Tree_ID, uint8
     filterFIFOAssignment);
 }
 
+void MMM_CAN_Send(LoxCanMessage *msg) {
+  CAN_TxHeaderTypeDef hdr = {
+    .ExtId = msg->identifier,
+    .IDE = CAN_ID_EXT,
+    .RTR = CAN_RTR_DATA,
+    .DLC = 8,
+    .TransmitGlobalTime = DISABLE,
+  };
+  uint32_t txMailbox = 0;
+  HAL_StatusTypeDef status = HAL_CAN_AddTxMessage(&gCan, &hdr, msg->data, &txMailbox);
+  //printf("status = %d\n", status);
+}
+
 void MMM_CAN_Init() {
+  // queue for 64 messages
+  static LoxCanMessage sCanReceiveBuffer[64];
+  xQueueCreateStatic(sizeof(sCanReceiveBuffer) / sizeof(sCanReceiveBuffer[0]), sizeof(sCanReceiveBuffer[0]), (uint8_t *)sCanReceiveBuffer, &gCanReceiveQueue);
+
   gCan.Instance = CAN1;
   gCan.Init.TimeTriggeredMode = DISABLE;
   gCan.Init.AutoBusOff = ENABLE;
@@ -62,20 +101,7 @@ void MMM_CAN_Init() {
   HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR);           // Error Interrupt
   HAL_CAN_Start(&gCan);
 
-  // At least one filter is required to be able to receive data.
-  CAN_FilterTypeDef filterInit = {
-    .FilterIdHigh = 0x0000,
-    .FilterIdLow = 0x0000,
-    .FilterMaskIdHigh = 0x0000,
-    .FilterMaskIdLow = 0x0000,
-    .FilterFIFOAssignment = CAN_FILTER_FIFO0,
-    .FilterBank = 0,
-    .FilterMode = CAN_FILTERMODE_IDMASK,
-    .FilterScale = CAN_FILTERSCALE_32BIT,
-    .FilterActivation = CAN_FILTER_ENABLE,
-    .SlaveStartFilterBank = 0,
-  };
-  HAL_CAN_ConfigFilter(&gCan, &filterInit);
+  // FYI: At least one filter is required to be able to receive any data.
 }
 
 /**
@@ -186,8 +212,17 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
   uint8_t rx_data[8];
   HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);
   if (hcan->Instance == CAN1) {
-    if (rx_header.IDE == CAN_ID_EXT && rx_header.RTR == CAN_RTR_DATA && rx_header.DLC == 8) { // only standard Loxone packages
-      printf("%08x %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x\n", rx_header.ExtId, rx_data[0], rx_data[1], rx_data[2], rx_data[3], rx_data[4], rx_data[5], rx_data[6], rx_data[7]);
+    if (rx_header.IDE == CAN_ID_EXT && rx_header.RTR == CAN_RTR_DATA && rx_header.DLC == 8) { // only accept standard Loxone packages
+      LoxCanMessage msg;
+      msg.identifier = rx_header.ExtId;
+      memcpy(msg.data, rx_data, 8);
+      BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+      BaseType_t xResult = xQueueSendToBackFromISR(&gCanReceiveQueue, &msg, &xHigherPriorityTaskWoken);
+      assert_param(xResult != pdFAIL);
+      xResult = xEventGroupSetBitsFromISR(gEventGroup, 0x100, &xHigherPriorityTaskWoken);
+      if (xResult != pdFAIL) {
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+      }
     }
   }
 }
@@ -220,13 +255,13 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef *hcan) {
     __HAL_AFIO_REMAP_CAN1_2();
 
     // interrupt init for CAN
-    HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 0, 0);
+    HAL_NVIC_SetPriority(CAN1_RX0_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY, 0);
     HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
-    HAL_NVIC_SetPriority(CAN1_RX1_IRQn, 0, 0);
+    HAL_NVIC_SetPriority(CAN1_RX1_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY, 0);
     HAL_NVIC_EnableIRQ(CAN1_RX1_IRQn);
-    HAL_NVIC_SetPriority(CAN1_TX_IRQn, 0, 0);
+    HAL_NVIC_SetPriority(CAN1_TX_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY, 0);
     HAL_NVIC_EnableIRQ(CAN1_TX_IRQn);
-    HAL_NVIC_SetPriority(CAN1_SCE_IRQn, 0, 0);
+    HAL_NVIC_SetPriority(CAN1_SCE_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY, 0);
     HAL_NVIC_EnableIRQ(CAN1_SCE_IRQn);
   }
 }
