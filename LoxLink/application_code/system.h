@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 void SystemClock_Config(void);
+float MX_read_temperature(void);
 
 #ifdef __cplusplus
 }
