@@ -10,6 +10,7 @@
 
 CAN_HandleTypeDef gCan;
 StaticQueue_t gCanReceiveQueue;
+StaticQueue_t gCanTransmitQueue;
 
 void MMM_CAN_ConfigFilter_internal(uint32_t filterBank, uint32_t filterId, uint32_t filterMaskId, uint32_t filterFIFOAssignment) {
   filterId = (filterId << 3) | CAN_ID_EXT;
@@ -54,23 +55,48 @@ void MMM_CAN_FilterLoxNAT(uint32_t filterBank, uint8_t loxLink_or_Tree_ID, uint8
     filterFIFOAssignment);
 }
 
+static void vCANTXTask(void *pvParameters) {
+  const TickType_t xDelay4ms = pdMS_TO_TICKS(4);
+  uint32_t lastMainEventMask = eMainEvents_none;
+  while (1) {
+    LoxCanMessage msg;
+    while (xQueueReceive(&gCanTransmitQueue, &msg, 0)) {
+      printf("%08x %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x\n", msg.identifier, msg.can_data[0], msg.can_data[1], msg.can_data[2], msg.can_data[3], msg.can_data[4], msg.can_data[5], msg.can_data[6], msg.can_data[7]);
+      const CAN_TxHeaderTypeDef hdr = {
+        .ExtId = msg.identifier,
+        .IDE = CAN_ID_EXT,
+        .RTR = CAN_RTR_DATA,
+        .DLC = 8,
+        .TransmitGlobalTime = DISABLE,
+      };
+      uint32_t txMailbox = 0;
+      HAL_StatusTypeDef status = HAL_CAN_AddTxMessage(&gCan, &hdr, msg.can_data, &txMailbox);
+      printf("status = %d\n", status);
+      vTaskDelay(xDelay4ms);
+    }
+  }
+}
+
 void MMM_CAN_Send(const LoxCanMessage &msg) {
-  const CAN_TxHeaderTypeDef hdr = {
-    .ExtId = msg.identifier,
-    .IDE = CAN_ID_EXT,
-    .RTR = CAN_RTR_DATA,
-    .DLC = 8,
-    .TransmitGlobalTime = DISABLE,
-  };
-  uint32_t txMailbox = 0;
-  HAL_StatusTypeDef status = HAL_CAN_AddTxMessage(&gCan, &hdr, msg.can_data, &txMailbox);
-  //printf("status = %d\n", status);
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  BaseType_t xResult = xQueueSendToBackFromISR(&gCanTransmitQueue, &msg, &xHigherPriorityTaskWoken);
+  if (xResult != pdFAIL) {
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+  }
 }
 
 void MMM_CAN_Init() {
   // queue for 64 messages
   static LoxCanMessage sCanReceiveBuffer[64];
   xQueueCreateStatic(sizeof(sCanReceiveBuffer) / sizeof(sCanReceiveBuffer[0]), sizeof(sCanReceiveBuffer[0]), (uint8_t *)sCanReceiveBuffer, &gCanReceiveQueue);
+
+  // queue for 64 messages
+  static LoxCanMessage sCanTransmitBuffer[64];
+  xQueueCreateStatic(sizeof(sCanTransmitBuffer) / sizeof(sCanTransmitBuffer[0]), sizeof(sCanTransmitBuffer[0]), (uint8_t *)sCanTransmitBuffer, &gCanTransmitQueue);
+
+  static StackType_t sCANTXTaskStack[configMINIMAL_STACK_SIZE];
+  static StaticTask_t sCANTXTask;
+  xTaskCreateStatic(vCANTXTask, "CANTXTask", configMINIMAL_STACK_SIZE, NULL, 2, sCANTXTaskStack, &sCANTXTask);
 
   gCan.Instance = CAN1;
   gCan.Init.TimeTriggeredMode = DISABLE;

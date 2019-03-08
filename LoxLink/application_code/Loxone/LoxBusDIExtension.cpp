@@ -44,18 +44,18 @@ void LoxBusDIExtension::Timer10ms(void)
     // simulate the inputs changing every second. They are sent back on every value change,
     // but not faster than 20ms (= 50Hz)
     this->lastBitmaskTime += 10;
-    if (this->lastBitmaskTime >= 1000) {
+    if (this->lastBitmaskTime >= 100) {
         this->lastBitmaskTime = 0;
         this->hardwareBitmask = this->hardwareBitmask + 1;
-//        send_digital_value(0, this->hardwareBitmask);
+        send_digital_value(0, this->hardwareBitmask);
     }
 
     // the frequency is sent every second
     this->lastFrequencyTime += 10;
-    if (this->lastFrequencyTime >= 1000) {
+    if (this->lastFrequencyTime >= 100) {
         this->lastFrequencyTime = 0;
         // and send a test frequency (between 0…100Hz) on input 1
-//        send_frequency_value(0, (random_range(0, 150) / 10) * 10);
+        send_frequency_value(0, (random_range(0, 150) / 10) * 10);
     }
 }
 
