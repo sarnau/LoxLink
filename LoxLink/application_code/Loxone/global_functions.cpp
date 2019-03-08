@@ -2,7 +2,7 @@
 //  global_functions.cpp
 //
 //  Created by Markus Fritze on 05.03.19.
-//  Copyright ÃÂ© 2019 Markus Fritze. All rights reserved.
+//  Copyright © 2019 Markus Fritze. All rights reserved.
 //
 
 #include "global_functions.hpp"

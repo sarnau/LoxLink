@@ -2,7 +2,7 @@
 //  LoxBusDIExtension.cpp
 //
 //  Created by Markus Fritze on 06.03.19.
-//  Copyright Â© 2019 Markus Fritze. All rights reserved.
+//  Copyright © 2019 Markus Fritze. All rights reserved.
 //
 
 #include "LoxBusDIExtension.hpp"
