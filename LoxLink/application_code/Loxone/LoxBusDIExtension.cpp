@@ -2,61 +2,58 @@
 //  LoxBusDIExtension.cpp
 //
 //  Created by Markus Fritze on 06.03.19.
-//  Copyright © 2019 Markus Fritze. All rights reserved.
+//  Copyright Â© 2019 Markus Fritze. All rights reserved.
 //
 
 #include "LoxBusDIExtension.hpp"
 #include "global_functions.hpp"
 #include <stdio.h>
 
-LoxBusDIExtension::LoxBusDIExtension(LoxCANDriver& driver, uint32_t serial)
-    : LoxNATExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_DIExtension << 24), eDeviceType_t_DIExtension, 0, 9021122, 1, sizeof(config), &config)
-    , hardwareBitmask(0)
-    , lastBitmaskTime(0)
-    , lastFrequencyTime(0)
-{
+LoxBusDIExtension::LoxBusDIExtension(LoxCANDriver &driver, uint32_t serial)
+  : LoxNATExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_DIExtension << 24), eDeviceType_t_DIExtension, 0, 9021122, 1, sizeof(config), &config), hardwareBitmask(0), lastBitmaskTime(0), lastFrequencyTime(0) {
 }
 
 /***
  *  Send current status back. This happens on value changes and typically on being assigned a NAT,
  *  to provide the Miniserver with the current value after a reboot.
  ***/
-void LoxBusDIExtension::SendValues()
-{
-    send_digital_value(0, this->hardwareBitmask);
+void LoxBusDIExtension::SendValues() {
+  send_digital_value(0, this->hardwareBitmask);
 }
 
 /***
  *  A new configuration has been uploaded. Here the extension need to get reconfigured accordingly.
  ***/
-void LoxBusDIExtension::ConfigUpdate(void)
-{
-    printf("Config updated: 0x%04x\n", config.frequencyInputsBitmask);
+void LoxBusDIExtension::ConfigUpdate(void) {
+  printf("Config updated: 0x%04x\n", this->config.frequencyInputsBitmask);
 }
 
 /***
  *  10ms Timer to be called 100x per second
  ***/
-void LoxBusDIExtension::Timer10ms(void)
-{
-    LoxNATExtension::Timer10ms();
+void LoxBusDIExtension::Timer10ms(void) {
+  LoxNATExtension::Timer10ms();
 
-    // simulate the inputs changing every second. They are sent back on every value change,
-    // but not faster than 20ms (= 50Hz)
-    this->lastBitmaskTime += 10;
-    if (this->lastBitmaskTime >= 100) {
-        this->lastBitmaskTime = 0;
-        this->hardwareBitmask = this->hardwareBitmask + 1;
-        send_digital_value(0, this->hardwareBitmask);
-    }
+  // simulate the inputs changing every second. They are sent back on every value change,
+  // but not faster than 20ms (= 50Hz)
+  this->lastBitmaskTime += 10;
+  if (this->lastBitmaskTime >= 1000 * 10) {
+    this->lastBitmaskTime = 0;
+    this->hardwareBitmask = (this->hardwareBitmask + 1) & 0xFFFFF; // 20 bits
+    send_digital_value(0, this->hardwareBitmask & ~this->config.frequencyInputsBitmask);
+  }
 
-    // the frequency is sent every second
-    this->lastFrequencyTime += 10;
-    if (this->lastFrequencyTime >= 100) {
-        this->lastFrequencyTime = 0;
-        // and send a test frequency (between 0…100Hz) on input 1
-        send_frequency_value(0, (random_range(0, 150) / 10) * 10);
+  // the frequency is sent every second
+  this->lastFrequencyTime += 10;
+  if (this->lastFrequencyTime >= 1000) {
+    this->lastFrequencyTime = 0;
+    // and send a test frequency (between 0â¦150Hz) on input 1
+    for (int i = 0; i < 20; ++i) {
+      if ((1 << i) & this->config.frequencyInputsBitmask) {
+        send_frequency_value(i, random_range(0, 150));
+      }
     }
+  }
 }
 
 #if 0

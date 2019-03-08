@@ -41,7 +41,6 @@ static void vMainTask(void *pvParameters) {
       LoxCanMessage msg;
       while (xQueueReceive(&gCanReceiveQueue, &msg, 0)) {
         gDIExtension.ReceiveMessage(msg);
-        printf("%08x %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x\n", msg.identifier, msg.can_data[0], msg.can_data[1], msg.can_data[2], msg.can_data[3], msg.can_data[4], msg.can_data[5], msg.can_data[6], msg.can_data[7]);
       }
     }
     if (uxBits & eMainEvents_10msTimer) {
@@ -86,7 +85,7 @@ int main(void) {
   HAL_Init();
   SystemClock_Config();
 
-  MX_print_cpu_info();
+//  MX_print_cpu_info();
 
   MMM_CAN_Init();
   //MMM_CAN_FilterLoxNAT(0, 0x10, 0xFF, 1, CAN_FILTER_FIFO0);

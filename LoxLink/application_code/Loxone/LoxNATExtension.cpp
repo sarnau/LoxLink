@@ -209,7 +209,7 @@ void LoxNATExtension::update(const eUpdatePackage* updatePackage)
 uint32_t LoxNATExtension::config_CRC(void)
 {
     memset((uint8_t*)this->configPtr + this->configPtr->size - 4, 0, 4); // erase the last 4 bytes of the configuration
-    return crc32_stm32_aligned(this->configPtr, ((configPtr->size - 1) >> 2) << 2);
+    return crc32_stm32_aligned(this->configPtr, ((configPtr->size - 1) >> 2) << 2); // the CRC is calculated rounded down to dividable by 4
 }
 
 /***
@@ -312,13 +312,11 @@ void LoxNATExtension::ReceiveBroadcast(LoxCanMessage& message)
         }
         break;
     case Search_Devices:
-        printf("Search_Devices\n");
         driver.Delay(random_range(0, 100));
         send_special_message(Search_Reply);
         break;
     case NAT_Offer:
         if (this->serial == message.value32) {
-            printf("NAT_Offer\n");
             uint8_t nat = message.data[0]; // NAT Index of the offer
             if (message.data[1] & 1) {
                 this->extensionNAT = nat;
@@ -338,23 +336,19 @@ void LoxNATExtension::ReceiveBroadcast(LoxCanMessage& message)
         break;
     case Identify_Unknown_Extensions:
         if (this->state == eDeviceState_parked) {
-            printf("Identify_Unknown_Extensions\n");
             driver.Delay(random_range(0, 100));
             send_special_message(NAT_Index_Request);
         }
         break;
     case Park_Devices:
-        printf("Park_Devices\n");
         this->extensionNAT = crc8_default(&this->serial, 4) | 0x80; // mark as a parked device
         SetState(eDeviceState_parked);
         break;
     case Sync_Packet:
-        printf("Sync_Packet\n");
         gLED.sync(this->configPtr->blinkSyncOffset, message.value32);
         break;
     case Version_Request:
         if (this->serial == message.value32) {
-            printf("Version_Request\n");
             send_info_package(Version_Request, eAliveReason_t_alive_packet);
         }
         break;
@@ -453,9 +447,6 @@ void LoxNATExtension::ReceiveMessage(LoxCanMessage& message)
 
     ++this->statistics.Rcv;
     this->offlineCountdownInMs = this->offlineTimeout * 1000;
-
-    printf("LoxNATExtension rcv:");
-    message.print(this->driver);
 
     switch (message.commandNat) {
     case Fragment_Start:

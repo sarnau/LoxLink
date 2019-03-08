@@ -27,4 +27,7 @@ uint8_t crc8_OneWire(const uint8_t* data, int size);
 // STM32 CRC32 algorithm as available in the STM32 hardware. Used as CRC32 over packages, etc
 uint32_t crc32_stm32_aligned(const void* data, int size);
 
+// Print a hexdump
+void debug_print_buffer(const void *data, int size, const char *header=0);
+
 #endif /* crc_hpp */

@@ -54,10 +54,7 @@ void LoxCANDriver::Delay(int msDelay) const
 
 void LoxCANDriver::SendMessage(LoxCanMessage& message)
 {
-    printf("Snd ");
-    message.print(*this);
     MMM_CAN_Send(message);
-    vTaskDelay(pdMS_TO_TICKS(20));
 }
 
 void LoxCANDriver::ReceiveMessage(LoxCanMessage& message)

@@ -57,11 +57,9 @@ void MMM_CAN_FilterLoxNAT(uint32_t filterBank, uint8_t loxLink_or_Tree_ID, uint8
 
 static void vCANTXTask(void *pvParameters) {
   const TickType_t xDelay4ms = pdMS_TO_TICKS(4);
-  uint32_t lastMainEventMask = eMainEvents_none;
   while (1) {
     LoxCanMessage msg;
     while (xQueueReceive(&gCanTransmitQueue, &msg, 0)) {
-      printf("%08x %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x\n", msg.identifier, msg.can_data[0], msg.can_data[1], msg.can_data[2], msg.can_data[3], msg.can_data[4], msg.can_data[5], msg.can_data[6], msg.can_data[7]);
       const CAN_TxHeaderTypeDef hdr = {
         .ExtId = msg.identifier,
         .IDE = CAN_ID_EXT,
@@ -70,8 +68,7 @@ static void vCANTXTask(void *pvParameters) {
         .TransmitGlobalTime = DISABLE,
       };
       uint32_t txMailbox = 0;
-      HAL_StatusTypeDef status = HAL_CAN_AddTxMessage(&gCan, &hdr, msg.can_data, &txMailbox);
-      printf("status = %d\n", status);
+      /*HAL_StatusTypeDef status =*/ HAL_CAN_AddTxMessage(&gCan, &hdr, msg.can_data, &txMailbox);
       vTaskDelay(xDelay4ms);
     }
   }
