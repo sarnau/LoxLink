@@ -11,6 +11,7 @@ extern "C" {
 extern EventGroupHandle_t gEventGroup;
 
 typedef enum {
+  eMainEvents_none = 0,
   eMainEvents_buttonLeft = 0x0001,
   eMainEvents_buttonRight = 0x0002,
   eMainEvents_anyButtonPressed = 0x0080,

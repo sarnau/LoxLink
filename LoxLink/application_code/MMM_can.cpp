@@ -1,5 +1,5 @@
-#include "MMM_can.h"
-#include "main.h"
+#include "MMM_can.hpp"
+#include "main.hpp"
 
 #include <string.h>
 
@@ -54,16 +54,16 @@ void MMM_CAN_FilterLoxNAT(uint32_t filterBank, uint8_t loxLink_or_Tree_ID, uint8
     filterFIFOAssignment);
 }
 
-void MMM_CAN_Send(const LoxCanMessage *msg) {
+void MMM_CAN_Send(const LoxCanMessage &msg) {
   const CAN_TxHeaderTypeDef hdr = {
-    .ExtId = msg->identifier,
+    .ExtId = msg.identifier,
     .IDE = CAN_ID_EXT,
     .RTR = CAN_RTR_DATA,
     .DLC = 8,
     .TransmitGlobalTime = DISABLE,
   };
   uint32_t txMailbox = 0;
-  HAL_StatusTypeDef status = HAL_CAN_AddTxMessage(&gCan, &hdr, msg->data, &txMailbox);
+  HAL_StatusTypeDef status = HAL_CAN_AddTxMessage(&gCan, &hdr, msg.can_data, &txMailbox);
   //printf("status = %d\n", status);
 }
 
@@ -109,7 +109,7 @@ void MMM_CAN_Init() {
   *         the configuration information for the specified CAN.
   * @retval None
   */
-void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan) {
+extern "C" void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
   }
 }
@@ -120,7 +120,7 @@ void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan) {
   *         the configuration information for the specified CAN.
   * @retval None
   */
-void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan) {
+extern "C" void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
   }
 }
@@ -131,7 +131,7 @@ void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan) {
   *         the configuration information for the specified CAN.
   * @retval None
   */
-void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan) {
+extern "C" void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
   }
 }
@@ -142,7 +142,7 @@ void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan) {
   *         the configuration information for the specified CAN.
   * @retval None
   */
-void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
+extern "C" void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
     int ErrorStatus = hcan->ErrorCode;
     if (ErrorStatus != HAL_CAN_ERROR_NONE) {
@@ -206,7 +206,7 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
   *         the configuration information for the specified CAN.
   * @retval None
   */
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
+extern "C" void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
   CAN_RxHeaderTypeDef rx_header;
   uint8_t rx_data[8];
   HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);
@@ -214,7 +214,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
     if (rx_header.IDE == CAN_ID_EXT && rx_header.RTR == CAN_RTR_DATA && rx_header.DLC == 8) { // only accept standard Loxone packages
       LoxCanMessage msg;
       msg.identifier = rx_header.ExtId;
-      memcpy(msg.data, rx_data, 8);
+      memcpy(msg.can_data, rx_data, 8);
       BaseType_t xHigherPriorityTaskWoken = pdFALSE;
       BaseType_t xResult = xQueueSendToBackFromISR(&gCanReceiveQueue, &msg, &xHigherPriorityTaskWoken);
       assert_param(xResult != pdFAIL);
@@ -232,7 +232,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
   *         the configuration information for the specified CAN.
   * @retval None
   */
-void HAL_CAN_MspInit(CAN_HandleTypeDef *hcan) {
+extern "C" void HAL_CAN_MspInit(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
 
     __HAL_RCC_CAN1_CLK_ENABLE();
@@ -271,7 +271,7 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef *hcan) {
   *         the configuration information for the specified CAN.
   * @retval None
   */
-void HAL_CAN_MspDeInit(CAN_HandleTypeDef *hcan) {
+extern "C" void HAL_CAN_MspDeInit(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
     __HAL_RCC_CAN1_CLK_DISABLE();
     HAL_GPIO_DeInit(CAN_GPIO_PORT, CAN_RX_GPIO_PIN | CAN_TX_GPIO_PIN);
@@ -292,27 +292,27 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef *hcan) {
 /**
 * @brief This function handles USB high priority or CAN TX interrupts.
 */
-void CAN1_TX_IRQHandler(void) {
+extern "C" void CAN1_TX_IRQHandler(void) {
   HAL_CAN_IRQHandler(&gCan);
 }
 
 /**
 * @brief This function handles USB low priority or CAN RX0 interrupts.
 */
-void CAN1_RX0_IRQHandler(void) {
+extern "C" void CAN1_RX0_IRQHandler(void) {
   HAL_CAN_IRQHandler(&gCan);
 }
 
 /**
 * @brief This function handles CAN RX1 interrupt.
 */
-void CAN1_RX1_IRQHandler(void) {
+extern "C" void CAN1_RX1_IRQHandler(void) {
   HAL_CAN_IRQHandler(&gCan);
 }
 
 /**
 * @brief This function handles CAN SCE interrupt.
 */
-void CAN1_SCE_IRQHandler(void) {
+extern "C" void CAN1_SCE_IRQHandler(void) {
   HAL_CAN_IRQHandler(&gCan);
 }

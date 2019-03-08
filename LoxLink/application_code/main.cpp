@@ -1,5 +1,6 @@
 #include "stm32f1xx_hal.h" // HAL_GetUID()
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stm32f1xx.h>
 
@@ -9,35 +10,43 @@
 #include "queue.h"
 #include "task.h"
 
-#include "MMM_can.h"
-#include "main.h"
+#include "MMM_can.hpp"
+#include "main.hpp"
 #include "rtos_code.h"
-#include "system.h"
+#include "system.hpp"
+
+#include "LoxBusDIExtension.hpp"
 
 EventGroupHandle_t gEventGroup;
+
+static     LoxCANDriver gLoxCANDriver(tLoxCANDriverType_LoxoneLink);
+static     LoxBusDIExtension gDIExtension(gLoxCANDriver, 0x123456);
+
 
 static void vMainTask(void *pvParameters) {
   xFreeRTOSActive = pdTRUE; // if the boot takes too long, the SysTick ISR will trigger a crash in FreeRTOS, if it is not already initialized.
   while (1) {
-    EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, (eMainEvents_buttonLeft | eMainEvents_buttonRight | eMainEvents_anyButtonPressed) | eMainEvents_LoxCanMessageReceived | eMainEvents_1sTimer, pdTRUE, pdFALSE, portMAX_DELAY);
+    EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, (eMainEvents_buttonLeft | eMainEvents_buttonRight | eMainEvents_anyButtonPressed) | eMainEvents_LoxCanMessageReceived | eMainEvents_10msTimer, pdTRUE, pdFALSE, portMAX_DELAY);
     if (uxBits & eMainEvents_anyButtonPressed) {
       uint8_t keyBitmask = uxBits & (eMainEvents_buttonLeft | eMainEvents_buttonRight);
       if (keyBitmask == 3) {
-        const LoxCanMessage msg = {
-          .identifier = 0x106ff0fd,
-          .data = {0xff, 0x01, 0x00, 0x00, 0x6c, 0x10, 0x10, 0x13},
-        };
-        MMM_CAN_Send(&msg);
+        const uint8_t can_package[8] = {0xff, 0x01, 0x00, 0x00, 0x6c, 0x10, 0x10, 0x13};
+        LoxCanMessage msg;
+        msg.identifier = 0x106ff0fd;
+        memcpy(&msg.can_data, can_package, sizeof(msg.can_data));
+        MMM_CAN_Send(msg);
       }
     }
     if (uxBits & eMainEvents_LoxCanMessageReceived) {
       LoxCanMessage msg;
       while (xQueueReceive(&gCanReceiveQueue, &msg, 0)) {
-        printf("%08x %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x\n", msg.identifier, msg.data[0], msg.data[1], msg.data[2], msg.data[3], msg.data[4], msg.data[5], msg.data[6], msg.data[7]);
+        gDIExtension.ReceiveMessage(msg);
+        printf("%08x %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x\n", msg.identifier, msg.can_data[0], msg.can_data[1], msg.can_data[2], msg.can_data[3], msg.can_data[4], msg.can_data[5], msg.can_data[6], msg.can_data[7]);
       }
     }
-    if (uxBits & eMainEvents_1sTimer) {
-      printf("Ticks %d\n", HAL_GetTick());
+    if (uxBits & eMainEvents_10msTimer) {
+      //printf("Ticks %d\n", HAL_GetTick());
+      gDIExtension.Timer10ms();
     }
   }
 }
@@ -47,8 +56,8 @@ static void vLEDTask(void *pvParameters) {
     EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, (eMainEvents_buttonLeft | eMainEvents_buttonRight | eMainEvents_anyButtonPressed) | eMainEvents_1sTimer, pdTRUE, pdFALSE, portMAX_DELAY);
     if (uxBits & eMainEvents_anyButtonPressed) {
       uint8_t keyBitmask = uxBits & (eMainEvents_buttonLeft | eMainEvents_buttonRight);
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, !((keyBitmask & 1) == 1)); // 0=LED on, 1=LED off
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, !((keyBitmask & 2) == 2)); // 0=LED on, 1=LED off
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, !((keyBitmask & 1) == 1) ? GPIO_PIN_SET : GPIO_PIN_RESET); // 0=LED on, 1=LED off
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, !((keyBitmask & 2) == 2) ? GPIO_PIN_SET : GPIO_PIN_RESET); // 0=LED on, 1=LED off
     }
     if (uxBits & eMainEvents_1sTimer) {
       //printf("Ticks %d (LED)\n", HAL_GetTick());
@@ -58,9 +67,9 @@ static void vLEDTask(void *pvParameters) {
 
 static void vKeyInputTask(void *pvParameters) {
   const TickType_t xDelay50ms = pdMS_TO_TICKS(50);
-  eMainEvents lastMainEventMask = 0;
+  uint32_t lastMainEventMask = eMainEvents_none;
   while (1) {
-    eMainEvents eventMask = eMainEvents_anyButtonPressed;
+    uint32_t eventMask = eMainEvents_anyButtonPressed;
     if (!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1)) // 0=Button pressed, 1=Button released
       eventMask |= eMainEvents_buttonLeft;
     if (!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15))

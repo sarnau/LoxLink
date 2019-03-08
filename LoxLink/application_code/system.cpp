@@ -1,4 +1,4 @@
-#include "system.h"
+#include "system.hpp"
 #include "stm32f1xx_hal.h" // HAL_IncTick
 #include "stm32f1xx_hal_conf.h"
 #include "stm32f1xx_ll_cortex.h" // LL_CPUID_...()
@@ -110,7 +110,7 @@ void MX_print_cpu_info(void) {
 /**
   * Initializes the Global MSP.
   */
-void HAL_MspInit(void) {
+extern "C" void HAL_MspInit(void) {
   __HAL_RCC_AFIO_CLK_ENABLE();
   __HAL_RCC_PWR_CLK_ENABLE();
 }
@@ -118,7 +118,7 @@ void HAL_MspInit(void) {
 /**
 * @brief This function handles System tick timer.
 */
-void SysTick_Handler(void) {
+extern "C" void SysTick_Handler(void) {
   HAL_IncTick();
   HAL_SYSTICK_IRQHandler();
 }
@@ -169,7 +169,7 @@ void assert_failed(uint8_t *file, uint32_t line) {
 * @param hadc: ADC handle pointer
 * @retval None
 */
-void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc) {
+extern "C" void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc) {
   if (hadc->Instance == ADC1) {
     /* Peripheral clock enable */
     __HAL_RCC_ADC1_CLK_ENABLE();
@@ -182,7 +182,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc) {
 * @param hadc: ADC handle pointer
 * @retval None
 */
-void HAL_ADC_MspDeInit(ADC_HandleTypeDef *hadc) {
+extern "C" void HAL_ADC_MspDeInit(ADC_HandleTypeDef *hadc) {
   if (hadc->Instance == ADC1) {
     /* Peripheral clock disable */
     __HAL_RCC_ADC1_CLK_DISABLE();

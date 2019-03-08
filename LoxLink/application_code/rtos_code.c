@@ -1,6 +1,6 @@
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
-#include "main.h"
+#include "main.hpp"
 #include "task.h"
 #include "rtos_code.h"
 
