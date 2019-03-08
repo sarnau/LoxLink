@@ -1,5 +1,111 @@
+#include "system.h"
 #include "stm32f1xx_hal.h" // HAL_IncTick
 #include "stm32f1xx_hal_conf.h"
+#include "stm32f1xx_ll_cortex.h" // LL_CPUID_...()
+#include "stm32f1xx_ll_utils.h" // LL_GetFlashSize()
+
+/***
+ *
+ ***/
+void MX_print_cpu_info(void) {
+  switch (LL_CPUID_GetImplementer()) {
+  case 0x41:
+    switch (LL_CPUID_GetParNo()) {
+    case 0x0C05:
+      printf("ARM Cortex-A5");
+      break;
+    case 0x0C07:
+      printf("ARM Cortex-A7");
+      break;
+    case 0x0C08:
+      printf("ARM Cortex-A8");
+      break;
+    case 0x0C09:
+      printf("ARM Cortex-A9");
+      break;
+    case 0x0C0D:
+      printf("ARM Cortex-A12");
+      break;
+    case 0x0C0F:
+      printf("ARM Cortex-A15");
+      break;
+    case 0x0C14:
+      printf("ARM Cortex-R4");
+      break;
+    case 0x0C15:
+      printf("ARM Cortex-R5");
+      break;
+    case 0x0C17:
+      printf("ARM Cortex-R7");
+      break;
+    case 0x0C18:
+      printf("ARM Cortex-R8");
+      break;
+    case 0x0C20:
+      printf("ARM Cortex-M0");
+      break;
+    case 0x0C21:
+      printf("ARM Cortex-M1");
+      break;
+    case 0x0C23:
+      printf("ARM Cortex-M3");
+      break;
+    case 0x0C24:
+      printf("ARM Cortex-M4");
+      break;
+    case 0x0C27:
+      printf("ARM Cortex-M7");
+      break;
+    case 0x0D01:
+      printf("ARM Cortex-A32");
+      break;
+    case 0x0D03:
+      printf("ARM Cortex-A53");
+      break;
+    case 0x0D04:
+      printf("ARM Cortex-A35");
+      break;
+    case 0x0D05:
+      printf("ARM Cortex-A55");
+      break;
+    case 0x0D07:
+      printf("ARM Cortex-A57");
+      break;
+    case 0x0D08:
+      printf("ARM Cortex-A72");
+      break;
+    case 0x0D09:
+      printf("ARM Cortex-A73");
+      break;
+    case 0x0D0A:
+      printf("ARM Cortex-A75");
+      break;
+    case 0x0D0B:
+      printf("ARM Cortex-A76");
+      break;
+    case 0x0D13:
+      printf("ARM Cortex-R52");
+      break;
+    case 0x0D20:
+      printf("ARM Cortex-M23");
+      break;
+    case 0x0D21:
+      printf("ARM Cortex-M33");
+      break;
+    }
+    break;
+  default:
+    printf("Implementor:%c:0x%04x.%04x", LL_CPUID_GetImplementer(), LL_CPUID_GetConstant(), LL_CPUID_GetParNo());
+    break;
+  }
+  printf(" r:%d p:%d\n", LL_CPUID_GetVariant(), LL_CPUID_GetRevision());
+  printf("FLASH:%dkb\n", LL_GetFlashSize());
+  uint32_t uid[3];
+  HAL_GetUID(uid);
+  printf("Unique device ID:%08x.%08x.%08x\n", uid[0], uid[1], uid[2]);
+  printf("SysClock:%dMHz HCLK:%dMHz PCLK1:%dMHz PCLK2:%dMHz FLASH:%dkb\n", HAL_RCC_GetSysClockFreq() / 1000000, HAL_RCC_GetHCLKFreq() / 1000000, HAL_RCC_GetPCLK1Freq() / 1000000, HAL_RCC_GetPCLK2Freq() / 1000000);
+  printf("ADC_TEMPSENSOR: %.2fC\n", MX_read_temperature());
+}
 
 /**
   * Initializes the Global MSP.

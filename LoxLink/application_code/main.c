@@ -1,7 +1,4 @@
 #include "stm32f1xx_hal.h" // HAL_GetUID()
-#include "stm32f1xx_hal_conf.h"
-#include "stm32f1xx_ll_bus.h"
-#include "stm32f1xx_ll_utils.h" // LL_GetFlashSize()
 #include <stdio.h>
 #include <stdlib.h>
 #include <stm32f1xx.h>
@@ -80,10 +77,7 @@ int main(void) {
   HAL_Init();
   SystemClock_Config();
 
-  uint32_t uid[3];
-  HAL_GetUID(uid);
-  printf("SysClock:%dMHz HCLK:%dMHz PCLK1:%dMHz PCLK2:%dMHz FLASH:%dkb, Unique device ID:%08x.%08x.%08x\n", HAL_RCC_GetSysClockFreq() / 1000000, HAL_RCC_GetHCLKFreq() / 1000000, HAL_RCC_GetPCLK1Freq() / 1000000, HAL_RCC_GetPCLK2Freq() / 1000000, LL_GetFlashSize(), uid[0], uid[1], uid[2]);
-  printf("ADC_TEMPSENSOR: %.2fC\n", MX_read_temperature());
+  MX_print_cpu_info();
 
   MMM_CAN_Init();
   //MMM_CAN_FilterLoxNAT(0, 0x10, 0xFF, 1, CAN_FILTER_FIFO0);
