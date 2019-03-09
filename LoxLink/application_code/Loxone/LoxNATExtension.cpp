@@ -209,6 +209,7 @@ void LoxNATExtension::config_data(const tConfigHeader *config) {
   if (config->size == configSize && config->version == configVersion) {
     memcpy(this->configPtr, config, config->size);
     this->offlineTimeout = this->configPtr->offlineTimeout;
+    gLED.set_sync_offset(this->configPtr->blinkSyncOffset);
     ConfigUpdate();
   } else { // undefined values trigger a reset of the structure
     memset(this->configPtr, 0, this->configSize);
@@ -319,7 +320,7 @@ void LoxNATExtension::ReceiveBroadcast(LoxCanMessage &message) {
     SetState(eDeviceState_parked);
     break;
   case Sync_Packet:
-    gLED.sync(this->configPtr->blinkSyncOffset, message.value32);
+    gLED.sync(message.value32);
     break;
   case Version_Request:
     if (this->serial == message.value32) {

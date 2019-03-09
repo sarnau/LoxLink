@@ -28,6 +28,7 @@ typedef union {
 class LED {
   volatile eLED_state led_state;
   static void vLEDTask(void *pvParameters);
+  uint8_t sync_offset;
 
 public:
   void Startup(void);
@@ -38,7 +39,8 @@ public:
   void blink_red(void);
   void identify_on(void);
   void identify_off(void);
-  void sync(uint8_t syncOffset, uint32_t timeInMs);
+  void sync(uint32_t timeInMs);
+  void set_sync_offset(uint8_t sync_offset);
 };
 
 extern LED gLED;

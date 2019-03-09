@@ -21,7 +21,7 @@ LED gLED;
 void LED::vLEDTask(void *pvParameters) {
   LED *_this = (LED *)pvParameters;
   const int period = 1000;
-  const int onPeriod = period / 10; // 10% on
+  const int onPeriod = period / 10;        // 10% on
   const int offPeriod = period - onPeriod; // 90% off
   const int identifySpeedup = 10;
   while (1) {
@@ -45,14 +45,14 @@ void LED::vLEDTask(void *pvParameters) {
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
     }
-    for (int i = 0; i < (state.identify ? onPeriod/identifySpeedup : onPeriod); ++i) {
+    for (int i = 0; i < (state.identify ? onPeriod / identifySpeedup : onPeriod); ++i) {
       vTaskDelay(pdMS_TO_TICKS(1));
       if (state.state != _this->led_state.state)
         break;
     }
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
-    for (int i = 0; i < (state.identify ? offPeriod/identifySpeedup : offPeriod); ++i) {
+    for (int i = 0; i < (state.identify ? offPeriod / identifySpeedup : offPeriod); ++i) {
       vTaskDelay(pdMS_TO_TICKS(1));
       if (state.state != _this->led_state.state)
         break;
@@ -112,6 +112,10 @@ void LED::identify_off(void) {
   this->led_state.identify = false;
 }
 
-void LED::sync(uint8_t syncOffset, uint32_t timeInMs) {
-  //  printf("LED sync(%d,%u)\n", syncOffset, timeInMs);
+void LED::sync(uint32_t timeInMs) {
+  printf("LED sync(%u)\n", timeInMs);
+}
+
+void LED::set_sync_offset(uint8_t sync_offset) {
+  printf("LED sync_offset(%u)\n", sync_offset);
 }
