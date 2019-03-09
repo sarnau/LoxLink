@@ -7,7 +7,7 @@
 
 #include "LoxCANDriver.hpp"
 #include "LoxExtension.hpp"
-#include "main.hpp"
+#include "event_groups.h"
 #include "task.h"
 #include <stdio.h>
 #include <string.h>
@@ -15,48 +15,116 @@
 #define CAN_GPIO_PORT GPIOB
 #define CAN_RX_GPIO_PIN GPIO_PIN_8
 #define CAN_TX_GPIO_PIN GPIO_PIN_9
-#define CAN_BITRATE 125000
 
-StaticQueue_t gCanReceiveQueue;
-static StaticQueue_t gCanTransmitQueue;
 static CAN_HandleTypeDef gCan;
+static StaticQueue_t gCanReceiveQueue;
+static EventGroupHandle_t gCANRXEventGroup;
 
+typedef enum {
+  eMainEvents_LoxCanMessageReceived = 0x1,
+  eMainEvents_10msTimer = 0x2,
+} eMainEvents;
 
 LoxCANDriver::LoxCANDriver(tLoxCANDriverType type)
   : driverType(type), extensionCount(0) {
 }
 
-static void vCANTXTask(void *pvParameters) {
+/**
+  * @brief  SYSTICK callback.
+  * @retval None
+  */
+extern "C" void xPortSysTickHandler(void);
+extern "C" void HAL_SYSTICK_Callback(void) {
+  xPortSysTickHandler();
+  LoxCANDriver::CANSysTick();
+}
+
+/***
+ *  SysTick callback at 1000Hz
+ ***/
+void LoxCANDriver::CANSysTick(void) {
+  BaseType_t xResult = pdFAIL;
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  static uint32_t sMsCounter;
+  if (sMsCounter++ == 0)
+    xResult = xEventGroupSetBitsFromISR(gCANRXEventGroup, eMainEvents_10msTimer, &xHigherPriorityTaskWoken);
+  if (sMsCounter > 9)
+    sMsCounter = 0;
+  if (xResult != pdFAIL) {
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+  }
+}
+
+/***
+ *  CAN RX Task to forward messages and timers to all extensions
+ ***/
+void LoxCANDriver::vCANRXTask(void *pvParameters) {
+  LoxCANDriver *_this = (LoxCANDriver *)pvParameters;
+  while (1) {
+    EventBits_t uxBits = xEventGroupWaitBits(gCANRXEventGroup, eMainEvents_LoxCanMessageReceived | eMainEvents_10msTimer, pdTRUE, pdFALSE, portMAX_DELAY);
+    if (uxBits & eMainEvents_LoxCanMessageReceived) {
+      LoxCanMessage message;
+      while (xQueueReceive(&gCanReceiveQueue, &message, 0)) {
+        printf("CANR:");
+        message.print(*_this);
+        for (int i = 0; i < _this->extensionCount; ++i)
+          _this->extensions[i]->ReceiveMessage(message);
+      }
+    }
+    if (uxBits & eMainEvents_10msTimer) {
+      for (int i = 0; i < _this->extensionCount; ++i)
+        _this->extensions[i]->Timer10ms();
+    }
+  }
+}
+
+/***
+ *  CAN TX Task to send pending messages to the CAN bus
+ ***/
+void LoxCANDriver::vCANTXTask(void *pvParameters) {
+  LoxCANDriver *_this = (LoxCANDriver *)pvParameters;
   const TickType_t xDelay4ms = pdMS_TO_TICKS(4);
   while (1) {
-    LoxCanMessage msg;
-    while (xQueueReceive(&gCanTransmitQueue, &msg, 0)) {
+    LoxCanMessage message;
+    while (xQueueReceive(&_this->transmitQueue, &message, 0)) {
+      printf("CANS:");
+      message.print(*_this);
       const CAN_TxHeaderTypeDef hdr = {
-        .ExtId = msg.identifier,
+        .ExtId = message.identifier,
         .IDE = CAN_ID_EXT,
         .RTR = CAN_RTR_DATA,
         .DLC = 8,
         .TransmitGlobalTime = DISABLE,
       };
       uint32_t txMailbox = 0;
-      /*HAL_StatusTypeDef status =*/HAL_CAN_AddTxMessage(&gCan, &hdr, msg.can_data, &txMailbox);
+      /*HAL_StatusTypeDef status =*/HAL_CAN_AddTxMessage(&gCan, &hdr, message.can_data, &txMailbox);
       vTaskDelay(xDelay4ms);
     }
   }
 }
 
+/***
+ *  Initialize the CAN bus and all tasks, etc
+ ***/
 void LoxCANDriver::Startup(void) {
+  static StaticEventGroup_t sEventGroup;
+  gCANRXEventGroup = xEventGroupCreateStatic(&sEventGroup);
+
   // queue for 64 messages
   static LoxCanMessage sCanReceiveBuffer[64];
   xQueueCreateStatic(sizeof(sCanReceiveBuffer) / sizeof(sCanReceiveBuffer[0]), sizeof(sCanReceiveBuffer[0]), (uint8_t *)sCanReceiveBuffer, &gCanReceiveQueue);
 
   // queue for 64 messages
   static LoxCanMessage sCanTransmitBuffer[64];
-  xQueueCreateStatic(sizeof(sCanTransmitBuffer) / sizeof(sCanTransmitBuffer[0]), sizeof(sCanTransmitBuffer[0]), (uint8_t *)sCanTransmitBuffer, &gCanTransmitQueue);
+  xQueueCreateStatic(sizeof(sCanTransmitBuffer) / sizeof(sCanTransmitBuffer[0]), sizeof(sCanTransmitBuffer[0]), (uint8_t *)sCanTransmitBuffer, &this->transmitQueue);
 
   static StackType_t sCANTXTaskStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sCANTXTask;
-  xTaskCreateStatic(vCANTXTask, "CANTXTask", configMINIMAL_STACK_SIZE, NULL, 2, sCANTXTaskStack, &sCANTXTask);
+  xTaskCreateStatic(LoxCANDriver::vCANTXTask, "CANTXTask", configMINIMAL_STACK_SIZE, this, 2, sCANTXTaskStack, &sCANTXTask);
+
+  static StackType_t sCANRXTaskStack[configMINIMAL_STACK_SIZE];
+  static StaticTask_t sCANRXTask;
+  xTaskCreateStatic(LoxCANDriver::vCANRXTask, "CANRXTask", configMINIMAL_STACK_SIZE, this, 2, sCANRXTaskStack, &sCANRXTask);
 
   gCan.Instance = CAN1;
   gCan.Init.TimeTriggeredMode = DISABLE;
@@ -71,7 +139,7 @@ void LoxCANDriver::Startup(void) {
   gCan.Init.SyncJumpWidth = CAN_SJW_1TQ;
   gCan.Init.TimeSeg1 = CAN_BS1_10TQ;
   gCan.Init.TimeSeg2 = CAN_BS2_5TQ;
-  gCan.Init.Prescaler = HAL_RCC_GetPCLK1Freq() / 16 / CAN_BITRATE; // 16tq (see above)
+  gCan.Init.Prescaler = HAL_RCC_GetPCLK1Freq() / 16 / (this->driverType == tLoxCANDriverType_LoxoneLink ? 125000 : 50000); // 16tq (see above)
   if (HAL_CAN_Init(&gCan) != HAL_OK) {
     for (;;)
       ;
@@ -87,13 +155,19 @@ void LoxCANDriver::Startup(void) {
   HAL_CAN_Start(&gCan);
 
   // FYI: At least one filter is required to be able to receive any data.
-//  FilterAllowAll(0);
+  //  FilterAllowAll(0);
 }
 
+/***
+ *  Loxone Link or Tree Bus
+ ***/
 tLoxCANDriverType LoxCANDriver::GetDriverType() const {
   return this->driverType;
 }
 
+/***
+ *  Add an extension to this driver
+ ***/
 void LoxCANDriver::AddExtension(LoxExtension *extension) {
   if (this->extensionCount == sizeof(this->extensions) / sizeof(this->extensions[0]))
     return;
@@ -161,21 +235,22 @@ uint8_t LoxCANDriver::GetReceiveErrorCounter() const {
   return 0;
 }
 
+/***
+ *  A ms delay, implemented via RTOS
+ ***/
 void LoxCANDriver::Delay(int msDelay) const {
   vTaskDelay(pdMS_TO_TICKS(msDelay));
 }
 
+/***
+ *  Send a message by putting it into the transmission queue
+ ***/
 void LoxCANDriver::SendMessage(LoxCanMessage &message) {
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-  BaseType_t xResult = xQueueSendToBackFromISR(&gCanTransmitQueue, &message, &xHigherPriorityTaskWoken);
+  BaseType_t xResult = xQueueSendToBackFromISR(&this->transmitQueue, &message, &xHigherPriorityTaskWoken);
   if (xResult != pdFAIL) {
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
   }
-}
-
-void LoxCANDriver::ReceiveMessage(LoxCanMessage &message) {
-  for (int i = 0; i < this->extensionCount; ++i)
-    this->extensions[i]->ReceiveMessage(message);
 }
 
 /**
@@ -260,7 +335,7 @@ extern "C" void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
       BaseType_t xHigherPriorityTaskWoken = pdFALSE;
       BaseType_t xResult = xQueueSendToBackFromISR(&gCanReceiveQueue, &msg, &xHigherPriorityTaskWoken);
       assert_param(xResult != pdFAIL);
-      xResult = xEventGroupSetBitsFromISR(gEventGroup, eMainEvents_LoxCanMessageReceived, &xHigherPriorityTaskWoken);
+      xResult = xEventGroupSetBitsFromISR(gCANRXEventGroup, eMainEvents_LoxCanMessageReceived, &xHigherPriorityTaskWoken);
       if (xResult != pdFAIL) {
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
       }

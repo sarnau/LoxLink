@@ -1,40 +1,13 @@
 /* FreeRTOS includes. */
-#include "rtos_code.h"
-#include "main.hpp"
+#include "FreeRTOS.h"
 #include "task.h"
-
-extern void xPortSysTickHandler(void);
-
-PRIVILEGED_DATA volatile BaseType_t xFreeRTOSActive = pdFALSE;
-
-/**
-  * @brief  SYSTICK callback.
-  * @retval None
-  */
-void HAL_SYSTICK_Callback(void) {
-  if (!xFreeRTOSActive) // This avoids a crash in xPortSysTickHandler, if the scheduler is started after a longer than normal boot time
-    return;
-  xPortSysTickHandler();
-
-  BaseType_t xResult = pdFAIL;
-  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-  static uint32_t sMsCounter;
-  if (!(sMsCounter % 10))
-    xResult = xEventGroupSetBitsFromISR(gEventGroup, eMainEvents_10msTimer, &xHigherPriorityTaskWoken);
-  if (!(sMsCounter % 1000u))
-    xResult = xEventGroupSetBitsFromISR(gEventGroup, eMainEvents_1sTimer, &xHigherPriorityTaskWoken);
-  ++sMsCounter;
-  if (xResult != pdFAIL) {
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-  }
-}
 
 /*-----------------------------------------------------------*/
 
 /* configUSE_STATIC_ALLOCATION is set to 1, so the application must provide an
  * implementation of vApplicationGetIdleTaskMemory() to provide the memory that is
  * used by the Idle task. */
-void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
+extern "C" void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
   StackType_t **ppxIdleTaskStackBuffer,
   uint32_t *pulIdleTaskStackSize) {
   /* If the buffers to be provided to the Idle task are declared inside this
@@ -61,7 +34,7 @@ void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
 /* configUSE_STATIC_ALLOCATION is set to 1, so the application must provide an
  * implementation of vApplicationGetTimerTaskMemory() to provide the memory that is
  * used by the RTOS daemon/time task. */
-void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
+extern "C" void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
   StackType_t **ppxTimerTaskStackBuffer,
   uint32_t *pulTimerTaskStackSize) {
   /* If the buffers to be provided to the Timer task are declared inside this
@@ -94,7 +67,7 @@ void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
  * has occurred.
  *
  */
-void vApplicationStackOverflowHook(TaskHandle_t xTask,
+extern "C" void vApplicationStackOverflowHook(TaskHandle_t xTask,
   char *pcTaskName) {
   portDISABLE_INTERRUPTS();
 

@@ -13,8 +13,6 @@
 #include "queue.h"
 #include "stm32f1xx_hal_conf.h"
 
-extern StaticQueue_t gCanReceiveQueue;
-
 class LoxExtension;
 
 typedef enum {
@@ -26,6 +24,11 @@ class LoxCANDriver {
   tLoxCANDriverType driverType;
   int extensionCount;
   LoxExtension *extensions[16]; // up to 16 extensions per driver
+
+  StaticQueue_t transmitQueue;
+
+  static void vCANRXTask(void *pvParameters);
+  static void vCANTXTask(void *pvParameters);
 
 public:
   LoxCANDriver(tLoxCANDriverType type);
@@ -48,7 +51,8 @@ public:
   void Delay(int msDelay) const;
 
   void SendMessage(LoxCanMessage &message);
-  void ReceiveMessage(LoxCanMessage &message);
+
+  static void CANSysTick(void);
 };
 
 #endif /* LoxCANDriver_hpp */
