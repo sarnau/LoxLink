@@ -16,46 +16,65 @@
 LED gLED;
 
 /***
+ *   Set the LED gpio
+ ***/
+static void LED_on_off(eLED_color color) {
+  switch (color) {
+  case eLED_green:
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+    break;
+  case eLED_orange:
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+    break;
+  case eLED_red:
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+    break;
+  default: // off
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+  }
+}
+
+/***
  *  CAN TX Task to send pending messages to the CAN bus
  ***/
 void LED::vLEDTask(void *pvParameters) {
   LED *_this = (LED *)pvParameters;
-  const int period = 1000;
-  const int onPeriod = period / 10;        // 10% on
-  const int offPeriod = period - onPeriod; // 90% off
+  const int base_period = 1000;
   const int identifySpeedup = 10;
   while (1) {
+  restart:
+    _this->resync_flag = false;
     eLED_state state;
     state.state = _this->led_state.state;
 
-    switch (state.color) {
-    case eLED_green:
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
-      break;
-    case eLED_orange:
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
-      break;
-    case eLED_red:
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
-      break;
-    default: // off
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+    int ldelay = 0;
+    if (!state.identify) {
+      ldelay = _this->sync_offset * 5;
+      for (int i = 0; i < ldelay; ++i) {
+        vTaskDelay(pdMS_TO_TICKS(1));
+        if (state.state != _this->led_state.state || _this->resync_flag)
+          goto restart;
+      }
     }
-    for (int i = 0; i < (state.identify ? onPeriod / identifySpeedup : onPeriod); ++i) {
+
+    LED_on_off(state.color);
+    int period = (base_period * 12) / 100; // 12% on
+    if (state.identify)
+      period /= identifySpeedup;
+    for (int i = 0; i < period; ++i) {
       vTaskDelay(pdMS_TO_TICKS(1));
-      if (state.state != _this->led_state.state)
-        break;
+      if (state.state != _this->led_state.state || _this->resync_flag)
+        goto restart;
     }
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
-    for (int i = 0; i < (state.identify ? offPeriod / identifySpeedup : offPeriod); ++i) {
+    LED_on_off(eLED_off);
+    for (int i = 0; i < base_period - period - ldelay; ++i) {
       vTaskDelay(pdMS_TO_TICKS(1));
-      if (state.state != _this->led_state.state)
-        break;
+      if (state.state != _this->led_state.state || _this->resync_flag)
+        goto restart;
     }
   }
 }
@@ -114,8 +133,10 @@ void LED::identify_off(void) {
 
 void LED::sync(uint32_t timeInMs) {
   printf("LED sync(%u)\n", timeInMs);
+  this->resync_flag = true;
 }
 
 void LED::set_sync_offset(uint8_t sync_offset) {
   printf("LED sync_offset(%u)\n", sync_offset);
+  this->sync_offset = sync_offset;
 }
