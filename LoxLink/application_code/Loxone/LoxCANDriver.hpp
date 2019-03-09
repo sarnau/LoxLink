@@ -8,7 +8,12 @@
 #ifndef LoxCANDriver_hpp
 #define LoxCANDriver_hpp
 
+#include "FreeRTOS.h"
 #include "LoxCanMessage.hpp"
+#include "queue.h"
+#include "stm32f1xx_hal_conf.h"
+
+extern StaticQueue_t gCanReceiveQueue;
 
 class LoxExtension;
 
@@ -25,11 +30,16 @@ class LoxCANDriver {
 public:
   LoxCANDriver(tLoxCANDriverType type);
 
+  void Startup(void);
+
   tLoxCANDriverType GetDriverType() const;
 
   void AddExtension(LoxExtension *);
 
-  void SetupCANFilter(int filterIndex, LoxCmdNATBus_t busType, uint8_t extensionNAT);
+  // setup various CAN filters. At least one is required to receive messages!
+  void FilterAllowAll(uint32_t filterBank);
+  void FilterSetup(uint32_t filterBank, uint32_t filterId, uint32_t filterMaskId, uint32_t filterFIFOAssignment);
+  void FilterSetupNAT(int filterIndex, LoxCmdNATBus_t busType, uint8_t extensionNAT);
 
   // CAN error reporting
   uint8_t GetTransmitErrorCounter() const;

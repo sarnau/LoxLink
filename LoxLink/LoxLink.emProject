@@ -55,6 +55,9 @@
         path="lib/STM32F1xx"
         recurse="Yes" />
     </folder>
+    <configuration
+      Name="Release"
+      gcc_optimization_level="Optimize For Size" />
   </project>
   <configuration
     Name="Debug"

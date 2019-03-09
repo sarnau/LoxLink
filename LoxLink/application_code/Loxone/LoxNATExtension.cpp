@@ -38,7 +38,7 @@ void LoxNATExtension::send_special_message(LoxMsgNATCommand_t command) {
   // Extension only accept broadcast messages, after the NAT Index Request has been sent.
   // This seems to be ok for way the Miniserver works.
   if (command == NAT_Index_Request) {
-    driver.SetupCANFilter(0, this->busType, 0xFF); // 0xFF = broadcast extension NAT
+    driver.FilterSetupNAT(0, this->busType, 0xFF); // 0xFF = broadcast extension NAT
   }
 }
 
@@ -299,7 +299,7 @@ void LoxNATExtension::ReceiveBroadcast(LoxCanMessage &message) {
         SetState(eDeviceState_parked);
       } else if ((nat & 0x80) == 0x00) { // a parked NAT index is ignored
         this->extensionNAT = nat;
-        driver.SetupCANFilter(1, this->busType, nat);
+        driver.FilterSetupNAT(1, this->busType, nat);
         SetState(eDeviceState_online);
         send_info_package(Start, this->aliveReason ? this->aliveReason : eAliveReason_t_pairing);
         if ((message.data[1] & 2) == 0x00) {
@@ -386,7 +386,6 @@ void LoxNATExtension::Timer10ms(void) {
         maxv = 30 * 1000;
       }
       this->randomNATIndexRequestDelay = random_range(minv, maxv);
-      printf("NAT\n");
       send_special_message(NAT_Index_Request);
     }
   }

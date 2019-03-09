@@ -10,7 +10,6 @@
 #include "queue.h"
 #include "task.h"
 
-#include "MMM_can.hpp"
 #include "main.hpp"
 #include "rtos_code.h"
 #include "system.hpp"
@@ -27,17 +26,11 @@ static void vMainTask(void *pvParameters) {
     EventBits_t uxBits = xEventGroupWaitBits(gEventGroup, (eMainEvents_buttonLeft | eMainEvents_buttonRight | eMainEvents_anyButtonPressed) | eMainEvents_LoxCanMessageReceived | eMainEvents_10msTimer, pdTRUE, pdFALSE, portMAX_DELAY);
     if (uxBits & eMainEvents_anyButtonPressed) {
       uint8_t keyBitmask = uxBits & (eMainEvents_buttonLeft | eMainEvents_buttonRight);
-      //      if (keyBitmask == 3) {
-      //        const uint8_t can_package[8] = {0xff, 0x01, 0x00, 0x00, 0x6c, 0x10, 0x10, 0x13};
-      //        LoxCanMessage msg;
-      //        msg.identifier = 0x106ff0fd;
-      //        memcpy(&msg.can_data, can_package, sizeof(msg.can_data));
-      //        MMM_CAN_Send(msg);
-      //      }
     }
     if (uxBits & eMainEvents_LoxCanMessageReceived) {
       LoxCanMessage msg;
       while (xQueueReceive(&gCanReceiveQueue, &msg, 0)) {
+        printf("CANR:"); msg.print(gLoxCANDriver);
         gDIExtension.ReceiveMessage(msg);
       }
     }
@@ -71,9 +64,7 @@ int main(void) {
 
   //  MX_print_cpu_info();
 
-  MMM_CAN_Init();
-  //MMM_CAN_FilterLoxNAT(0, 0x10, 0xFF, 1, CAN_FILTER_FIFO0);
-  MMM_CAN_FilterAllowAll(0);
+  gLoxCANDriver.Startup();
 
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
