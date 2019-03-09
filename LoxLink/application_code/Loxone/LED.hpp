@@ -2,7 +2,7 @@
 //  LED.hpp
 //
 //  Created by Markus Fritze on 06.03.19.
-//  Copyright © 2019 Markus Fritze. All rights reserved.
+//  Copyright (c) 2019 Markus Fritze. All rights reserved.
 //
 
 #ifndef LED_hpp
@@ -12,12 +12,12 @@
 
 class LED {
 public:
-    void blink_green(void) const;
-    void blink_orange(void) const;
-    void blink_red(void) const;
-    void identify_on(void) const;
-    void identify_off(void) const;
-    void sync(uint8_t syncOffset, uint32_t timeInMs) const;
+  void blink_green(void) const;
+  void blink_orange(void) const;
+  void blink_red(void) const;
+  void identify_on(void) const;
+  void identify_off(void) const;
+  void sync(uint8_t syncOffset, uint32_t timeInMs) const;
 };
 
 extern LED gLED;

@@ -1,6 +1,8 @@
 #ifndef RTOS_CODE_H
 #define RTOS_CODE_H
 
+#include "FreeRTOS.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

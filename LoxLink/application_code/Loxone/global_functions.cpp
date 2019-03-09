@@ -2,7 +2,7 @@
 //  global_functions.cpp
 //
 //  Created by Markus Fritze on 05.03.19.
-//  Copyright © 2019 Markus Fritze. All rights reserved.
+//  Copyright (c) 2019 Markus Fritze. All rights reserved.
 //
 
 #include "global_functions.hpp"
@@ -82,8 +82,8 @@ void debug_print_buffer(const void *data, int size, const char *header) {
   const int LineLength = 16;
   const uint8_t *dp = (const uint8_t *)data;
   for (int loffset = 0; loffset < size; loffset += LineLength) {
-    if(header)
-        printf("%s ", header);
+    if (header)
+      printf("%s ", header);
     printf("%04x : ", loffset);
     for (int i = 0; i < LineLength; ++i) {
       int offset = loffset + i;

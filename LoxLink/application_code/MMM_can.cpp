@@ -68,7 +68,7 @@ static void vCANTXTask(void *pvParameters) {
         .TransmitGlobalTime = DISABLE,
       };
       uint32_t txMailbox = 0;
-      /*HAL_StatusTypeDef status =*/ HAL_CAN_AddTxMessage(&gCan, &hdr, msg.can_data, &txMailbox);
+      /*HAL_StatusTypeDef status =*/HAL_CAN_AddTxMessage(&gCan, &hdr, msg.can_data, &txMailbox);
       vTaskDelay(xDelay4ms);
     }
   }

@@ -2,7 +2,7 @@
 #include "stm32f1xx_hal.h" // HAL_IncTick
 #include "stm32f1xx_hal_conf.h"
 #include "stm32f1xx_ll_cortex.h" // LL_CPUID_...()
-#include "stm32f1xx_ll_utils.h" // LL_GetFlashSize()
+#include "stm32f1xx_ll_utils.h"  // LL_GetFlashSize()
 
 /***
  *

@@ -1,8 +1,7 @@
 /* FreeRTOS includes. */
-#include "FreeRTOS.h"
+#include "rtos_code.h"
 #include "main.hpp"
 #include "task.h"
-#include "rtos_code.h"
 
 extern void xPortSysTickHandler(void);
 

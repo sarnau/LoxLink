@@ -2,7 +2,7 @@
 //  global_functions.hpp
 //
 //  Created by Markus Fritze on 05.03.19.
-//  Copyright © 2019 Markus Fritze. All rights reserved.
+//  Copyright (c) 2019 Markus Fritze. All rights reserved.
 //
 
 #ifndef crc_hpp
@@ -19,15 +19,15 @@ void random_init(uint32_t seed);
 // These are the 3 commonly used CRC algorithms for the Loxone hardware:
 
 // simple CRC8 with a Polynome of 0x85
-uint8_t crc8_default(const void* data, int len);
+uint8_t crc8_default(const void *data, int len);
 
 // Used for Maxim 1-Wire hardware to calculate the CRC over the serialnumber
-uint8_t crc8_OneWire(const uint8_t* data, int size);
+uint8_t crc8_OneWire(const uint8_t *data, int size);
 
 // STM32 CRC32 algorithm as available in the STM32 hardware. Used as CRC32 over packages, etc
-uint32_t crc32_stm32_aligned(const void* data, int size);
+uint32_t crc32_stm32_aligned(const void *data, int size);
 
 // Print a hexdump
-void debug_print_buffer(const void *data, int size, const char *header=0);
+void debug_print_buffer(const void *data, int size, const char *header = 0);
 
 #endif /* crc_hpp */
