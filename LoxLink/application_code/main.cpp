@@ -20,7 +20,9 @@ int main(void) {
   static LoxCANDriver gLoxCANDriver(tLoxCANDriverType_LoxoneLink);
   static LoxBusDIExtension gDIExtension(gLoxCANDriver, (uid[0] ^ uid[1] ^ uid[2]) & 0xFFFFFF);
 
-  //  MX_print_cpu_info();
+#if DEBUG && 0
+  MX_print_cpu_info();
+#endif
   gLED.Startup();
   gLoxCANDriver.Startup();
   gDIExtension.Startup();

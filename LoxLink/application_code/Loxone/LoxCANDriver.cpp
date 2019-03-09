@@ -74,8 +74,10 @@ void LoxCANDriver::vCANRXTask(void *pvParameters) {
       LoxCanMessage message;
       while (xQueueReceive(&gCanReceiveQueue, &message, 0)) {
         ++_this->statistics.Rcv;
+#if DEBUG
         printf("CANR:");
         message.print(*_this);
+#endif
         for (int i = 0; i < _this->extensionCount; ++i) {
           _this->extensions[i]->ReceiveMessage(message);
         }
@@ -102,8 +104,10 @@ void LoxCANDriver::vCANTXTask(void *pvParameters) {
     LoxCanMessage message;
     while (xQueueReceive(&_this->transmitQueue, &message, 0)) {
       ++_this->statistics.Sent;
+#if DEBUG
       printf("CANS:");
       message.print(*_this);
+#endif
       const CAN_TxHeaderTypeDef hdr = {
         .ExtId = message.identifier,
         .IDE = CAN_ID_EXT,
@@ -172,7 +176,9 @@ void LoxCANDriver::Startup(void) {
   HAL_CAN_Start(&gCan);
 
   // FYI: At least one filter is required to be able to receive any data.
-  //  FilterAllowAll(0);
+#if DEBUG
+  FilterAllowAll(10);
+#endif
 }
 
 /***
@@ -241,7 +247,9 @@ void LoxCANDriver::FilterSetupNAT(int filterIndex, LoxCmdNATBus_t busType, uint8
   msg.directionNat = LoxCmdNATDirection_t_fromServer;
   msg.extensionNat = extensionNAT;
   FilterSetup(filterIndex, msg.identifier, 0x1F2FF000, CAN_FILTER_FIFO0);
+#if DEBUG
   printf("Filter #%d mask:%08x value:%08x\n", filterIndex, 0x1F2FF000, msg.identifier);
+#endif
 }
 
 /***
@@ -259,6 +267,7 @@ uint8_t LoxCANDriver::GetReceiveErrorCounter() const {
   return gCan.Instance->ESR >> 24; // Receive error counter
 }
 
+#if DEBUG
 void LoxCANDriver::StatisticsPrint() const {
   printf("Sent:%d;", this->statistics.Sent);
   printf("Rcv:%d;", this->statistics.Rcv);
@@ -272,6 +281,7 @@ void LoxCANDriver::StatisticsPrint() const {
   printf("RQ:%d;", this->statistics.RQ);
   printf("mRQ:%d;\n", this->statistics.mRQ);
 }
+#endif
 
 void LoxCANDriver::StatisticsReset() {
   memset(&this->statistics, 0, sizeof(this->statistics));

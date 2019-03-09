@@ -28,6 +28,8 @@ uint8_t crc8_OneWire(const uint8_t *data, int size);
 uint32_t crc32_stm32_aligned(const void *data, int size);
 
 // Print a hexdump
+#if DEBUG
 void debug_print_buffer(const void *data, int size, const char *header = 0);
+#endif
 
 #endif /* crc_hpp */

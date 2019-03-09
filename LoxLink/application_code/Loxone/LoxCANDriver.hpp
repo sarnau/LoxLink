@@ -60,7 +60,9 @@ public:
   void FilterSetupNAT(int filterIndex, LoxCmdNATBus_t busType, uint8_t extensionNAT);
 
   // CAN bus statistics and errors
+#if DEBUG
   void StatisticsPrint() const;
+#endif
   void StatisticsReset();
   uint32_t GetErrorCounter() const;
   uint8_t GetTransmitErrorCounter() const;

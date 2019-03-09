@@ -7,6 +7,7 @@
 /***
  *
  ***/
+#if DEBUG
 void MX_print_cpu_info(void) {
   switch (LL_CPUID_GetImplementer()) {
   case 0x41:
@@ -106,6 +107,7 @@ void MX_print_cpu_info(void) {
   printf("SysClock:%dMHz HCLK:%dMHz PCLK1:%dMHz PCLK2:%dMHz FLASH:%dkb\n", HAL_RCC_GetSysClockFreq() / 1000000, HAL_RCC_GetHCLKFreq() / 1000000, HAL_RCC_GetPCLK1Freq() / 1000000, HAL_RCC_GetPCLK2Freq() / 1000000);
   printf("ADC_TEMPSENSOR: %.2fC\n", MX_read_temperature());
 }
+#endif
 
 /**
   * Initializes the Global MSP.

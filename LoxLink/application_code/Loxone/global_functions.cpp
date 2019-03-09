@@ -78,6 +78,7 @@ uint32_t crc32_stm32_aligned(const void *data, int size) {
   return crc;
 }
 
+#if DEBUG
 void debug_print_buffer(const void *data, int size, const char *header) {
   const int LineLength = 16;
   const uint8_t *dp = (const uint8_t *)data;
@@ -106,3 +107,4 @@ void debug_print_buffer(const void *data, int size, const char *header) {
     printf("\n");
   }
 }
+#endif

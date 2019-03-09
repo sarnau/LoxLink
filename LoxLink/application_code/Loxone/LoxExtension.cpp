@@ -35,7 +35,9 @@ LoxExtension::LoxExtension(LoxCANDriver &driver, uint32_t serial, eDeviceType_t 
   : driver(driver), serial(serial), device_type(device_type), hardware_version(hardware_version), version(version), state(eDeviceState(-1)) // illegal state to force the SetState() to update
 {
   assert(serial != 0);
+#if DEBUG
   printf("LoxExtension(%07x,%04x,%d,%d)\n", this->serial, this->device_type, this->hardware_version, this->version);
+#endif
   SetState(eDeviceState_offline);
   driver.AddExtension(this);
 }

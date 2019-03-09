@@ -313,10 +313,12 @@ public:
   };
 
   bool isNATmessage(LoxCANDriver &driver) const;
+#if DEBUG
   void print(LoxCANDriver &driver) const;
 
 private:
     const char * const NATcommandString(LoxMsgNATCommand_t command) const;
+#endif
 };
 
 #endif /* MMM_LoxCanMessage_hpp */
