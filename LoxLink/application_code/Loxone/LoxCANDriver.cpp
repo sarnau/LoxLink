@@ -46,9 +46,9 @@ void LoxCANDriver::CANSysTick(void) {
   BaseType_t xResult = pdFAIL;
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
   static uint32_t sMsCounter;
-  if (sMsCounter++ == 0)
+  if (sMsCounter == 0)
     xResult = xEventGroupSetBitsFromISR(gCANRXEventGroup, eMainEvents_10msTimer, &xHigherPriorityTaskWoken);
-  if (sMsCounter > 9)
+  if (++sMsCounter > 9)
     sMsCounter = 0;
   if (xResult != pdFAIL) {
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
