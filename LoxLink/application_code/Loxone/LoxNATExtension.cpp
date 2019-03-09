@@ -241,6 +241,7 @@ LoxNATExtension::LoxNATExtension(LoxCANDriver &driver, uint32_t serial, eDeviceT
   this->offlineTimeout = 15 * 60;
   this->offlineCountdownInMs = this->offlineTimeout * 1000;
   SetState(eDeviceState_offline);
+  gLED.identify_off();
 }
 
 /***

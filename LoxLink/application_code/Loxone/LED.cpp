@@ -51,30 +51,43 @@ void LED::vLEDTask(void *pvParameters) {
     eLED_state state;
     state.state = _this->led_state.state;
 
-    int ldelay = 0;
-    if (!state.identify) {
-      ldelay = _this->sync_offset * 5;
-      for (int i = 0; i < ldelay; ++i) {
+    if (state.identify) { // no delay during identify
+      LED_on_off(state.color);
+      int period = ((base_period * 12) / 100) / identifySpeedup; // 12% on (measured via looking at video material)
+      for (int i = 0; i < period; ++i) {
         vTaskDelay(pdMS_TO_TICKS(1));
         if (state.state != _this->led_state.state || _this->resync_flag)
           goto restart;
       }
-    }
-
-    LED_on_off(state.color);
-    int period = (base_period * 12) / 100; // 12% on
-    if (state.identify)
-      period /= identifySpeedup;
-    for (int i = 0; i < period; ++i) {
-      vTaskDelay(pdMS_TO_TICKS(1));
-      if (state.state != _this->led_state.state || _this->resync_flag)
-        goto restart;
-    }
-    LED_on_off(eLED_off);
-    for (int i = 0; i < base_period - period - ldelay; ++i) {
-      vTaskDelay(pdMS_TO_TICKS(1));
-      if (state.state != _this->led_state.state || _this->resync_flag)
-        goto restart;
+      LED_on_off(eLED_off);
+      period = (base_period - period) / identifySpeedup;
+      for (int i = 0; i < period; ++i) {
+        vTaskDelay(pdMS_TO_TICKS(1));
+        if (state.state != _this->led_state.state || _this->resync_flag)
+          goto restart;
+      }
+    } else {
+      int ldelay = 0;
+      // 15ms delay per unit in the rack, in which 5 is 15ms
+      ldelay = _this->sync_offset * 3;
+      for (int i = 0; i < ldelay; ++i) {
+        vTaskDelay(pdMS_TO_TICKS(1));
+        if (state.state != _this->led_state.state || _this->resync_flag)
+          goto restart; // force resync when the LED change or a sync is received
+      }
+      LED_on_off(state.color);
+      int period = (base_period * 12) / 100; // 12% on (measured via looking at video material)
+      for (int i = 0; i < period; ++i) {
+        vTaskDelay(pdMS_TO_TICKS(1));
+        if (state.state != _this->led_state.state || _this->resync_flag)
+          goto restart;
+      }
+      LED_on_off(eLED_off);
+      for (int i = 0; i < base_period - period - ldelay; ++i) {
+        vTaskDelay(pdMS_TO_TICKS(1));
+        if (state.state != _this->led_state.state || _this->resync_flag)
+          goto restart;
+      }
     }
   }
 }
@@ -122,21 +135,21 @@ void LED::blink_red(void) {
 }
 
 void LED::identify_on(void) {
-  printf("LED identify on\n");
+  //  printf("LED identify on\n");
   this->led_state.identify = true;
 }
 
 void LED::identify_off(void) {
-  printf("LED identify off\n");
+  //  printf("LED identify off\n");
   this->led_state.identify = false;
 }
 
 void LED::sync(uint32_t timeInMs) {
-  printf("LED sync(%u)\n", timeInMs);
+  //  printf("LED sync(%u)\n", timeInMs);
   this->resync_flag = true;
 }
 
 void LED::set_sync_offset(uint8_t sync_offset) {
-  printf("LED sync_offset(%u)\n", sync_offset);
+  //  printf("LED sync_offset(%u)\n", sync_offset);
   this->sync_offset = sync_offset;
 }
