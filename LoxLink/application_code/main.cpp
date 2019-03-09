@@ -1,5 +1,6 @@
 #include "LED.hpp"
 #include "LoxBusDIExtension.hpp"
+#include "Watchdog.hpp"
 #include "stm32f1xx_hal.h"
 #include "system.hpp"
 
@@ -24,6 +25,7 @@ int main(void) {
   gLoxCANDriver.Startup();
   gDIExtension.Startup();
 
+  Start_Watchdog();
   vTaskStartScheduler();
   NVIC_SystemReset(); // should never reach this point
   return 0;

@@ -115,11 +115,11 @@ void LoxBusDIExtension::SendValues() {
   uint32_t gpioBits = 0;
   for (int i = 0; i < DI_EXTENSION_INPUTS; ++i) {
     GPIO_PinState state = HAL_GPIO_ReadPin(gPins[i].gpio, gPins[i].pin);
-      if ((this->config.frequencyInputsBitmask & (1 << i)) // is this pin a frequency counter?
-        continue;
-        // regular (non-frequency) input
-        if (state == GPIO_PIN_SET)
-          gpioBits |= 1 << i;
+    if (this->config.frequencyInputsBitmask & (1 << i)) // is this pin a frequency counter?
+      continue;
+    // regular (non-frequency) input
+    if (state == GPIO_PIN_SET)
+      gpioBits |= 1 << i;
   }
   this->hardwareBitmask = gpioBits;
   send_digital_value(0, this->hardwareBitmask);

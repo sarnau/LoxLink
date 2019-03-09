@@ -111,7 +111,6 @@ void LoxCANDriver::vCANTXTask(void *pvParameters) {
         .DLC = 8,
         .TransmitGlobalTime = DISABLE,
       };
-      _this->StatisticsPrint();
       uint32_t txMailbox = 0;
       /*HAL_StatusTypeDef status =*/HAL_CAN_AddTxMessage(&gCan, &hdr, message.can_data, &txMailbox);
       vTaskDelay(xDelay4ms);
