@@ -20,7 +20,6 @@ void LoxNATExtension::send_message(LoxMsgNATCommand_t command, LoxCanMessage &ms
   msg.commandNat = command;
   msg.directionNat = LoxCmdNATDirection_t_fromDevice;
   msg.busType = this->busType;
-  ++this->statistics.Sent;
   driver.SendMessage(msg);
 }
 
@@ -135,7 +134,7 @@ void LoxNATExtension::send_can_status(LoxMsgNATCommand_t command) {
   msg.value8 = 0x00; // from the device (!=0 => from a Tree bus)
   msg.data[1] = this->driver.GetReceiveErrorCounter();
   msg.data[2] = this->driver.GetTransmitErrorCounter();
-  msg.value32 = this->statistics.Err;
+  msg.value32 = this->driver.GetErrorCounter();
   lox_send_package_if_nat(command, msg);
 }
 
@@ -416,7 +415,6 @@ void LoxNATExtension::ReceiveMessage(LoxCanMessage &message) {
   if (!message.isNATmessage(this->driver) || message.directionNat < LoxCmdNATDirection_t_fromServerShortcut)
     return;
 
-  ++this->statistics.Rcv;
   this->offlineCountdownInMs = this->offlineTimeout * 1000;
 
   switch (message.commandNat) {

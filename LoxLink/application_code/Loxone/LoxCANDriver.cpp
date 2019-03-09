@@ -16,9 +16,13 @@
 #define CAN_RX_GPIO_PIN GPIO_PIN_8
 #define CAN_TX_GPIO_PIN GPIO_PIN_9
 
+#define CAN_RX_QUEUE_SIZE 64
+#define CAN_TX_QUEUE_SIZE 64
+
 static CAN_HandleTypeDef gCan;
 static StaticQueue_t gCanReceiveQueue;
 static EventGroupHandle_t gCANRXEventGroup;
+static LoxCANDriver *gCANDriver;
 
 typedef enum {
   eMainEvents_LoxCanMessageReceived = 0x1,
@@ -63,12 +67,18 @@ void LoxCANDriver::vCANRXTask(void *pvParameters) {
   while (1) {
     EventBits_t uxBits = xEventGroupWaitBits(gCANRXEventGroup, eMainEvents_LoxCanMessageReceived | eMainEvents_10msTimer, pdTRUE, pdFALSE, portMAX_DELAY);
     if (uxBits & eMainEvents_LoxCanMessageReceived) {
+      UBaseType_t rq = uxQueueMessagesWaiting(&gCanReceiveQueue);
+      _this->statistics.RQ = rq;
+      if (rq > _this->statistics.mRQ)
+        _this->statistics.mRQ = rq;
       LoxCanMessage message;
       while (xQueueReceive(&gCanReceiveQueue, &message, 0)) {
+        ++_this->statistics.Rcv;
         printf("CANR:");
         message.print(*_this);
-        for (int i = 0; i < _this->extensionCount; ++i)
+        for (int i = 0; i < _this->extensionCount; ++i) {
           _this->extensions[i]->ReceiveMessage(message);
+        }
       }
     }
     if (uxBits & eMainEvents_10msTimer) {
@@ -85,8 +95,13 @@ void LoxCANDriver::vCANTXTask(void *pvParameters) {
   LoxCANDriver *_this = (LoxCANDriver *)pvParameters;
   const TickType_t xDelay4ms = pdMS_TO_TICKS(4);
   while (1) {
+    UBaseType_t tq = uxQueueMessagesWaiting(&gCanReceiveQueue);
+    _this->statistics.TQ = tq;
+    if (tq > _this->statistics.mTQ)
+      _this->statistics.mTQ = tq;
     LoxCanMessage message;
     while (xQueueReceive(&_this->transmitQueue, &message, 0)) {
+      ++_this->statistics.Sent;
       printf("CANS:");
       message.print(*_this);
       const CAN_TxHeaderTypeDef hdr = {
@@ -96,6 +111,7 @@ void LoxCANDriver::vCANTXTask(void *pvParameters) {
         .DLC = 8,
         .TransmitGlobalTime = DISABLE,
       };
+      _this->StatisticsPrint();
       uint32_t txMailbox = 0;
       /*HAL_StatusTypeDef status =*/HAL_CAN_AddTxMessage(&gCan, &hdr, message.can_data, &txMailbox);
       vTaskDelay(xDelay4ms);
@@ -107,16 +123,18 @@ void LoxCANDriver::vCANTXTask(void *pvParameters) {
  *  Initialize the CAN bus and all tasks, etc
  ***/
 void LoxCANDriver::Startup(void) {
+  gCANDriver = this;
+
   static StaticEventGroup_t sEventGroup;
   gCANRXEventGroup = xEventGroupCreateStatic(&sEventGroup);
 
   // queue for 64 messages
-  static LoxCanMessage sCanReceiveBuffer[64];
-  xQueueCreateStatic(sizeof(sCanReceiveBuffer) / sizeof(sCanReceiveBuffer[0]), sizeof(sCanReceiveBuffer[0]), (uint8_t *)sCanReceiveBuffer, &gCanReceiveQueue);
+  static LoxCanMessage sCanReceiveBuffer[CAN_RX_QUEUE_SIZE];
+  xQueueCreateStatic(CAN_RX_QUEUE_SIZE, sizeof(sCanReceiveBuffer[0]), (uint8_t *)sCanReceiveBuffer, &gCanReceiveQueue);
 
   // queue for 64 messages
-  static LoxCanMessage sCanTransmitBuffer[64];
-  xQueueCreateStatic(sizeof(sCanTransmitBuffer) / sizeof(sCanTransmitBuffer[0]), sizeof(sCanTransmitBuffer[0]), (uint8_t *)sCanTransmitBuffer, &this->transmitQueue);
+  static LoxCanMessage sCanTransmitBuffer[CAN_TX_QUEUE_SIZE];
+  xQueueCreateStatic(CAN_TX_QUEUE_SIZE, sizeof(sCanTransmitBuffer[0]), (uint8_t *)sCanTransmitBuffer, &this->transmitQueue);
 
   static StackType_t sCANTXTaskStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sCANTXTask;
@@ -227,12 +245,37 @@ void LoxCANDriver::FilterSetupNAT(int filterIndex, LoxCmdNATBus_t busType, uint8
   printf("Filter #%d mask:%08x value:%08x\n", filterIndex, 0x1F2FF000, msg.identifier);
 }
 
+/***
+ *  CAN error reporting and statistics
+ ***/
+uint32_t LoxCANDriver::GetErrorCounter() const {
+  return this->statistics.Err;
+}
+
 uint8_t LoxCANDriver::GetTransmitErrorCounter() const {
-  return 0;
+  return gCan.Instance->ESR >> 16; // Least significant byte of the 9-bit transmit error counter
 }
 
 uint8_t LoxCANDriver::GetReceiveErrorCounter() const {
-  return 0;
+  return gCan.Instance->ESR >> 24; // Receive error counter
+}
+
+void LoxCANDriver::StatisticsPrint() const {
+  printf("Sent:%d;", this->statistics.Sent);
+  printf("Rcv:%d;", this->statistics.Rcv);
+  printf("Err:%d;", this->statistics.Err);
+  printf("REC:%d;", this->GetReceiveErrorCounter());
+  printf("TEC:%d;", this->GetTransmitErrorCounter());
+  printf("HWE:%d;", this->statistics.HWE);
+  printf("TQ:%d;", this->statistics.TQ);
+  printf("mTQ:%d;", this->statistics.mTQ);
+  printf("QOvf:%d;", this->statistics.QOvf);
+  printf("RQ:%d;", this->statistics.RQ);
+  printf("mRQ:%d;\n", this->statistics.mRQ);
+}
+
+void LoxCANDriver::StatisticsReset() {
+  memset(&this->statistics, 0, sizeof(this->statistics));
 }
 
 /***
@@ -263,55 +306,7 @@ extern "C" void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
     int ErrorStatus = hcan->ErrorCode;
     if (ErrorStatus != HAL_CAN_ERROR_NONE) {
-      if (ErrorStatus & HAL_CAN_ERROR_EWG)
-        printf("HAL_CAN_ERROR_EWG,");
-      if (ErrorStatus & HAL_CAN_ERROR_EPV)
-        printf("HAL_CAN_ERROR_EPV,");
-      if (ErrorStatus & HAL_CAN_ERROR_BOF)
-        printf("HAL_CAN_ERROR_BOF,");
-      if (ErrorStatus & HAL_CAN_ERROR_STF)
-        printf("HAL_CAN_ERROR_STF,");
-      if (ErrorStatus & HAL_CAN_ERROR_FOR)
-        printf("HAL_CAN_ERROR_FOR,");
-      if (ErrorStatus & HAL_CAN_ERROR_ACK)
-        printf("HAL_CAN_ERROR_ACK,");
-      if (ErrorStatus & HAL_CAN_ERROR_BR)
-        printf("HAL_CAN_ERROR_BR,");
-      if (ErrorStatus & HAL_CAN_ERROR_BD)
-        printf("HAL_CAN_ERROR_BD,");
-      if (ErrorStatus & HAL_CAN_ERROR_CRC)
-        printf("HAL_CAN_ERROR_CRC,");
-      if (ErrorStatus & HAL_CAN_ERROR_RX_FOV0)
-        printf("HAL_CAN_ERROR_RX_FOV0,");
-      if (ErrorStatus & HAL_CAN_ERROR_RX_FOV1)
-        printf("HAL_CAN_ERROR_RX_FOV1,");
-      if (ErrorStatus & HAL_CAN_ERROR_TX_ALST0)
-        printf("HAL_CAN_ERROR_TX_ALST0,");
-      if (ErrorStatus & HAL_CAN_ERROR_TX_TERR0)
-        printf("HAL_CAN_ERROR_TX_TERR0,");
-      if (ErrorStatus & HAL_CAN_ERROR_TX_ALST1)
-        printf("HAL_CAN_ERROR_TX_ALST1,");
-      if (ErrorStatus & HAL_CAN_ERROR_TX_TERR1)
-        printf("HAL_CAN_ERROR_TX_TERR1,");
-      if (ErrorStatus & HAL_CAN_ERROR_TX_ALST0)
-        printf("HAL_CAN_ERROR_TX_ALST0,");
-      if (ErrorStatus & HAL_CAN_ERROR_TX_ALST2)
-        printf("HAL_CAN_ERROR_TX_ALST2,");
-      if (ErrorStatus & HAL_CAN_ERROR_TX_TERR2)
-        printf("HAL_CAN_ERROR_TX_TERR2,");
-      if (ErrorStatus & HAL_CAN_ERROR_TIMEOUT)
-        printf("HAL_CAN_ERROR_TIMEOUT,");
-      if (ErrorStatus & HAL_CAN_ERROR_NOT_INITIALIZED)
-        printf("HAL_CAN_ERROR_NOT_INITIALIZED,");
-      if (ErrorStatus & HAL_CAN_ERROR_NOT_READY)
-        printf("HAL_CAN_ERROR_NOT_READY,");
-      if (ErrorStatus & HAL_CAN_ERROR_NOT_STARTED)
-        printf("HAL_CAN_ERROR_NOT_STARTED,");
-      if (ErrorStatus & HAL_CAN_ERROR_PARAM)
-        printf("HAL_CAN_ERROR_PARAM,");
-      if (ErrorStatus & HAL_CAN_ERROR_INTERNAL)
-        printf("HAL_CAN_ERROR_INTERNAL,");
-      printf("\n");
+      gCANDriver->statistics.HWE++;
     }
   }
   HAL_CAN_ResetError(hcan);

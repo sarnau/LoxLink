@@ -85,17 +85,6 @@ public:
 protected:
   LoxCANDriver &driver;
   eDeviceState state;
-  struct {         // CAN bus statistics
-    uint32_t Rcv;  // number of received CAN bus packages
-    uint32_t Sent; // number of sent CAN messages
-    uint32_t RQ;   // number of entries in the receive queue
-    uint32_t mRQ;  // maximum number of entries in the receive queue
-    uint32_t TQ;   // number of entries in the transmit queue
-    uint32_t mTQ;  // maximum number of entries in the transmit queue
-    uint32_t QOvf; // number of dropped packages, because the transmit queue was full
-    uint32_t Err;  // incremented, whenever the CAN Last error code was != 0
-    uint32_t HWE;  // Hardware error: incremented, whenever the Error Passive limit has been reached (Receive Error Counter or Transmit Error Counter>127).
-  } statistics;
 
   virtual void SetState(eDeviceState state);
   virtual void ReceiveDirect(LoxCanMessage &message){};
@@ -105,10 +94,6 @@ protected:
 
 public:
   LoxExtension(LoxCANDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version);
-
-  // CAN bus statistics, just for debugging
-  void StatisticsPrint() const;
-  void StatisticsReset();
 
   // Need to be called by the main
   virtual void Startup(void){};

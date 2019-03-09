@@ -39,21 +39,3 @@ LoxExtension::LoxExtension(LoxCANDriver &driver, uint32_t serial, eDeviceType_t 
   SetState(eDeviceState_offline);
   driver.AddExtension(this);
 }
-
-void LoxExtension::StatisticsPrint() const {
-  printf("Sent:%d;", this->statistics.Sent);
-  printf("Rcv:%d;", this->statistics.Rcv);
-  printf("Err:%d;", this->statistics.Err);
-  printf("REC:%d;", this->driver.GetReceiveErrorCounter());
-  printf("TEC:%d;", this->driver.GetTransmitErrorCounter());
-  printf("HWE:%d;", this->statistics.HWE);
-  printf("TQ:%d;", this->statistics.TQ);
-  printf("mTQ:%d;", this->statistics.mTQ);
-  printf("QOvf:%d;", this->statistics.QOvf);
-  printf("RQ:%d;", this->statistics.RQ);
-  printf("mRQ:%d;\n", this->statistics.mRQ);
-}
-
-void LoxExtension::StatisticsReset() {
-  memset(&this->statistics, 0, sizeof(this->statistics));
-}
