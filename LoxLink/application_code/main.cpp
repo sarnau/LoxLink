@@ -7,12 +7,17 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-static LoxCANDriver gLoxCANDriver(tLoxCANDriverType_LoxoneLink);
-static LoxBusDIExtension gDIExtension(gLoxCANDriver, 0x123456);
+#include "stm32f1xx_ll_cortex.h" // LL_CPUID_...()
 
 int main(void) {
   HAL_Init();
   SystemClock_Config();
+
+  uint32_t uid[3];
+  HAL_GetUID(uid);
+
+  static LoxCANDriver gLoxCANDriver(tLoxCANDriverType_LoxoneLink);
+  static LoxBusDIExtension gDIExtension(gLoxCANDriver, (uid[0] ^ uid[1] ^ uid[2]) & 0xFFFFFF);
 
   //  MX_print_cpu_info();
   gLED.Startup();
