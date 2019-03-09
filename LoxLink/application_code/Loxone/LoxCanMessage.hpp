@@ -314,6 +314,9 @@ public:
 
   bool isNATmessage(LoxCANDriver &driver) const;
   void print(LoxCANDriver &driver) const;
+
+private:
+    const char * const NATcommandString(LoxMsgNATCommand_t command) const;
 };
 
 #endif /* MMM_LoxCanMessage_hpp */
