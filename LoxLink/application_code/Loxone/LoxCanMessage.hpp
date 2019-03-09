@@ -235,12 +235,12 @@ typedef enum {
   LoxCmdLegacyHardware_t_RS485 = 0x07,                // RS485 Extension
   LoxCmdLegacyHardware_t_IR = 0x08,                   // IR Extension
   LoxCmdLegacyHardware_t_Modbus485 = 0x09,            // Modbus 485 Extension
-  LoxCmdLegacyHardware_t_Froeling = 0x0a,             // FrÃ¶ling Extension (messages on the bus)
+  LoxCmdLegacyHardware_t_Froeling = 0x0a,             // FrÃÂ¶ling Extension (messages on the bus)
   LoxCmdLegacyHardware_t_Relay = 0x0b,                // Relay Extension
   LoxCmdLegacyHardware_t_AirBase = 0x0c,              // Air Base Extension
   LoxCmdLegacyHardware_t_Dali = 0x0d,                 // Dali Extension
   LoxCmdLegacyHardware_t_Modbus232 = 0x0e,            // Modbus 232 Extension
-  LoxCmdLegacyHardware_t_FroelingSerialnumber = 0x0f, // FrÃ¶ling Extension (serial number only), 0x0f can not be used for legacy devices, because messages from the server are not possible - 0x1f is  used for Legacy software updates.
+  LoxCmdLegacyHardware_t_FroelingSerialnumber = 0x0f, // FrÃÂ¶ling Extension (serial number only), 0x0f can not be used for legacy devices, because messages from the server are not possible - 0x1f is  used for Legacy software updates.
 } LoxCmdLegacyHardware_t;
 
 typedef enum {
@@ -317,7 +317,9 @@ public:
   void print(LoxCANDriver &driver) const;
 
 private:
-    const char * const NATcommandString(LoxMsgNATCommand_t command) const;
+  const char *const LegacyCommandString(LoxMsgLegacyCommand_t command, LoxCmdLegacyHardware_t hardware) const;
+  const char *const LegacyHardwareString(LoxCmdLegacyHardware_t hardware) const;
+  const char *const NATCommandString(LoxMsgNATCommand_t command) const;
 #endif
 };
 

@@ -15,8 +15,214 @@ bool LoxCanMessage::isNATmessage(LoxCANDriver &driver) const {
 }
 
 #if DEBUG
+const char *const LoxCanMessage::LegacyCommandString(LoxMsgLegacyCommand_t command, LoxCmdLegacyHardware_t hardware) const {
+  switch (command) {
+  case identify:
+    return "identify";
+  case software_update_init:
+    return "software_update_init";
+  case reboot_all:
+    return "reboot_all";
+  case software_update_verify:
+    return "software_update_verify";
+  case config_acknowledge:
+    return "config_acknowledge";
+  case BC_ACK:
+    return "BC_ACK";
+  case BC_NAK:
+    return "BC_NAK";
+  case start_request:
+    return "start_request";
+  case identify_LED:
+    return "identify_LED";
+  case alive:
+    return "alive";
+  case software_update_init_modules:
+    return "software_update_init_modules";
+  case identify_unknown_extensions:
+    return "identify_unknown_extensions";
+  case extension_offline:
+    return "extension_offline";
+  case sync_ticks:
+    return "sync_ticks";
+  case LED_flash_position:
+    return "LED_flash_position";
+  case alive_reply:
+    return "alive_reply";
+  case analog_input_config_0:
+    return "analog_input_config_0";
+  case analog_input_config_1:
+    return "analog_input_config_1";
+  case webrequest:
+    return "webrequest";
+  case crashreport:
+    return "crashreport";
+  case air_parameter:
+    return "air_parameter";
+  case debug:
+    return "debug";
+  case request_statistics:
+    return "request_statistics";
+  case air_OtauRxPacket:
+    return "air_OtauRxPacket";
+  case analog_input_value:
+    return "analog_input_value";
+  case Enocean_config:
+    return "Enocean_config";
+  case Enocean_learn:
+    return "Enocean_learn";
+  case Enocean_value:
+    return "Enocean_value";
+  case sync_date_time:
+    return "sync_date_time";
+  case analog_output_value:
+    return "analog_output_value";
+  case analog_output_config:
+    return "analog_output_config";
+  case software_update_retry_page:
+    return "software_update_retry_page";
+  case log_level:
+    return "log_level";
+  case config_check_CRC:
+    return "config_check_CRC";
+  case park_extension:
+    return "park_extension";
+  case LinkDiagnosis_reply:
+    return "LinkDiagnosis_reply";
+  case LinkDiagnosis_request:
+    return "LinkDiagnosis_request";
+  case digital_input_config_0:
+    return "digital_input_config_0";
+  case digital_input_config_1:
+    return "digital_input_config_1";
+  case digital_input_config_2:
+    return "digital_input_config_2";
+  case digital_input_config_3:
+    return "digital_input_config_3";
+  case fragmented_package:
+    return "fragmented_package";
+  case fragmented_package_large_data:
+    return "fragmented_package_large_data";
+  case fragmented_package_large_start:
+    return "fragmented_package_large_start";
+  case digital_input_value:
+    return "digital_input_value";
+  case digital_input_frequency:
+    return "digital_input_frequency";
+  case system_temperature:
+    return "system_temperature";
+  case software_update_page_crc:
+    return "software_update_page_crc";
+  case air_reboot_devices:
+    return "air_reboot_devices";
+  case mute_all:
+    return "mute_all";
+  case Modbus_485_SensorValue:
+    return "Modbus_485_SensorValue";
+  case Modbus_485_WriteSingleCoil:
+    return "Modbus_485_WriteSingleCoil";
+  case Modbus_485_WriteSingleRegister:
+    return "Modbus_485_WriteSingleRegister";
+  case Modbus_485_WriteMultipleRegisters:
+    return "Modbus_485_WriteMultipleRegisters";
+  case digital_output_value:
+    if (hardwareType == LoxCmdLegacyHardware_t_Modbus485)
+      return "Modbus_485_WriteMultipleRegisters2";
+    return "digital_output_value";
+  case Modbus_485_WriteSingleRegister4:
+    return "Modbus_485_WriteSingleRegister4";
+  case Modbus_485_WriteMultipleRegisters4:
+    return "Modbus_485_WriteMultipleRegisters4";
+  case OneWire_polling_cycle:
+    if (hardwareType == LoxCmdLegacyHardware_t_Modbus485)
+      return "Modbus_485_WriteMultipleCoils";
+    return "OneWire_polling_cycle";
+  case set_monitor:
+    return "set_monitor";
+  case OneWire_search:
+    return "OneWire_search";
+  case OneWire_analog_value:
+    return "OneWire_analog_value";
+  case RS232_config_hardware:
+    return "RS232_config_hardware";
+  case IR_learn:
+    return "IR_learn";
+  case IR_sensor_value:
+    return "IR_sensor_value";
+  case IR_raw_value:
+    if (hardwareType == LoxCmdLegacyHardware_t_Dali)
+      return "Dali_change_address";
+    return "IR_raw_value";
+  case Dali_monitor_data:
+    return "Dali_monitor_data";
+  case Dali_state:
+    return "Dali_state";
+  case RS232_send_bytes:
+    return "RS232_send_bytes";
+  case OneWire_NAT_serial:
+    return "OneWire_NAT_serial";
+  case OneWire_NAT_index_checksum:
+    return "OneWire_NAT_index_checksum";
+  case DMX_learn:
+    return "DMX_learn";
+  case EnOcean_ValueFromUnknownSensor1:
+    return "EnOcean_ValueFromUnknownSensor1";
+  case EnOcean_ValueFromUnknownSensor2A:
+    return "EnOcean_ValueFromUnknownSensor2A";
+  case EnOcean_ValueFromUnknownSensor2B:
+    return "EnOcean_ValueFromUnknownSensor2B";
+  case config_checksum:
+    return "config_checksum";
+  case config_checksum_request:
+    return "config_checksum_request";
+  case OneWire_iButton_arrive:
+    return "OneWire_iButton_arrive";
+  case OneWire_iButton_depart:
+    return "OneWire_iButton_depart";
+  case RS232_config_protocol:
+    return "RS232_config_protocol";
+  }
+}
 
-const char *const LoxCanMessage::NATcommandString(LoxMsgNATCommand_t command) const {
+const char *const LoxCanMessage::LegacyHardwareString(LoxCmdLegacyHardware_t hardware) const {
+  switch (hardware) {
+  case LoxCmdLegacyHardware_t_Server:
+    return "Miniserver";
+  case LoxCmdLegacyHardware_t_Extension:
+    return "Extension";
+  case LoxCmdLegacyHardware_t_Dimmer:
+    return "Dimmer Extension";
+  case LoxCmdLegacyHardware_t_EnOcean:
+    return "EnOcean Extension";
+  case LoxCmdLegacyHardware_t_DMX:
+    return "DMX Extension";
+  case LoxCmdLegacyHardware_t_OneWire:
+    return "1-Wire Extension";
+  case LoxCmdLegacyHardware_t_RS232:
+    return "RS232 Extension";
+  case LoxCmdLegacyHardware_t_RS485:
+    return "RS485 Extension";
+  case LoxCmdLegacyHardware_t_IR:
+    return "IR Extension";
+  case LoxCmdLegacyHardware_t_Modbus485:
+    return "Modbus 485 Extension";
+  case LoxCmdLegacyHardware_t_Froeling:
+    return "Froeling Extension";
+  case LoxCmdLegacyHardware_t_Relay:
+    return "Relay Extension";
+  case LoxCmdLegacyHardware_t_AirBase:
+    return "Air Base Extension";
+  case LoxCmdLegacyHardware_t_Dali:
+    return "Dali Extension";
+  case LoxCmdLegacyHardware_t_Modbus232:
+    return "Modbus 232 Extension";
+  case LoxCmdLegacyHardware_t_FroelingSerialnumber:
+    return "Froeling Extension";
+  }
+  return NULL;
+}
+
+const char *const LoxCanMessage::NATCommandString(LoxMsgNATCommand_t command) const {
   switch (command) {
   case Version_Request:
     return "Version_Request";
@@ -141,23 +347,35 @@ void LoxCanMessage::print(LoxCANDriver &driver) const {
     }
     printf(this->fragmented ? "F" : " ");
     printf(" NAT:%02x/%02x ", this->extensionNat, this->deviceNAT);
-    const char *natStr = NATcommandString(this->commandNat);
+    const char *natStr = NATCommandString(this->commandNat);
     if (natStr)
       printf(natStr);
     else
       printf("Cmd:%02x", this->commandNat);
     printf(" : ");
     if (this->commandNat == Fragment_Start) {
-      natStr = NATcommandString(LoxMsgNATCommand_t(this->data[0]));
+      natStr = NATCommandString(LoxMsgNATCommand_t(this->data[0]));
       if (natStr)
         printf("(%s) ", natStr);
     }
   } else { // legacy command
-    printf("0x%x ", this->identifier);
-    printf("Dir:%d ", this->directionLegacy);
-    printf("Hw:%02x ", this->hardwareType);
-    printf("Serial:%06x ", this->serial);
-    printf("Cmd:%d/%02x ", this->commandDirection, this->commandLegacy);
+    if (this->serial == 0 && this->hardwareType == LoxCmdLegacyHardware_t_Server) {
+      printf("Miniserver Broadcast ");
+    } else {
+      printf((this->directionLegacy == LoxMsgLegacyDirection_t_fromServer) ? "S" : "D");
+      printf((this->commandDirection == LoxMsgLegacyCommandDirection_t_fromServer) ? "s" : "d");
+      printf(" %s ", LegacyHardwareString(this->hardwareType));
+      printf("%07x ", this->identifier & 0xFFFFFFF);
+    }
+    //printf("Cmd:%d/", this->commandDirection);
+    const char *legStr = LegacyCommandString(this->commandLegacy, this->hardwareType);
+    if (legStr) {
+      printf(legStr);
+    } else {
+      printf(legStr);
+      printf("Cmd:%02x", this->commandLegacy);
+    }
+    printf(" : ");
   }
   printf("%02x.%02x.%02x.%02x.%02x.%02x.%02x\n", this->data[0], this->data[1], this->data[2], this->data[3], this->data[4], this->data[5], this->data[6]);
 }
