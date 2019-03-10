@@ -13,6 +13,8 @@
 #include "stm32f1xx_ll_rcc.h"
 #include "stm32f1xx_hal_pwr.h"
 
+#include "LoxLegacyRelayExtension.hpp"
+
 static eAliveReason_t GetResetReason() {
   eAliveReason_t reason = eAliveReason_t_unknown;
   if (__HAL_PWR_GET_FLAG(PWR_FLAG_SB))
@@ -43,14 +45,16 @@ int main(void) {
   HAL_GetUID(uid);
 
   static LoxCANDriver gLoxCANDriver(tLoxCANDriverType_LoxoneLink);
-  static LoxBusDIExtension gDIExtension(gLoxCANDriver, (uid[0] ^ uid[1] ^ uid[2]) & 0xFFFFFF, sResetReason);
+//  static LoxBusDIExtension gDIExtension(gLoxCANDriver, (uid[0] ^ uid[1] ^ uid[2]) & 0xFFFFFF, sResetReason);
+  static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, (uid[0] ^ uid[1] ^ uid[2]) & 0xFFFFFF);
 
 #if DEBUG && 0
   MX_print_cpu_info();
 #endif
   gLED.Startup();
   gLoxCANDriver.Startup();
-  gDIExtension.Startup();
+  gRelayExtension.Startup();
+  //gDIExtension.Startup();
 
   Start_Watchdog();
   vTaskStartScheduler();

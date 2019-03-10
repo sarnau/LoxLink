@@ -15,7 +15,7 @@ bool LoxCanMessage::isNATmessage(LoxCANDriver &driver) const {
 }
 
 #if DEBUG
-const char *const LoxCanMessage::LegacyCommandString(LoxMsgLegacyCommand_t command, LoxCmdLegacyHardware_t hardware) const {
+const char *const LoxCanMessage::LegacyCommandString(LoxMsgLegacyCommand_t command, eDeviceType_t hardware) const {
   switch (command) {
   case identify:
     return "identify";
@@ -126,7 +126,7 @@ const char *const LoxCanMessage::LegacyCommandString(LoxMsgLegacyCommand_t comma
   case Modbus_485_WriteMultipleRegisters:
     return "Modbus_485_WriteMultipleRegisters";
   case digital_output_value:
-    if (hardwareType == LoxCmdLegacyHardware_t_Modbus485)
+    if (hardwareType == eDeviceType_t_ModbusExtension)
       return "Modbus_485_WriteMultipleRegisters2";
     return "digital_output_value";
   case Modbus_485_WriteSingleRegister4:
@@ -134,7 +134,7 @@ const char *const LoxCanMessage::LegacyCommandString(LoxMsgLegacyCommand_t comma
   case Modbus_485_WriteMultipleRegisters4:
     return "Modbus_485_WriteMultipleRegisters4";
   case OneWire_polling_cycle:
-    if (hardwareType == LoxCmdLegacyHardware_t_Modbus485)
+    if (hardwareType == eDeviceType_t_ModbusExtension)
       return "Modbus_485_WriteMultipleCoils";
     return "OneWire_polling_cycle";
   case set_monitor:
@@ -150,7 +150,7 @@ const char *const LoxCanMessage::LegacyCommandString(LoxMsgLegacyCommand_t comma
   case IR_sensor_value:
     return "IR_sensor_value";
   case IR_raw_value:
-    if (hardwareType == LoxCmdLegacyHardware_t_Dali)
+    if (hardwareType == eDeviceType_t_DaliExtension)
       return "Dali_change_address";
     return "IR_raw_value";
   case Dali_monitor_data:
@@ -184,40 +184,42 @@ const char *const LoxCanMessage::LegacyCommandString(LoxMsgLegacyCommand_t comma
   }
 }
 
-const char *const LoxCanMessage::LegacyHardwareString(LoxCmdLegacyHardware_t hardware) const {
+const char *const LoxCanMessage::HardwareNameString(eDeviceType_t hardware) const {
   switch (hardware) {
-  case LoxCmdLegacyHardware_t_Server:
+  case eDeviceType_t_Miniserver:
     return "Miniserver";
-  case LoxCmdLegacyHardware_t_Extension:
+  case eDeviceType_t_Extension:
     return "Extension";
-  case LoxCmdLegacyHardware_t_Dimmer:
+  case eDeviceType_t_DimmerExtension:
     return "Dimmer Extension";
-  case LoxCmdLegacyHardware_t_EnOcean:
+  case eDeviceType_t_EnOceanExtension:
     return "EnOcean Extension";
-  case LoxCmdLegacyHardware_t_DMX:
+  case eDeviceType_t_DMXExtension:
     return "DMX Extension";
-  case LoxCmdLegacyHardware_t_OneWire:
+  case eDeviceType_t_OneWireExtension:
     return "1-Wire Extension";
-  case LoxCmdLegacyHardware_t_RS232:
+  case eDeviceType_t_RS232Extension:
     return "RS232 Extension";
-  case LoxCmdLegacyHardware_t_RS485:
+  case eDeviceType_t_RS485Extension:
     return "RS485 Extension";
-  case LoxCmdLegacyHardware_t_IR:
+  case eDeviceType_t_IRExtension:
     return "IR Extension";
-  case LoxCmdLegacyHardware_t_Modbus485:
+  case eDeviceType_t_ModbusExtension:
     return "Modbus 485 Extension";
-  case LoxCmdLegacyHardware_t_Froeling:
+  case eDeviceType_t_FroelingExtension:
     return "Froeling Extension";
-  case LoxCmdLegacyHardware_t_Relay:
+  case eDeviceType_t_RelayExtension:
     return "Relay Extension";
-  case LoxCmdLegacyHardware_t_AirBase:
+  case eDeviceType_t_AirBaseExtension:
     return "Air Base Extension";
-  case LoxCmdLegacyHardware_t_Dali:
+  case eDeviceType_t_DaliExtension:
     return "Dali Extension";
-  case LoxCmdLegacyHardware_t_Modbus232:
+  case eDeviceType_t_Modbus232Extension:
     return "Modbus 232 Extension";
-  case LoxCmdLegacyHardware_t_FroelingSerialnumber:
+  case eDeviceType_t_FroelingExtensionSerial:
     return "Froeling Extension";
+  default:
+    break;
   }
   return NULL;
 }
@@ -359,12 +361,12 @@ void LoxCanMessage::print(LoxCANDriver &driver) const {
         printf("(%s) ", natStr);
     }
   } else { // legacy command
-    if (this->serial == 0 && this->hardwareType == LoxCmdLegacyHardware_t_Server) {
+    if (this->serial == 0 && this->hardwareType == eDeviceType_t_Miniserver) {
       printf("Miniserver Broadcast ");
     } else {
       printf((this->directionLegacy == LoxMsgLegacyDirection_t_fromServer) ? "S" : "D");
       printf((this->commandDirection == LoxMsgLegacyCommandDirection_t_fromServer) ? "s" : "d");
-      printf(" %s ", LegacyHardwareString(this->hardwareType));
+      printf(" %s ", HardwareNameString(this->hardwareType));
       printf("%07x ", this->identifier & 0xFFFFFFF);
     }
     //printf("Cmd:%d/", this->commandDirection);
