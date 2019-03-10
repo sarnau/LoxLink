@@ -12,8 +12,10 @@
 
 class LoxLegacyRelayExtension : public LoxLegacyExtension {
   uint16_t harewareDigitalOutBitmask; // 14 possible bits
-  bool forceSendTemperature;
-  bool shutdownFlag; // extension is overheating
+  bool temperatureForceSend;
+  bool temperatureOverheatingFlag; // emergency shutdown, if relays/dimmers got too hot
+  float temperature;
+  uint32_t temperatureMsTimer;
 
   void update_relays(uint16_t bitmask);
   virtual void PacketToExtension(LoxCanMessage &message);

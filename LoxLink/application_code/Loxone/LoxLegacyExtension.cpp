@@ -26,6 +26,7 @@ LoxLegacyExtension::LoxLegacyExtension(LoxCANDriver &driver, uint32_t serial, eD
 void LoxLegacyExtension::sendCommandWithValues(LoxMsgLegacyCommand_t command, uint8_t val8, uint16_t val16, uint32_t val32) {
   LoxCanMessage message;
   message.serial = this->serial;
+  message.hardwareType = eDeviceType_t(this->device_type);
   message.directionLegacy = LoxMsgLegacyDirection_t_fromDevice;
   message.commandLegacy = command;
   message.commandDirection = LoxMsgLegacyCommandDirection_t_fromDevice;
@@ -39,7 +40,7 @@ void LoxLegacyExtension::sendCommandWithValues(LoxMsgLegacyCommand_t command, ui
  *
  ***/
 void LoxLegacyExtension::sendCommandWithVersion(LoxMsgLegacyCommand_t command) {
-  sendCommandWithValues(command, 0, 0, this->version);
+  sendCommandWithValues(command, this->hardware_version, 0, this->version);
 }
 
 /***
@@ -115,7 +116,7 @@ void LoxLegacyExtension::PacketMulticastExtension(LoxCanMessage &message) {
     break;
   case software_update_page_crc:
     if (this->firmwareUpdateActive) {
-      if (message.value16 <= sizeof(firmwareUpdateCRCs)/sizeof(firmwareUpdateCRCs[0]))
+      if (message.value16 <= sizeof(firmwareUpdateCRCs) / sizeof(firmwareUpdateCRCs[0]))
         this->firmwareUpdateCRCs[message.value16] = message.value32;
     }
     break;
@@ -178,10 +179,10 @@ void LoxLegacyExtension::ReceiveMessage(LoxCanMessage &message) {
   if (message.isNATmessage(this->driver) or (message.directionLegacy == LoxMsgLegacyDirection_t_fromDevice and message.identifier != 0))
     return;
 
-  // Check for the five different legacy message types
+  // Check for the five different legacy message types:
 
   // Multicast to all extensions
-  if (message.identifier)
+  if (message.identifier == 0x00000000)
     PacketMulticastAll(message);
 
   // Multicast to all extensions of a certain type
