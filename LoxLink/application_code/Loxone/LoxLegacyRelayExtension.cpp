@@ -9,6 +9,11 @@
 #include "system.hpp"
 #include <stdlib.h>
 
+// TODO
+// - Actual GPIO out setup
+// - 100ms delay to set values to avoid too many changes in quick succession
+
+
 /***
  *  Update the relays
  ***/
