@@ -235,7 +235,7 @@ typedef enum {                   // some of these commands have different meanin
   //    DimmerExtension_47 = 0x47, // prepare composite actor
   digital_input_value = 0x50,
   digital_input_frequency = 0x51,
-  system_temperature = 0x53,       // send from extension
+  system_temperature = 0x53,       // send from extension (only used by Dimmer, Relay, Extension)
   software_update_page_crc = 0x54, // send from Miniserver
   air_reboot_devices = 0x58,       // send from Miniserver
   mute_all = 0x5B,                 // send from Miniserver

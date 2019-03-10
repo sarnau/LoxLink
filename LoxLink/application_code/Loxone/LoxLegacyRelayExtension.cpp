@@ -32,10 +32,16 @@ void LoxLegacyRelayExtension::Timer10ms(void) {
   LoxLegacyExtension::Timer10ms();
   if (not this->isMuted and doSend) {
     this->forceSendTemperature = false;
+    // https://www.st.com/content/ccc/resource/technical/document/application_note/b9/21/44/4e/cf/6f/46/fa/DM00035957.pdf/files/DM00035957.pdf/jcr:content/translations/en.DM00035957.pdf
+    // https://electronics.stackexchange.com/questions/324321/reading-internal-temperature-sensor-stm32
     // convert temperature in Celsius into Luminary System Temperature (as returned by the ADC in the CPU)
     float temperature = 70.3;
     uint32_t value = ((1475 - (temperature * 10)) * 1024) / 2245;
     // Reverse conversion: tempC = (1475-(value*2245/1024))/10
+    // hardware version < 2 only sends the luminary system temperature from STM32
+    // starting with hardware version 2, two options are supported:
+    // value8 == 0: value32 = temperature in Celcius * 10
+    // value8 == 1: value32 = luminary system temperature
     sendCommandWithValues(system_temperature, 0x00, this->shutdownFlag << 8, value);
   }
 }
