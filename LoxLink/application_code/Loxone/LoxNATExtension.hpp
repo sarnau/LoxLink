@@ -141,7 +141,7 @@ protected:
   virtual void ReceiveBroadcastFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size);
 
 public:
-  LoxNATExtension(LoxCANDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version, uint8_t configVersion, uint8_t configSize, tConfigHeader *configPtr);
+  LoxNATExtension(LoxCANDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version, uint8_t configVersion, uint8_t configSize, tConfigHeader *configPtr, eAliveReason_t alive);
 
   virtual void Timer10ms(void);
   virtual void ReceiveMessage(LoxCanMessage &message);

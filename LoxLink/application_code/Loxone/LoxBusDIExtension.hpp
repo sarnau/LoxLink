@@ -43,7 +43,7 @@ private:
   virtual void SendValues();
 
 public:
-  LoxBusDIExtension(LoxCANDriver &driver, uint32_t serial);
+  LoxBusDIExtension(LoxCANDriver &driver, uint32_t serial, eAliveReason_t alive);
 
   virtual void Startup(void);
   virtual void Timer10ms(void);
