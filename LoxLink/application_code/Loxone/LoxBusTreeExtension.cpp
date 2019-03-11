@@ -13,6 +13,11 @@ LoxBusTreeExtension::LoxBusTreeExtension(LoxCANDriver &driver, uint32_t serial, 
   : LoxNATExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_TreeBaseExtension << 24), eDeviceType_t_TreeBaseExtension, 0, 9030305, 1, sizeof(config), &config, alive) {
 }
 
+void LoxBusTreeExtension::SendValues(void) {
+  send_can_status(CAN_Error_Reply, eTreeBranch_leftBranch);
+  send_can_status(CAN_Error_Reply, eTreeBranch_rightBranch);
+}
+
 /***
  *  A direct message received
  ***/
@@ -37,4 +42,17 @@ void LoxBusTreeExtension::ReceiveDirect(LoxCanMessage &message) {
     }
     LoxNATExtension::ReceiveDirect(message);
   }
+}
+
+// Forward other messages to the tree devices
+void LoxBusTreeExtension::ReceiveBroadcast(LoxCanMessage &message) {
+    LoxNATExtension::ReceiveBroadcast(message);
+}
+
+void LoxBusTreeExtension::ReceiveDirectFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size) {
+    LoxNATExtension::ReceiveDirectFragment(command, data, size);
+}
+
+void LoxBusTreeExtension::ReceiveBroadcastFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size) {
+    LoxNATExtension::ReceiveBroadcastFragment(command, data, size);
 }

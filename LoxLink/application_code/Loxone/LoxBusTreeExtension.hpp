@@ -21,7 +21,11 @@ class LoxBusTreeExtension : public LoxNATExtension {
 public:
   tTreeExtensionConfig config;
 
-  void ReceiveDirect(LoxCanMessage &message);
+  virtual void SendValues(void);
+  virtual void ReceiveDirect(LoxCanMessage &message);
+  virtual void ReceiveBroadcast(LoxCanMessage &message);
+  virtual void ReceiveDirectFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size);
+  virtual void ReceiveBroadcastFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size);
 
 public:
   LoxBusTreeExtension(LoxCANDriver &driver, uint32_t serial, eAliveReason_t alive);
