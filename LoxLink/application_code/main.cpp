@@ -45,7 +45,7 @@ int main(void) {
   HAL_GetUID(uid);
 
   static LoxCANDriver gLoxCANDriver(tLoxCANDriverType_LoxoneLink);
-//  static LoxBusDIExtension gDIExtension(gLoxCANDriver, (uid[0] ^ uid[1] ^ uid[2]) & 0xFFFFFF, sResetReason);
+  static LoxBusDIExtension gDIExtension(gLoxCANDriver, (uid[0] ^ uid[1] ^ uid[2]) & 0xFFFFFF, sResetReason);
   static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, (uid[0] ^ uid[1] ^ uid[2]) & 0xFFFFFF);
 
 #if DEBUG && 0
@@ -54,7 +54,7 @@ int main(void) {
   gLED.Startup();
   gLoxCANDriver.Startup();
   gRelayExtension.Startup();
-  //gDIExtension.Startup();
+  gDIExtension.Startup();
 
   Start_Watchdog();
   vTaskStartScheduler();

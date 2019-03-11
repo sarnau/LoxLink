@@ -41,6 +41,8 @@ void LoxLegacyExtension::sendCommandWithValues(LoxMsgLegacyCommand_t command, ui
  *
  ***/
 void LoxLegacyExtension::sendCommandWithVersion(LoxMsgLegacyCommand_t command) {
+  // 0 contains the configuration bitmask, which is used e.g. for the Extension
+  // to confirm the complete configuration has arrived.
   sendCommandWithValues(command, this->hardware_version, 0, this->version);
 }
 
