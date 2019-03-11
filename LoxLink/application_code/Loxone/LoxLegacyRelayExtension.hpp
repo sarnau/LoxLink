@@ -10,6 +10,8 @@
 
 #include "LoxLegacyExtension.hpp"
 
+#define RELAY_EXTENSION_OUTPUTS 14
+
 class LoxLegacyRelayExtension : public LoxLegacyExtension {
   uint16_t harewareDigitalOutBitmask; // 14 possible bits
   bool temperatureForceSend;
@@ -23,6 +25,7 @@ class LoxLegacyRelayExtension : public LoxLegacyExtension {
 public:
   LoxLegacyRelayExtension(LoxCANDriver &driver, uint32_t serial);
 
+  virtual void Startup(void);
   virtual void Timer10ms(void);
 };
 

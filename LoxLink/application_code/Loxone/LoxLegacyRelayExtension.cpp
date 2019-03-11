@@ -6,13 +6,29 @@
 //
 
 #include "LoxLegacyRelayExtension.hpp"
+#include "stm32f1xx_hal_gpio.h"
 #include "system.hpp"
 #include <stdlib.h>
 
-// TODO
-// - Actual GPIO out setup
-// - 100ms delay to set values to avoid too many changes in quick succession
-
+static const struct {
+  uint16_t pin;
+  GPIO_TypeDef *gpio;
+} gRelayPins[RELAY_EXTENSION_OUTPUTS] = {
+  {GPIO_PIN_15, GPIOD},
+  {GPIO_PIN_14, GPIOD},
+  {GPIO_PIN_13, GPIOD},
+  {GPIO_PIN_12, GPIOD},
+  {GPIO_PIN_11, GPIOD},
+  {GPIO_PIN_10, GPIOD},
+  {GPIO_PIN_9, GPIOD},
+  {GPIO_PIN_8, GPIOD},
+  {GPIO_PIN_7, GPIOD},
+  {GPIO_PIN_6, GPIOD},
+  {GPIO_PIN_5, GPIOD},
+  {GPIO_PIN_4, GPIOD},
+  {GPIO_PIN_3, GPIOD},
+  {GPIO_PIN_2, GPIOD},
+};
 
 /***
  *  Update the relays
@@ -21,7 +37,10 @@ void LoxLegacyRelayExtension::update_relays(uint16_t bitmask) {
   if (this->temperatureOverheatingFlag)
     bitmask = 0;
   this->harewareDigitalOutBitmask = bitmask;
-//  printf("### Relay Status 0x%x\n", this->harewareDigitalOutBitmask);
+  //  printf("### Relay Status 0x%x\n", this->harewareDigitalOutBitmask);
+  for (int i = 0; i < RELAY_EXTENSION_OUTPUTS; ++i) {
+    HAL_GPIO_WritePin(gRelayPins[i].gpio, gRelayPins[i].pin, (bitmask & (1 << i)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+  }
 }
 
 /***
@@ -29,6 +48,22 @@ void LoxLegacyRelayExtension::update_relays(uint16_t bitmask) {
  ***/
 LoxLegacyRelayExtension::LoxLegacyRelayExtension(LoxCANDriver &driver, uint32_t serial)
   : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_RelayExtension << 24), eDeviceType_t_RelayExtension, 2, 9000822), harewareDigitalOutBitmask(0), temperatureForceSend(false), temperatureOverheatingFlag(false), temperatureMsTimer(0), temperature(0) {
+}
+
+/***
+ *  Setup GPIOs
+ ***/
+void LoxLegacyRelayExtension::Startup(void) {
+  // Configure all outputs
+  __HAL_RCC_GPIOD_CLK_ENABLE();
+  for (int i = 0; i < RELAY_EXTENSION_OUTPUTS; ++i) {
+    GPIO_InitTypeDef GPIO_Init;
+    GPIO_Init.Pin = gRelayPins[i].pin;
+    GPIO_Init.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_Init.Pull = GPIO_PULLDOWN;
+    GPIO_Init.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(gRelayPins[i].gpio, &GPIO_Init);
+  }
 }
 
 /***

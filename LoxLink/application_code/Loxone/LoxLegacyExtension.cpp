@@ -18,6 +18,7 @@ LoxLegacyExtension::LoxLegacyExtension(LoxCANDriver &driver, uint32_t serial, eD
   : LoxExtension(driver, serial, device_type, hardware_version, version), aliveCountdown(0), isMuted(false), isDeviceIdentified(false), forceStartMessage(true), firmwareUpdateActive(false) {
   SetState(eDeviceState_offline);
   gLED.identify_off();
+  gLED.blink_red();
 }
 
 /***
@@ -75,6 +76,7 @@ void LoxLegacyExtension::PacketMulticastAll(LoxCanMessage &message) {
   case park_extension:
     this->isMuted = false;
     this->isDeviceIdentified = false;
+    gLED.blink_orange();
     break;
   case sync_ticks:
     gLED.sync(message.value32);
@@ -135,28 +137,34 @@ void LoxLegacyExtension::PacketToExtension(LoxCanMessage &message) {
     this->isMuted = false;
     this->forceStartMessage = true;
     this->firmwareUpdateActive = false;
+    gLED.blink_green();
     break;
   case identify_LED:
     gLED.identify_on();
     break;
   case alive:
     sendCommandWithVersion(alive_reply);
+    gLED.blink_green();
     break;
   case extension_offline:
   case park_extension:
     this->isMuted = false;
     this->isDeviceIdentified = false;
+    gLED.blink_orange();
     break;
   case LED_flash_position:
     gLED.set_sync_offset(message.value32);
+    gLED.blink_green();
     break;
   case alive_reply:
+    gLED.blink_green();
     break;
   case LinkDiagnosis_request:
     sendCommandWithValues(LinkDiagnosis_reply, 0, (driver.GetReceiveErrorCounter() & 0x7F) + ((driver.GetTransmitErrorCounter() & 0x7F) << 8), driver.GetErrorCounter());
     break;
   case mute_all:
     this->isMuted = true;
+    gLED.blink_green();
     break;
   default:
     break;

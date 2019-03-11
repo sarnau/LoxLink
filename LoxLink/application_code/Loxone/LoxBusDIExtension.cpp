@@ -17,7 +17,7 @@
 static const struct {
   uint16_t pin;
   GPIO_TypeDef *gpio;
-} gPins[DI_EXTENSION_INPUTS] = {
+} gDIPins[DI_EXTENSION_INPUTS] = {
   {GPIO_PIN_0, GPIOE},
   {GPIO_PIN_1, GPIOE},
   {GPIO_PIN_2, GPIOE},
@@ -52,7 +52,7 @@ extern "C" void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     static volatile uint32_t sMillisecondsCounter;
     uint32_t gpioBits = 0;
     for (int i = 0; i < DI_EXTENSION_INPUTS; ++i) {
-      GPIO_PinState state = HAL_GPIO_ReadPin(gPins[i].gpio, gPins[i].pin);
+      GPIO_PinState state = HAL_GPIO_ReadPin(gDIPins[i].gpio, gDIPins[i].pin);
       if (gDIExt->config.frequencyInputsBitmask & (1 << i)) { // is this pin a frequency counter?
         if (state != gDIExt->hardwareFrequencyStates[i].state) {
           gDIExt->hardwareFrequencyStates[i].state = state;
@@ -88,10 +88,10 @@ void LoxBusDIExtension::Startup(void) {
   __HAL_RCC_GPIOC_CLK_ENABLE();
   for (int i = 0; i < DI_EXTENSION_INPUTS; ++i) {
     GPIO_InitTypeDef GPIO_Init;
-    GPIO_Init.Pin = gPins[i].pin;
+    GPIO_Init.Pin = gDIPins[i].pin;
     GPIO_Init.Mode = GPIO_MODE_INPUT;
     GPIO_Init.Pull = GPIO_PULLDOWN;
-    HAL_GPIO_Init(gPins[i].gpio, &GPIO_Init);
+    HAL_GPIO_Init(gDIPins[i].gpio, &GPIO_Init);
   }
 
   g1000HzTimer.Instance = TIM3;
@@ -114,7 +114,7 @@ void LoxBusDIExtension::SendValues() {
   // read all gpio bits
   uint32_t gpioBits = 0;
   for (int i = 0; i < DI_EXTENSION_INPUTS; ++i) {
-    GPIO_PinState state = HAL_GPIO_ReadPin(gPins[i].gpio, gPins[i].pin);
+    GPIO_PinState state = HAL_GPIO_ReadPin(gDIPins[i].gpio, gDIPins[i].pin);
     if (this->config.frequencyInputsBitmask & (1 << i)) // is this pin a frequency counter?
       continue;
     // regular (non-frequency) input
