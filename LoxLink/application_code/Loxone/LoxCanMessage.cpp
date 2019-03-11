@@ -182,6 +182,7 @@ const char *const LoxCanMessage::LegacyCommandString(LoxMsgLegacyCommand_t comma
   case RS232_config_protocol:
     return "RS232_config_protocol";
   }
+  return NULL;
 }
 
 const char *const LoxCanMessage::HardwareNameString(eDeviceType_t hardware) const {
