@@ -1,6 +1,4 @@
 #include "LED.hpp"
-#include "LoxBusDIExtension.hpp"
-#include "LoxLegacyRelayExtension.hpp"
 #include "Watchdog.hpp"
 #include "stm32f1xx_hal.h"
 #include "system.hpp"
@@ -10,6 +8,11 @@
 #include "task.h"
 
 #include "stm32f1xx_ll_cortex.h" // LL_CPUID_...()
+
+#include "LoxBusDIExtension.hpp"
+#include "LoxLegacyRelayExtension.hpp"
+#include "LoxBusTreeExtension.hpp"
+
 
 int main(void) {
   HAL_Init();
@@ -26,6 +29,7 @@ int main(void) {
   static LoxCANDriver gLoxCANDriver(tLoxCANDriverType_LoxoneLink);
   static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, sResetReason);
   static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
+  static LoxBusTreeExtension gTreeExtension(gLoxCANDriver, serial_base, sResetReason);
 
 #if DEBUG && 0
   MX_print_cpu_info();
@@ -34,6 +38,7 @@ int main(void) {
   gLoxCANDriver.Startup();
   gRelayExtension.Startup();
   gDIExtension.Startup();
+  gTreeExtension.Startup();
 
   Start_Watchdog();
   vTaskStartScheduler();

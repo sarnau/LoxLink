@@ -69,6 +69,12 @@ typedef enum {
   eAnalogFlags_signedValue = 0x10,
 } eAnalogFlags;
 
+typedef enum {
+  eTreeBranch_extension = 0,
+  eTreeBranch_leftBranch = 1,
+  eTreeBranch_rightBranch = 2,
+} eTreeBranch;
+
 class LoxNATExtension : public LoxExtension {
 protected:
   // Configuration support
@@ -100,7 +106,7 @@ protected:
   void lox_send_package_if_nat(LoxMsgNATCommand_t command, LoxCanMessage &msg);
   void send_fragmented_message(LoxMsgNATCommand_t command, const void *data, int dataCount, uint8_t deviceNAT);
   void send_alive_package(void);
-  void send_can_status(LoxMsgNATCommand_t command);
+  void send_can_status(LoxMsgNATCommand_t command, eTreeBranch branch);
   void send_info_package(LoxMsgNATCommand_t command, uint8_t /*eAliveReason_t*/ reason);
   void send_digital_value(uint8_t index, uint32_t value);
   void send_analog_value(uint8_t index, uint32_t value, uint16_t flags, eAnalogFormat format);

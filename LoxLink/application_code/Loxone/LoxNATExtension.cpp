@@ -129,9 +129,9 @@ void LoxNATExtension::send_alive_package(void) {
 /***
  *  
  ***/
-void LoxNATExtension::send_can_status(LoxMsgNATCommand_t command) {
+void LoxNATExtension::send_can_status(LoxMsgNATCommand_t command, eTreeBranch branch) {
   LoxCanMessage msg;
-  msg.value8 = 0x00; // from the device (!=0 => from a Tree bus)
+  msg.value8 = branch; // from the device (!=0 => from a Tree bus)
   msg.data[1] = this->driver.GetReceiveErrorCounter();
   msg.data[2] = this->driver.GetTransmitErrorCounter();
   msg.value32 = this->driver.GetErrorCounter();
@@ -262,12 +262,12 @@ void LoxNATExtension::ReceiveDirect(LoxCanMessage &message) {
     break;
   case CAN_Diagnosis_Request:
     if (message.value16 == 0) { // for this device (!=0 => for a Tree bus)
-      send_can_status(CAN_Diagnosis_Reply);
+      send_can_status(CAN_Diagnosis_Reply, eTreeBranch_extension);
     }
     break;
   case CAN_Error_Request:
     if (message.value16 == 0) { // for this device (!=0 => for a Tree bus)
-      send_can_status(CAN_Error_Reply);
+      send_can_status(CAN_Error_Reply, eTreeBranch_extension);
     }
     break;
   default:
