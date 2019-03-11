@@ -1,8 +1,33 @@
 #include "system.hpp"
 #include "stm32f1xx_hal.h" // HAL_IncTick
 #include "stm32f1xx_hal_conf.h"
+#include "stm32f1xx_hal_pwr.h"
 #include "stm32f1xx_ll_cortex.h" // LL_CPUID_...()
-#include "stm32f1xx_ll_utils.h"  // LL_GetFlashSize()
+#include "stm32f1xx_ll_rcc.h"
+#include "stm32f1xx_ll_utils.h" // LL_GetFlashSize()
+
+/***
+ *
+ ***/
+eAliveReason_t MX_reset_reason(void) {
+  eAliveReason_t reason = eAliveReason_t_unknown;
+  if (__HAL_PWR_GET_FLAG(PWR_FLAG_SB))
+    reason = eAliveReason_t_standby_reset;
+  else if (LL_RCC_IsActiveFlag_IWDGRST())
+    reason = eAliveReason_t_watchdog_reset;
+  else if (LL_RCC_IsActiveFlag_LPWRRST())
+    reason = eAliveReason_t_low_power_reset;
+  else if (LL_RCC_IsActiveFlag_PINRST())
+    reason = eAliveReason_t_pin_reset;
+  else if (LL_RCC_IsActiveFlag_PORRST())
+    reason = eAliveReason_t_power_on_reset;
+  else if (LL_RCC_IsActiveFlag_SFTRST())
+    reason = eAliveReason_t_software_reset;
+  else if (LL_RCC_IsActiveFlag_WWDGRST())
+    reason = eAliveReason_t_window_watchdog_reset;
+  LL_RCC_ClearResetFlags();
+  return reason;
+}
 
 /***
  *
