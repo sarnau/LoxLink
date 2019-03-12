@@ -219,10 +219,55 @@ const char *const LoxCanMessage::HardwareNameString(eDeviceType_t hardware) cons
     return "Modbus 232 Extension";
   case eDeviceType_t_FroelingExtensionSerial:
     return "Froeling Extension";
+  case eDeviceType_t_ValveActuatorTree:           // <https://shop.loxone.com/enuk/valve-actuator.html>
+    return "Valve Actuator Tree";
+  case eDeviceType_t_MotionSensorTree:            // <https://shop.loxone.com/enuk/motion-sensor.html>
+    return "Motion Sensor Tree";
+  case eDeviceType_t_TouchTree:                   // <https://shop.loxone.com/enuk/loxone-touch.html>
+    return "Touch Tree";
+  case eDeviceType_t_UniversalTree:               // unreleased
+    return "Universal Tree";
+  case eDeviceType_t_TouchPureTree:               // <https://shop.loxone.com/enuk/loxone-touch-pure.html>
+    return "Touch Pure Tree";
+  case eDeviceType_t_LEDCeilingLightTree:         // <https://shop.loxone.com/enuk/led-ceiling-light-rgbw.html>
+    return "LED Ceiling Light RGBW Tree";
+  case eDeviceType_t_LEDSurfaceMountSpotRGBWTree: // not sure
+    return "LED Surface Mount Spot RGBW Tree";
+  case eDeviceType_t_LEDSpotRGBWTreeGen1:         // <https://shop.loxone.com/enuk/led-spot-rgbw-global.html>
+    return "LED Sport RGBW Gen 1 Tree";
+  case eDeviceType_t_NFCCodeTouchTree:            // <https://shop.loxone.com/enuk/nfc-code-touch.html>
+    return "NFC Code Touch Tree";
+  case eDeviceType_t_WeatherStationTree:          // <https://shop.loxone.com/enuk/weather-station.html>
+    return "Weather Station Tree";
+  case eDeviceType_t_NanoDITree:                  // <https://shop.loxone.com/enuk/nano-di-tree.html>
+    return "Nano DI Tree";
+  case eDeviceType_t_RGBW24VDimmerTree:           // <https://shop.loxone.com/enuk/rgbw-24v-dimmer.html>, <https://shop.loxone.com/enuk/rgbw-24v-compact-dimmer.html>
+    return "RGBW 24V Dimmer Tree";
+  case eDeviceType_t_TouchSurfaceTree:            // <https://shop.loxone.com/enuk/touch-surface.html>
+    return "Touch Surface Tree";
+  case eDeviceType_t_LEDSurfaceMountSpotWWTree:   // not sure
+    return "LED Surface Mount Spot WW Tree";
+  case eDeviceType_t_LEDSpotWWTreeGen1:           // <https://shop.loxone.com/enuk/led-spots-ww-global.html>
+    return "LED Spot WW Gen 1 Tree";
+  case eDeviceType_t_RoomComfortSensorTree:       // <https://shop.loxone.com/enuk/room-comfort-sensor.html>
+    return "Room Comfort Sensor Tree";
+  case eDeviceType_t_LEDPendulumSlimRGBWTree:     // <https://shop.loxone.com/enuk/led-pendulum-slim-global.html>
+    return "LED Pendulum Slim RGBW Tree";
+  case eDeviceType_t_AlarmSirenTree:              // <https://shop.loxone.com/enuk/alarm-siren.html>
+    return "Alarm Siren Tree";
+  case eDeviceType_t_DamperTree:                  // <https://shop.loxone.com/enus/damper-tree.html>
+    return "Damper Tree Tree";
+  case eDeviceType_t_LeafTree:                    // <https://shop.loxone.com/dede/leaf-1.html>
+    return "Leaf Tree";
+  case eDeviceType_t_IntegratedWindowContactTree: // unreleased
+    return "Integrated Window Contact Tree";
+  case eDeviceType_t_LEDSpotRGBWTree:             // <https://shop.loxone.com/enuk/led-ceiling-spots-rgbw-global.html>
+    return "LED Spot RGBW Tree";
+  case eDeviceType_t_LEDSpotWWTree:               // <https://shop.loxone.com/enuk/led-ceiling-spots-ww-global.html>
+    return "LED Spot WW Tree";
   default:
-    break;
+    return NULL;
   }
-  return NULL;
 }
 
 const char *const LoxCanMessage::NATCommandString(LoxMsgNATCommand_t command) const {
