@@ -18,7 +18,7 @@
       arm_target_device_name="STM32F103VE"
       arm_target_interface_type="SWD"
       c_preprocessor_definitions="STM32F10X_XL;__STM32F1xx_FAMILY;__STM32F103_SUBFAMILY;ARM_MATH_CM3;STM32F103xE"
-      c_user_include_directories="$(ProjectDir)/lib/FreeRTOS;$(ProjectDir)/lib/FreeRTOS/include;$(ProjectDir)/lib/FreeRTOS/include/private;$(ProjectDir)/lib/FreeRTOS/portable/GCC/ARM_CM3;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc;$(ProjectDir)/lib/STM32F1xx/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/CMSIS/Device/ST/STM32L1xx/Include;$(ProjectDir)/application_code/st_code/;$(ProjectDir)/application_code/segger/;$(ProjectDir)/application_code;$(ProjectDir)/application_code/Loxone/"
+      c_user_include_directories="$(ProjectDir)/lib/FreeRTOS;$(ProjectDir)/lib/FreeRTOS/include;$(ProjectDir)/lib/FreeRTOS/include/private;$(ProjectDir)/lib/FreeRTOS/portable/GCC/ARM_CM3;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc;$(ProjectDir)/lib/STM32F1xx/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/CMSIS/Device/ST/STM32L1xx/Include;$(ProjectDir)/application_code/st_code/;$(ProjectDir)/application_code/segger/;$(ProjectDir)/application_code;$(ProjectDir)/application_code/Loxone/;$(ProjectDir)/application_code/Loxone/Legacy/;$(ProjectDir)/application_code/Loxone/NAT/;$(ProjectDir)/application_code/Loxone/NAT/Tree/;$(ProjectDir)/application_code/Loxone/NAT/Tree/Devices/;$(ProjectDir)/application_code/Loxone/CAN Driver/"
       debug_register_definition_file="$(ProjectDir)/lib/STM32F1xx/es/STM32F103xx_Registers.xml"
       debug_target_connection="J-Link"
       gcc_entry_point="Reset_Handler"
