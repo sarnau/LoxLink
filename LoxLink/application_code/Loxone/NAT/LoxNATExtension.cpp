@@ -48,7 +48,7 @@ void LoxNATExtension::lox_send_package_if_nat(LoxMsgNATCommand_t command, LoxCan
   // extension NAT not set?
   if (this->extensionNAT == 0x00)
     return;
-  msg.deviceNAT = 0x00;
+  msg.deviceNAT = driver.isLoxoneLinkBusDriver() ? this->deviceNAT : this->extensionNAT;
   msg.commandNat = command;
   msg.extensionNat = this->extensionNAT;
   send_message(command, msg);
@@ -325,7 +325,7 @@ void LoxNATExtension::ReceiveBroadcast(LoxCanMessage &message) {
     break;
   case Version_Request:
     if (this->serial == message.value32) {
-      send_info_package(Version_Request, eAliveReason_t_alive_packet);
+      send_info_package(Device_Version, eAliveReason_t_alive_packet);
     }
     break;
   default:
@@ -445,7 +445,7 @@ void LoxNATExtension::ReceiveMessage(LoxCanMessage &message) {
       if (message.extensionNat == 0xFF) {
         ReceiveBroadcastFragment(this->fragCommand, this->fragBuffer, this->fragSize);
       } else if (this->extensionNAT && message.extensionNat == this->extensionNAT) {
-        if (message.deviceNAT == this->deviceNAT) { // to this device?
+        if (message.deviceNAT == 0x00 || driver.isTreeBusDriver()) { // to this device?
           ReceiveDirectFragment(this->fragCommand, this->fragBuffer, this->fragSize);
         }
       }
@@ -456,7 +456,7 @@ void LoxNATExtension::ReceiveMessage(LoxCanMessage &message) {
     if (message.extensionNat == 0xFF) {
       ReceiveBroadcast(message);
     } else if (this->extensionNAT && message.extensionNat == this->extensionNAT) {
-      if (message.deviceNAT == this->deviceNAT) { // to this device?
+      if (message.deviceNAT == 0x00 || driver.isTreeBusDriver()) { // to this device?
         ReceiveDirect(message);
       }
     }

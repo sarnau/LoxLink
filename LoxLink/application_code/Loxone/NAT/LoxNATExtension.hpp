@@ -19,7 +19,7 @@
 // 12 bytes.
 // The 32-bit CRC is a STM32 CRC32 over the `(size - 1)/4` uint32_t words. For that reason the configuration
 // is followed by 4 zero bytes.
-class tConfigHeader {
+class __attribute__((__packed__)) tConfigHeader {
 public:
   uint8_t size;            // size of the configuration in bytes
   uint8_t version;         // version number for the configuration
@@ -38,7 +38,7 @@ typedef enum /*: uint8_t*/ {
   eUpdatePackageType_reply_verify_error = 0x81, // pageNumber contains the wrong page, crc[0] the wrong CRC.
 } eUpdatePackageType;
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
   uint8_t size;                                     // size of this package
   uint8_t /*eUpdatePackageType*/ updatePackageType; // type of this package, see above
   eDeviceType_t device_type;                        // for which hardware is this update
@@ -119,6 +119,7 @@ protected:
   virtual void ConfigLoadDefaults(void){};
   virtual void SendValues(void){};
   virtual void SetState(eDeviceState state);
+ public:
   virtual void ReceiveDirect(LoxCanMessage &message);
   virtual void ReceiveBroadcast(LoxCanMessage &message);
   virtual void ReceiveDirectFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size);

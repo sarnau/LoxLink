@@ -11,7 +11,7 @@
 #include <stdio.h>
 
 bool LoxCanMessage::isNATmessage(LoxCANBaseDriver &driver) const {
-  return (tLoxCANDriverType_LoxoneLink == driver.GetDriverType() && this->busType == LoxCmdNATBus_t_LoxoneLink) || (tLoxCANDriverType_TreeBus == driver.GetDriverType() && this->busType == LoxCmdNATBus_t_TreeBus);
+  return (driver.isLoxoneLinkBusDriver() && this->busType == LoxCmdNATBus_t_LoxoneLink) || (driver.isTreeBusDriver() && this->busType == LoxCmdNATBus_t_TreeBus);
 }
 
 #if DEBUG
@@ -377,7 +377,7 @@ const char *const LoxCanMessage::NATCommandString(LoxMsgNATCommand_t command) co
 void LoxCanMessage::print(LoxCANBaseDriver &driver) const {
   assert(sizeof(LoxCanMessage) == 12); //, "LoxCanMessage size wrong");
 
-  printf("msg:");
+  printf("%08x %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x : ",this->identifier, this->can_data[0], this->can_data[1], this->can_data[2], this->can_data[3], this->can_data[4], this->can_data[5], this->can_data[6], this->can_data[7]);
   if (this->isNATmessage(driver)) { // NAT command
     switch (this->directionNat) {
     case LoxCmdNATDirection_t_fromDevice:

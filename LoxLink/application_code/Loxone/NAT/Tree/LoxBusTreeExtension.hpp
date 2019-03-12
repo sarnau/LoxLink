@@ -21,19 +21,21 @@ private:
 };
 
 class LoxBusTreeExtension : public LoxNATExtension {
-public:
-  tTreeExtensionConfig config;
-
+private:
   int treeDevicesLeftCount;
   LoxBusTreeDevice *treeDevicesLeft[MAX_TREE_DEVICECOUNT];
   int treeDevicesRightCount;
   LoxBusTreeDevice *treeDevicesRight[MAX_TREE_DEVICECOUNT];
+
+public:
+  tTreeExtensionConfig config;
 
   virtual void SendValues(void);
   virtual void ReceiveDirect(LoxCanMessage &message);
   virtual void ReceiveBroadcast(LoxCanMessage &message);
   virtual void ReceiveDirectFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size);
   virtual void ReceiveBroadcastFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size);
+  virtual void Timer10ms(void);
 
 public:
   LoxBusTreeExtension(LoxCANBaseDriver &driver, uint32_t serial, eAliveReason_t alive);

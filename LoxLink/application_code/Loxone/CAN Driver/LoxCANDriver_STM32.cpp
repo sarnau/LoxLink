@@ -151,7 +151,7 @@ void LoxCANDriver_STM32::Startup(void) {
   gCan.Init.SyncJumpWidth = CAN_SJW_1TQ;
   gCan.Init.TimeSeg1 = CAN_BS1_10TQ;
   gCan.Init.TimeSeg2 = CAN_BS2_5TQ;
-  gCan.Init.Prescaler = HAL_RCC_GetPCLK1Freq() / 16 / (this->GetDriverType() == tLoxCANDriverType_LoxoneLink ? 125000 : 50000); // 16tq (see above)
+  gCan.Init.Prescaler = HAL_RCC_GetPCLK1Freq() / 16 / (this->isLoxoneLinkBusDriver() ? 125000 : 50000); // 16tq (see above)
   if (HAL_CAN_Init(&gCan) != HAL_OK) {
     for (;;)
       ;

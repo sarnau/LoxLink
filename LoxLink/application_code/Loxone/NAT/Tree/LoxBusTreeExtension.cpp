@@ -39,7 +39,26 @@ void LoxBusTreeExtension::SendValues(void) {
  ***/
 void LoxBusTreeExtension::ReceiveDirect(LoxCanMessage &message) {
   if (message.deviceNAT != 0) { // forward to a tree device?
-    // TODO
+    message.busType = LoxCmdNATBus_t_TreeBus;
+    uint8_t nat = message.deviceNAT;
+    message.extensionNat = nat;
+    // messages to parked devices is sent to both branches for parked devices, except for a NAT offer
+    if ((nat & 0x80) == 0x80 and message.commandNat == NAT_Offer) {
+      for (int i = 0; i < this->treeDevicesLeftCount; ++i)
+        this->treeDevicesLeft[i]->ReceiveMessage(message);
+      for (int i = 0; i < this->treeDevicesRightCount; ++i)
+        this->treeDevicesRight[i]->ReceiveMessage(message);
+    } else {
+      if (message.commandNat == NAT_Offer)
+        nat = message.data[1]; // for NAT offset use the new NAT
+      if (nat & 0x40) {        // left branch?
+        for (int i = 0; i < this->treeDevicesLeftCount; ++i)
+          this->treeDevicesLeft[i]->ReceiveMessage(message);
+      } else { // right branch
+        for (int i = 0; i < this->treeDevicesRightCount; ++i)
+          this->treeDevicesRight[i]->ReceiveMessage(message);
+      }
+    }
   } else {
     LoxCanMessage msg;
     switch (message.commandNat) {
@@ -63,6 +82,27 @@ void LoxBusTreeExtension::ReceiveDirect(LoxCanMessage &message) {
 // Forward other messages to the tree devices
 void LoxBusTreeExtension::ReceiveBroadcast(LoxCanMessage &message) {
   LoxNATExtension::ReceiveBroadcast(message);
+
+  message.busType = LoxCmdNATBus_t_TreeBus;
+  uint8_t nat = message.deviceNAT;
+  message.extensionNat = nat;
+  // messages to parked devices is sent to both branches for parked devices, except for a NAT offer
+  if ((nat & 0x80) == 0x80 and message.commandNat == NAT_Offer) {
+    for (int i = 0; i < this->treeDevicesLeftCount; ++i)
+      this->treeDevicesLeft[i]->ReceiveBroadcast(message);
+    for (int i = 0; i < this->treeDevicesRightCount; ++i)
+      this->treeDevicesRight[i]->ReceiveBroadcast(message);
+  } else {
+    if (message.commandNat == NAT_Offer)
+      nat = message.data[1]; // for NAT offset use the new NAT
+    if (nat & 0x40) {        // left branch?
+      for (int i = 0; i < this->treeDevicesLeftCount; ++i)
+        this->treeDevicesLeft[i]->ReceiveBroadcast(message);
+    } else { // right branch
+      for (int i = 0; i < this->treeDevicesRightCount; ++i)
+        this->treeDevicesRight[i]->ReceiveBroadcast(message);
+    }
+  }
 }
 
 void LoxBusTreeExtension::ReceiveDirectFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size) {
@@ -71,4 +111,18 @@ void LoxBusTreeExtension::ReceiveDirectFragment(LoxMsgNATCommand_t command, cons
 
 void LoxBusTreeExtension::ReceiveBroadcastFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size) {
   LoxNATExtension::ReceiveBroadcastFragment(command, data, size);
+  for (int i = 0; i < this->treeDevicesLeftCount; ++i)
+    this->treeDevicesLeft[i]->ReceiveBroadcastFragment(command, data, size);
+  for (int i = 0; i < this->treeDevicesRightCount; ++i)
+    this->treeDevicesRight[i]->ReceiveBroadcastFragment(command, data, size);
+}
+
+/***
+ *  10ms Timer to be called 100x per second
+ ***/
+void LoxBusTreeExtension::Timer10ms() {
+  for (int i = 0; i < this->treeDevicesLeftCount; ++i)
+    this->treeDevicesLeft[i]->Timer10ms();
+  for (int i = 0; i < this->treeDevicesRightCount; ++i)
+    this->treeDevicesRight[i]->Timer10ms();
 }

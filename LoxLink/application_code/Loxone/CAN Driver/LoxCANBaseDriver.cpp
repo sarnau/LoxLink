@@ -27,13 +27,6 @@ void LoxCANBaseDriver::Startup(void) {
 }
 
 /***
- *  Loxone Link or Tree Bus
- ***/
-tLoxCANDriverType LoxCANBaseDriver::GetDriverType() const {
-  return this->driverType;
-}
-
-/***
  *  Add an extension to this driver
  ***/
 void LoxCANBaseDriver::AddExtension(LoxExtension *extension) {
@@ -104,7 +97,6 @@ void LoxCANBaseDriver::ReceiveMessage(LoxCanMessage &message) {
  *  Forward a 10ms heartbeat to all extensions
  ***/
 void LoxCANBaseDriver::Heartbeat(void)
-
 {
   for (int i = 0; i < this->extensionCount; ++i)
     this->extensions[i]->Timer10ms();

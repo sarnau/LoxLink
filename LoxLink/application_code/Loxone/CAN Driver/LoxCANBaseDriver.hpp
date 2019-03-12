@@ -39,7 +39,9 @@ public:
   LoxCANBaseDriver(tLoxCANDriverType type);
   virtual void Startup(void);
 
-  tLoxCANDriverType GetDriverType() const;
+  //tLoxCANDriverType GetDriverType() const;
+  bool isTreeBusDriver() const { return this->driverType == tLoxCANDriverType_TreeBus; };
+  bool isLoxoneLinkBusDriver() const { return this->driverType == tLoxCANDriverType_LoxoneLink; };
 
   // add an extension to the driver
   void AddExtension(LoxExtension *driver);
