@@ -271,7 +271,7 @@ void LoxNATExtension::ReceiveDirect(LoxCanMessage &message) {
     }
     break;
   default:
-    break;
+    LoxExtension::ReceiveDirect(message);
   }
 }
 
@@ -329,6 +329,7 @@ void LoxNATExtension::ReceiveBroadcast(LoxCanMessage &message) {
     }
     break;
   default:
+    LoxExtension::ReceiveDirect(message);
     break;
   }
 }

@@ -34,8 +34,8 @@ int main(void) {
   //  static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
   //static LoxBusTreeExtension gTreeExtension(gLoxCANDriver, serial_base, sResetReason);
   static LoxBusTreeRoomComfortSensor gTreeRoomComfortSensor(gLoxCANDriver, 0xb0112233, sResetReason);
-  static LoxBusTreeTouch gLoxBusTreeTouch(gLoxCANDriver, 0xb010035b, sResetReason);
-  static LoxBusTreeAlarmSiren gLoxBusTreeAlarmSiren(gLoxCANDriver, 0xb010035c, sResetReason);
+  //static LoxBusTreeTouch gLoxBusTreeTouch(gLoxCANDriver, 0xb010035b, sResetReason);
+  //static LoxBusTreeAlarmSiren gLoxBusTreeAlarmSiren(gLoxCANDriver, 0xb010035c, sResetReason);
 
 #if DEBUG && 0
   MX_print_cpu_info();
@@ -45,9 +45,9 @@ int main(void) {
   //  gRelayExtension.Startup();
   //  gDIExtension.Startup();
   //  gTreeExtension.Startup();
-  gLoxBusTreeAlarmSiren.Startup();
+  //gLoxBusTreeAlarmSiren.Startup();
   gTreeRoomComfortSensor.Startup();
-  gLoxBusTreeTouch.Startup();
+  //gLoxBusTreeTouch.Startup();
 
   Start_Watchdog();
   vTaskStartScheduler();

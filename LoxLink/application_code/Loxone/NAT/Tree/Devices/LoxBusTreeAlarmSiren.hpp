@@ -21,8 +21,20 @@ private:
 class LoxBusTreeAlarmSiren : public LoxBusTreeDevice {
   tTreeAlarmSirenConfig config;
 
+  bool hardwareTamperStatus;
+  bool tamperStatusOk;
+  int32_t tamperStatusTimer;
+  int32_t alarmSoundStartTimer;
+
+  void send_tamper_status(void);
+  void hardware_strobe_light(bool status);
+  void hardware_alarm_sound(bool status);
+
   virtual void ConfigUpdate(void);
-  virtual void ConfigLoadDefaults(void);
+  virtual void SendValues(void);
+  virtual void Timer10ms(void);
+  virtual void ReceiveDirect(LoxCanMessage &message);
+  virtual void SetState(eDeviceState state);
 
 public:
   LoxBusTreeAlarmSiren(LoxCANBaseDriver &driver, uint32_t serial, eAliveReason_t alive);
