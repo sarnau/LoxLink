@@ -18,6 +18,7 @@ private:
 
 class LoxBusTreeRoomComfortSensor : public LoxBusTreeDevice {
   tTreeRoomComfortSensorConfig config;
+
 public:
   LoxBusTreeRoomComfortSensor(LoxCANBaseDriver &driver, uint32_t serial, eAliveReason_t alive);
 };

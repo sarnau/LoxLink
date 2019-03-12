@@ -8,8 +8,8 @@
 #ifndef LoxBusTreeExtension_hpp
 #define LoxBusTreeExtension_hpp
 
-#include "LoxNATExtension.hpp"
 #include "LoxBusTreeDevice.hpp"
+#include "LoxNATExtension.hpp"
 
 #define MAX_TREE_DEVICECOUNT 62 // max. number per branch (6 bits, but 0 and 63 are reserved)
 

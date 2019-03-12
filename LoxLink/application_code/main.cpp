@@ -9,12 +9,11 @@
 
 #include "stm32f1xx_ll_cortex.h" // LL_CPUID_...()
 
-#include "LoxCANDriver_STM32.hpp"
 #include "LoxBusDIExtension.hpp"
-#include "LoxLegacyRelayExtension.hpp"
 #include "LoxBusTreeExtension.hpp"
 #include "LoxBusTreeRoomComfortSensor.hpp"
-
+#include "LoxCANDriver_STM32.hpp"
+#include "LoxLegacyRelayExtension.hpp"
 
 int main(void) {
   HAL_Init();
@@ -29,20 +28,20 @@ int main(void) {
   uint32_t serial_base = (uid[0] ^ uid[1] ^ uid[2]) & 0xFFFFFF;
 
   static LoxCANDriver_STM32 gLoxCANDriver(tLoxCANDriverType_LoxoneLink);
-//  static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, sResetReason);
-//  static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
+  //  static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, sResetReason);
+  //  static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
   static LoxBusTreeExtension gTreeExtension(gLoxCANDriver, serial_base, sResetReason);
-//  static LoxBusTreeRoomComfortSensor gTreeRoomComfortSensor(gLoxCANDriver, 0x112233, sResetReason);
+  //  static LoxBusTreeRoomComfortSensor gTreeRoomComfortSensor(gLoxCANDriver, 0x112233, sResetReason);
 
 #if DEBUG && 0
   MX_print_cpu_info();
 #endif
   gLED.Startup();
   gLoxCANDriver.Startup();
-//  gRelayExtension.Startup();
-//  gDIExtension.Startup();
+  //  gRelayExtension.Startup();
+  //  gDIExtension.Startup();
   gTreeExtension.Startup();
-//  gTreeRoomComfortSensor.Startup();
+  //  gTreeRoomComfortSensor.Startup();
 
   Start_Watchdog();
   vTaskStartScheduler();

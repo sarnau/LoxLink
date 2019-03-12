@@ -52,7 +52,7 @@ typedef struct {
 } eUpdatePackage;
 
 typedef enum {
-  // Bit 0â¦3
+  // Bit 0..3 // multiplication factor for floating point numbers
   eAnalogFormat_mul_1 = 0,
   eAnalogFormat_mul_1000 = 1,
   eAnalogFormat_mul_1000000 = 2,
@@ -64,7 +64,7 @@ typedef enum {
 } eAnalogFormat;
 
 typedef enum {
-  // Bit 4
+  // Bit 4 // sign of floating point numbers, always seems to be signed
   eAnalogFlags_unsignedValue = 0x00,
   eAnalogFlags_signedValue = 0x10,
 } eAnalogFlags;
@@ -95,7 +95,7 @@ protected:
   uint8_t deviceNAT;                      // NAT for the device on a Tree bus, otherwise 0
   uint8_t /*eAliveReason_t*/ aliveReason; // reason for a reset or current state
   uint32_t upTimeInMs;                    // time since boot in ms
-  int32_t NATStateCounter;               //
+  int32_t NATStateCounter;                //
   int32_t randomNATIndexRequestDelay;
   int32_t offlineTimeout;
   int32_t offlineCountdownInMs;

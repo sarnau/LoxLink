@@ -10,8 +10,8 @@
 
 #include "LoxNATExtension.hpp"
 #include "stm32f1xx_hal_dma.h"
-#include "stm32f1xx_hal_tim.h"
 #include "stm32f1xx_hal_gpio.h"
+#include "stm32f1xx_hal_tim.h"
 
 #define DI_EXTENSION_INPUTS 20
 

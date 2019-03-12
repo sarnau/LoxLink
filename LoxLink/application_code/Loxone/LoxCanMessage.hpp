@@ -30,7 +30,7 @@ typedef enum /*: uint16_t*/ {
   eDeviceType_t_AirBaseExtension = 0x000c,        // <https://shop.loxone.com/enuk/air-base-extension.html>
   eDeviceType_t_DaliExtension = 0x000d,           // <https://shop.loxone.com/enuk/dali-extension.html>
   eDeviceType_t_Modbus232Extension = 0x000e,      // unreleased
-  eDeviceType_t_FroelingExtensionSerial = 0x000f, // The FrÃ¶hling Extension can't receive at this type, because 0x1F is used for the legacy software update. For Loxone Link the extension uses eDeviceType_t_FroelingExtension.
+  eDeviceType_t_FroelingExtensionSerial = 0x000f, // The Froehling Extension can't receive at this type, because 0x1F is used for the legacy software update. For Loxone Link the extension uses eDeviceType_t_FroelingExtension.
   eDeviceType_t_NATProtocol = 0x0010,             // LoxCmdNATBus_t_LoxoneLink
   eDeviceType_t_TreeBusProtocol = 0x0011,         // LoxCmdNATBus_t_TreeBus
   // the following extensions are all NAT based
@@ -67,7 +67,6 @@ typedef enum /*: uint16_t*/ {
   eDeviceType_t_LEDSpotRGBWTree = 0x8016,             // <https://shop.loxone.com/enuk/led-ceiling-spots-rgbw-global.html>
   eDeviceType_t_LEDSpotWWTree = 0x8017,               // <https://shop.loxone.com/enuk/led-ceiling-spots-ww-global.html>
 } eDeviceType_t;
-
 
 /////////////////////////////////////////////////////////////////
 // NAT protocol

@@ -17,10 +17,10 @@ LoxBusTreeExtension::LoxBusTreeExtension(LoxCANBaseDriver &driver, uint32_t seri
  *  Adding a device to the Tree Bus Extension
  ***/
 void LoxBusTreeExtension::AddExtension(LoxBusTreeDevice *ext, eTreeBranch branch) {
-  if(branch == eTreeBranch_leftBranch) {
+  if (branch == eTreeBranch_leftBranch) {
     assert(this->treeDevicesLeftCount == MAX_TREE_DEVICECOUNT);
     this->treeDevicesLeft[this->treeDevicesLeftCount++] = ext;
-  } else if(branch == eTreeBranch_rightBranch) {
+  } else if (branch == eTreeBranch_rightBranch) {
     assert(this->treeDevicesRightCount == MAX_TREE_DEVICECOUNT);
     this->treeDevicesRight[this->treeDevicesRightCount++] = ext;
   }
@@ -62,13 +62,13 @@ void LoxBusTreeExtension::ReceiveDirect(LoxCanMessage &message) {
 
 // Forward other messages to the tree devices
 void LoxBusTreeExtension::ReceiveBroadcast(LoxCanMessage &message) {
-    LoxNATExtension::ReceiveBroadcast(message);
+  LoxNATExtension::ReceiveBroadcast(message);
 }
 
 void LoxBusTreeExtension::ReceiveDirectFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size) {
-    LoxNATExtension::ReceiveDirectFragment(command, data, size);
+  LoxNATExtension::ReceiveDirectFragment(command, data, size);
 }
 
 void LoxBusTreeExtension::ReceiveBroadcastFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size) {
-    LoxNATExtension::ReceiveBroadcastFragment(command, data, size);
+  LoxNATExtension::ReceiveBroadcastFragment(command, data, size);
 }
