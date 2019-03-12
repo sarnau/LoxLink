@@ -11,7 +11,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-class LoxCANDriver;
+class LoxCANBaseDriver;
 
 // All Loxone extension device types
 typedef enum /*: uint16_t*/ {
@@ -349,9 +349,9 @@ public:
     };
   };
 
-  bool isNATmessage(LoxCANDriver &driver) const;
+  bool isNATmessage(LoxCANBaseDriver &driver) const;
 #if DEBUG
-  void print(LoxCANDriver &driver) const;
+  void print(LoxCANBaseDriver &driver) const;
 
 private:
   const char *const LegacyCommandString(LoxMsgLegacyCommand_t command, eDeviceType_t hardware) const;

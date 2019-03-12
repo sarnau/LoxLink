@@ -7,6 +7,7 @@
 
 #include "LoxLegacyRelayExtension.hpp"
 #include "stm32f1xx_hal_gpio.h"
+#include "stm32f1xx_hal_rcc.h"
 #include "system.hpp"
 #include <stdlib.h>
 
@@ -46,7 +47,7 @@ void LoxLegacyRelayExtension::update_relays(uint16_t bitmask) {
 /***
  *  Constructor
  ***/
-LoxLegacyRelayExtension::LoxLegacyRelayExtension(LoxCANDriver &driver, uint32_t serial)
+LoxLegacyRelayExtension::LoxLegacyRelayExtension(LoxCANBaseDriver &driver, uint32_t serial)
   : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_RelayExtension << 24), eDeviceType_t_RelayExtension, 2, 9000822), harewareDigitalOutBitmask(0), temperatureForceSend(false), temperatureOverheatingFlag(false), temperatureMsTimer(0), temperature(0) {
 }
 

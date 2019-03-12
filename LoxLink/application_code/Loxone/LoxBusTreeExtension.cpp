@@ -9,10 +9,26 @@
 #include "global_functions.hpp"
 #include <stdio.h>
 
-LoxBusTreeExtension::LoxBusTreeExtension(LoxCANDriver &driver, uint32_t serial, eAliveReason_t alive)
-  : LoxNATExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_TreeBaseExtension << 24), eDeviceType_t_TreeBaseExtension, 0, 9030305, 1, sizeof(config), &config, alive) {
+LoxBusTreeExtension::LoxBusTreeExtension(LoxCANBaseDriver &driver, uint32_t serial, eAliveReason_t alive)
+  : LoxNATExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_TreeBaseExtension << 24), eDeviceType_t_TreeBaseExtension, 0, 9030305, 0, sizeof(config), &config, alive), treeDevicesLeftCount(0), treeDevicesRightCount(0) {
 }
 
+/***
+ *  Adding a device to the Tree Bus Extension
+ ***/
+void LoxBusTreeExtension::AddExtension(LoxBusTreeDevice *ext, eTreeBranch branch) {
+  if(branch == eTreeBranch_leftBranch) {
+    assert(this->treeDevicesLeftCount == MAX_TREE_DEVICECOUNT);
+    this->treeDevicesLeft[this->treeDevicesLeftCount++] = ext;
+  } else if(branch == eTreeBranch_rightBranch) {
+    assert(this->treeDevicesRightCount == MAX_TREE_DEVICECOUNT);
+    this->treeDevicesRight[this->treeDevicesRightCount++] = ext;
+  }
+}
+
+/***
+ *  Send values after the start
+ ***/
 void LoxBusTreeExtension::SendValues(void) {
   send_can_status(CAN_Error_Reply, eTreeBranch_leftBranch);
   send_can_status(CAN_Error_Reply, eTreeBranch_rightBranch);

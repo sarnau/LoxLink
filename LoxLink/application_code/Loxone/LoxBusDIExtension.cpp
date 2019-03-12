@@ -75,7 +75,7 @@ extern "C" void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   }
 }
 
-LoxBusDIExtension::LoxBusDIExtension(LoxCANDriver &driver, uint32_t serial, eAliveReason_t alive)
+LoxBusDIExtension::LoxBusDIExtension(LoxCANBaseDriver &driver, uint32_t serial, eAliveReason_t alive)
   : LoxNATExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_DIExtension << 24), eDeviceType_t_DIExtension, 0, 9021122, 1, sizeof(config), &config, alive), hardwareBitmask(0), lastBitmaskSendTime(0), lastBitmaskSend(0), lastFrequencyTime(0) {
   gDIExt = this;
 }

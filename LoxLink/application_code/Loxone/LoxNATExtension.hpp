@@ -90,7 +90,7 @@ protected:
   uint8_t fragBuffer[1024];
 
   // some internal state variables
-  const LoxCmdNATBus_t busType;           // LoxoneLink extension or a Tree device?
+  LoxCmdNATBus_t busType;                 // LoxoneLink extension or a Tree device?
   uint8_t extensionNAT;                   // NAT of the extension
   uint8_t deviceNAT;                      // NAT for the device on a Tree bus, otherwise 0
   uint8_t /*eAliveReason_t*/ aliveReason; // reason for a reset or current state
@@ -125,7 +125,7 @@ protected:
   virtual void ReceiveBroadcastFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size);
 
 public:
-  LoxNATExtension(LoxCANDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version, uint8_t configVersion, uint8_t configSize, tConfigHeader *configPtr, eAliveReason_t alive);
+  LoxNATExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version, uint8_t configVersion, uint8_t configSize, tConfigHeader *configPtr, eAliveReason_t alive);
 
   virtual void Timer10ms(void);
   virtual void ReceiveMessage(LoxCanMessage &message);

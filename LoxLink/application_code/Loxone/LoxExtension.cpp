@@ -31,7 +31,7 @@ void LoxExtension::SetState(eDeviceState state) {
   }
 }
 
-LoxExtension::LoxExtension(LoxCANDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version)
+LoxExtension::LoxExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version)
   : driver(driver), serial(serial), device_type(device_type), hardware_version(hardware_version), version(version), state(eDeviceState(-1)) // illegal state to force the SetState() to update
 {
   assert(serial != 0);

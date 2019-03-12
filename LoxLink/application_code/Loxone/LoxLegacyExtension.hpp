@@ -32,7 +32,7 @@ protected:
   virtual void PacketFirmwareUpdate(LoxCanMessage &message);
 
 public:
-  LoxLegacyExtension(LoxCANDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version);
+  LoxLegacyExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version);
 
   virtual void Timer10ms(void);
   virtual void ReceiveMessage(LoxCanMessage &message);

@@ -6,11 +6,11 @@
 //
 
 #include "LoxCanMessage.hpp"
-#include "LoxCANDriver.hpp"
+#include "LoxCANBaseDriver.hpp"
 #include <assert.h>
 #include <stdio.h>
 
-bool LoxCanMessage::isNATmessage(LoxCANDriver &driver) const {
+bool LoxCanMessage::isNATmessage(LoxCANBaseDriver &driver) const {
   return (tLoxCANDriverType_LoxoneLink == driver.GetDriverType() && this->busType == LoxCmdNATBus_t_LoxoneLink) || (tLoxCANDriverType_TreeBus == driver.GetDriverType() && this->busType == LoxCmdNATBus_t_TreeBus);
 }
 
@@ -329,7 +329,7 @@ const char *const LoxCanMessage::NATCommandString(LoxMsgNATCommand_t command) co
   return NULL;
 }
 
-void LoxCanMessage::print(LoxCANDriver &driver) const {
+void LoxCanMessage::print(LoxCANBaseDriver &driver) const {
   assert(sizeof(LoxCanMessage) == 12); //, "LoxCanMessage size wrong");
 
   printf("msg:");

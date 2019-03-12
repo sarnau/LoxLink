@@ -7,7 +7,7 @@
 
 #include "LoxNATExtension.hpp"
 #include "LED.hpp"
-#include "LoxCANDriver.hpp"
+#include "LoxCANBaseDriver.hpp"
 #include "global_functions.hpp"
 #include <assert.h>
 #include <stdio.h>
@@ -231,7 +231,7 @@ void LoxNATExtension::SetState(eDeviceState state) {
 /***
  *  Constructor
  ***/
-LoxNATExtension::LoxNATExtension(LoxCANDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version, uint8_t configVersion, uint8_t configSize, tConfigHeader *configPtr, eAliveReason_t alive)
+LoxNATExtension::LoxNATExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version, uint8_t configVersion, uint8_t configSize, tConfigHeader *configPtr, eAliveReason_t alive)
   : LoxExtension(driver, serial, device_type, hardware_version, version), busType(LoxCmdNATBus_t_LoxoneLink), configVersion(configVersion), configSize(configSize), configPtr(configPtr), aliveReason(alive), extensionNAT(0x00), deviceNAT(0x00), upTimeInMs(0) {
   assert(configPtr != NULL);
   this->configPtr->size = configSize;

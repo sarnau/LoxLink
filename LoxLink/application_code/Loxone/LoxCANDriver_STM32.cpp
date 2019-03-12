@@ -1,11 +1,11 @@
 //
-//  LoxCANDriver.cpp
+//  LoxCANDriver_STM32.cpp
 //
 //  Created by Markus Fritze on 04.03.19.
 //  Copyright (c) 2019 Markus Fritze. All rights reserved.
 //
 
-#include "LoxCANDriver.hpp"
+#include "LoxCANDriver_STM32.hpp"
 #include "LoxExtension.hpp"
 #include "event_groups.h"
 #include "task.h"
@@ -22,15 +22,14 @@
 static CAN_HandleTypeDef gCan;
 static StaticQueue_t gCanReceiveQueue;
 static EventGroupHandle_t gCANRXEventGroup;
-static LoxCANDriver *gCANDriver;
+static LoxCANDriver_STM32 *gCANDriver;
 
 typedef enum {
   eMainEvents_LoxCanMessageReceived = 0x1,
   eMainEvents_10msTimer = 0x2,
 } eMainEvents;
 
-LoxCANDriver::LoxCANDriver(tLoxCANDriverType type)
-  : driverType(type), extensionCount(0) {
+LoxCANDriver_STM32::LoxCANDriver_STM32(tLoxCANDriverType type) : LoxCANBaseDriver(type) {
 }
 
 /**
@@ -40,13 +39,13 @@ LoxCANDriver::LoxCANDriver(tLoxCANDriverType type)
 extern "C" void xPortSysTickHandler(void);
 extern "C" void HAL_SYSTICK_Callback(void) {
   xPortSysTickHandler();
-  LoxCANDriver::CANSysTick();
+  LoxCANDriver_STM32::CANSysTick();
 }
 
 /***
  *  SysTick callback at 1000Hz
  ***/
-void LoxCANDriver::CANSysTick(void) {
+void LoxCANDriver_STM32::CANSysTick(void) {
   BaseType_t xResult = pdFAIL;
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
   static uint32_t sMsCounter;
@@ -62,8 +61,8 @@ void LoxCANDriver::CANSysTick(void) {
 /***
  *  CAN RX Task to forward messages and timers to all extensions
  ***/
-void LoxCANDriver::vCANRXTask(void *pvParameters) {
-  LoxCANDriver *_this = (LoxCANDriver *)pvParameters;
+void LoxCANDriver_STM32::vCANRXTask(void *pvParameters) {
+  LoxCANDriver_STM32 *_this = (LoxCANDriver_STM32 *)pvParameters;
   while (1) {
     EventBits_t uxBits = xEventGroupWaitBits(gCANRXEventGroup, eMainEvents_LoxCanMessageReceived | eMainEvents_10msTimer, pdTRUE, pdFALSE, portMAX_DELAY);
     if (uxBits & eMainEvents_LoxCanMessageReceived) {
@@ -73,19 +72,11 @@ void LoxCANDriver::vCANRXTask(void *pvParameters) {
         _this->statistics.mRQ = rq;
       LoxCanMessage message;
       while (xQueueReceive(&gCanReceiveQueue, &message, 0)) {
-        ++_this->statistics.Rcv;
-#if DEBUG
-        printf("CANR:");
-        message.print(*_this);
-#endif
-        for (int i = 0; i < _this->extensionCount; ++i) {
-          _this->extensions[i]->ReceiveMessage(message);
-        }
+        _this->ReceiveMessage(message);
       }
     }
     if (uxBits & eMainEvents_10msTimer) {
-      for (int i = 0; i < _this->extensionCount; ++i)
-        _this->extensions[i]->Timer10ms();
+      _this->Heartbeat();
     }
   }
 }
@@ -93,8 +84,8 @@ void LoxCANDriver::vCANRXTask(void *pvParameters) {
 /***
  *  CAN TX Task to send pending messages to the CAN bus
  ***/
-void LoxCANDriver::vCANTXTask(void *pvParameters) {
-  LoxCANDriver *_this = (LoxCANDriver *)pvParameters;
+void LoxCANDriver_STM32::vCANTXTask(void *pvParameters) {
+  LoxCANDriver_STM32 *_this = (LoxCANDriver_STM32 *)pvParameters;
   const TickType_t xDelay4ms = pdMS_TO_TICKS(4);
   while (1) {
     UBaseType_t tq = uxQueueMessagesWaiting(&gCanReceiveQueue);
@@ -125,7 +116,7 @@ void LoxCANDriver::vCANTXTask(void *pvParameters) {
 /***
  *  Initialize the CAN bus and all tasks, etc
  ***/
-void LoxCANDriver::Startup(void) {
+void LoxCANDriver_STM32::Startup(void) {
   gCANDriver = this;
 
   static StaticEventGroup_t sEventGroup;
@@ -141,11 +132,11 @@ void LoxCANDriver::Startup(void) {
 
   static StackType_t sCANTXTaskStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sCANTXTask;
-  xTaskCreateStatic(LoxCANDriver::vCANTXTask, "CANTXTask", configMINIMAL_STACK_SIZE, this, 2, sCANTXTaskStack, &sCANTXTask);
+  xTaskCreateStatic(LoxCANDriver_STM32::vCANTXTask, "CANTXTask", configMINIMAL_STACK_SIZE, this, 2, sCANTXTaskStack, &sCANTXTask);
 
   static StackType_t sCANRXTaskStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sCANRXTask;
-  xTaskCreateStatic(LoxCANDriver::vCANRXTask, "CANRXTask", configMINIMAL_STACK_SIZE, this, 2, sCANRXTaskStack, &sCANRXTask);
+  xTaskCreateStatic(LoxCANDriver_STM32::vCANRXTask, "CANRXTask", configMINIMAL_STACK_SIZE, this, 2, sCANRXTaskStack, &sCANRXTask);
 
   gCan.Instance = CAN1;
   gCan.Init.TimeTriggeredMode = DISABLE;
@@ -160,7 +151,7 @@ void LoxCANDriver::Startup(void) {
   gCan.Init.SyncJumpWidth = CAN_SJW_1TQ;
   gCan.Init.TimeSeg1 = CAN_BS1_10TQ;
   gCan.Init.TimeSeg2 = CAN_BS2_5TQ;
-  gCan.Init.Prescaler = HAL_RCC_GetPCLK1Freq() / 16 / (this->driverType == tLoxCANDriverType_LoxoneLink ? 125000 : 50000); // 16tq (see above)
+  gCan.Init.Prescaler = HAL_RCC_GetPCLK1Freq() / 16 / (this->GetDriverType() == tLoxCANDriverType_LoxoneLink ? 125000 : 50000); // 16tq (see above)
   if (HAL_CAN_Init(&gCan) != HAL_OK) {
     for (;;)
       ;
@@ -182,26 +173,10 @@ void LoxCANDriver::Startup(void) {
 }
 
 /***
- *  Loxone Link or Tree Bus
- ***/
-tLoxCANDriverType LoxCANDriver::GetDriverType() const {
-  return this->driverType;
-}
-
-/***
- *  Add an extension to this driver
- ***/
-void LoxCANDriver::AddExtension(LoxExtension *extension) {
-  if (this->extensionCount == sizeof(this->extensions) / sizeof(this->extensions[0]))
-    return;
-  this->extensions[this->extensionCount++] = extension;
-}
-
-/***
  *  Setup CAN filters. While an AllowAll filter is working (we can filter in software), it is probably
  *  desirable to filter in "hardware" everything we do not care about.
  ***/
-void LoxCANDriver::FilterSetup(uint32_t filterBank, uint32_t filterId, uint32_t filterMaskId, uint32_t filterFIFOAssignment) {
+void LoxCANDriver_STM32::FilterSetup(uint32_t filterBank, uint32_t filterId, uint32_t filterMaskId, uint32_t filterFIFOAssignment) {
   filterId = (filterId << 3) | CAN_ID_EXT;
   filterMaskId = (filterMaskId << 3) | CAN_ID_EXT;
   CAN_FilterTypeDef filterInit = {
@@ -222,7 +197,7 @@ void LoxCANDriver::FilterSetup(uint32_t filterBank, uint32_t filterId, uint32_t 
 /***
  *  This Filter is a default filter, which allows to listen to all extended messages on the CAN bus
  ***/
-void LoxCANDriver::FilterAllowAll(uint32_t filterBank) {
+void LoxCANDriver_STM32::FilterAllowAll(uint32_t filterBank) {
   CAN_FilterTypeDef filterInit = {
     .FilterIdHigh = 0x0000,
     .FilterIdLow = 0x0000,
@@ -239,65 +214,24 @@ void LoxCANDriver::FilterAllowAll(uint32_t filterBank) {
 }
 
 /***
- *  Setup a NAT filter
- ***/
-void LoxCANDriver::FilterSetupNAT(int filterIndex, LoxCmdNATBus_t busType, uint8_t extensionNAT) {
-  LoxCanMessage msg;
-  msg.busType = busType;
-  msg.directionNat = LoxCmdNATDirection_t_fromServer;
-  msg.extensionNat = extensionNAT;
-  FilterSetup(filterIndex, msg.identifier, 0x1F2FF000, CAN_FILTER_FIFO0);
-#if DEBUG
-  printf("Filter #%d mask:%08x value:%08x\n", filterIndex, 0x1F2FF000, msg.identifier);
-#endif
-}
-
-/***
  *  CAN error reporting and statistics
  ***/
-uint32_t LoxCANDriver::GetErrorCounter() const {
+uint32_t LoxCANDriver_STM32::GetErrorCounter() const {
   return this->statistics.Err;
 }
 
-uint8_t LoxCANDriver::GetTransmitErrorCounter() const {
+uint8_t LoxCANDriver_STM32::GetTransmitErrorCounter() const {
   return gCan.Instance->ESR >> 16; // Least significant byte of the 9-bit transmit error counter
 }
 
-uint8_t LoxCANDriver::GetReceiveErrorCounter() const {
+uint8_t LoxCANDriver_STM32::GetReceiveErrorCounter() const {
   return gCan.Instance->ESR >> 24; // Receive error counter
-}
-
-#if DEBUG
-void LoxCANDriver::StatisticsPrint() const {
-  printf("Sent:%d;", this->statistics.Sent);
-  printf("Rcv:%d;", this->statistics.Rcv);
-  printf("Err:%d;", this->statistics.Err);
-  printf("REC:%d;", this->GetReceiveErrorCounter());
-  printf("TEC:%d;", this->GetTransmitErrorCounter());
-  printf("HWE:%d;", this->statistics.HWE);
-  printf("TQ:%d;", this->statistics.TQ);
-  printf("mTQ:%d;", this->statistics.mTQ);
-  printf("QOvf:%d;", this->statistics.QOvf);
-  printf("RQ:%d;", this->statistics.RQ);
-  printf("mRQ:%d;\n", this->statistics.mRQ);
-}
-#endif
-
-void LoxCANDriver::StatisticsReset() {
-  memset(&this->statistics, 0, sizeof(this->statistics));
-}
-
-/***
- *  A ms delay, implemented via RTOS
- ***/
-void LoxCANDriver::Delay(int msDelay) const {
-  vTaskDelay(pdMS_TO_TICKS(msDelay));
 }
 
 /***
  *  Send a message by putting it into the transmission queue
  ***/
-void LoxCANDriver::SendMessage(LoxCanMessage &message) {
+void LoxCANDriver_STM32::SendMessage(LoxCanMessage &message) {
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
   BaseType_t xResult = xQueueSendToBackFromISR(&this->transmitQueue, &message, &xHigherPriorityTaskWoken);
   if (xResult != pdFAIL) {

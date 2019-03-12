@@ -23,7 +23,7 @@ class LoxLegacyRelayExtension : public LoxLegacyExtension {
   virtual void PacketToExtension(LoxCanMessage &message);
 
 public:
-  LoxLegacyRelayExtension(LoxCANDriver &driver, uint32_t serial);
+  LoxLegacyRelayExtension(LoxCANBaseDriver &driver, uint32_t serial);
 
   virtual void Startup(void);
   virtual void Timer10ms(void);

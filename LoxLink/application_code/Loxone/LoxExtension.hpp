@@ -8,7 +8,7 @@
 #ifndef LoxExtension_hpp
 #define LoxExtension_hpp
 
-#include "LoxCANDriver.hpp"
+#include "LoxCANBaseDriver.hpp"
 #include "LoxCanMessage.hpp"
 
 // The different state, in which the extension can be
@@ -28,7 +28,7 @@ public:
   const uint8_t hardware_version;               // some extensions have more than one hardware revision, but typically this is 0.
   const uint32_t version;                       // version number of the software in the extension. Automatically updated by the Miniserver.
 protected:
-  LoxCANDriver &driver;
+  LoxCANBaseDriver &driver;
   eDeviceState state;
 
   virtual void SetState(eDeviceState state);
@@ -38,7 +38,7 @@ protected:
   virtual void ReceiveBroadcastFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size){};
 
 public:
-  LoxExtension(LoxCANDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version);
+  LoxExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version);
 
   // Need to be called by the main
   virtual void Startup(void){};

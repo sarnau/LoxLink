@@ -7,6 +7,7 @@
 
 #include "LoxLegacyExtension.hpp"
 #include "LED.hpp"
+#include "stm32f1xx_ll_cortex.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,7 +15,7 @@
 /***
  *  Constructor
  ***/
-LoxLegacyExtension::LoxLegacyExtension(LoxCANDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version)
+LoxLegacyExtension::LoxLegacyExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version)
   : LoxExtension(driver, serial, device_type, hardware_version, version), aliveCountdown(0), isMuted(false), isDeviceIdentified(false), forceStartMessage(true), firmwareUpdateActive(false) {
   SetState(eDeviceState_offline);
   gLED.identify_off();
