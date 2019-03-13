@@ -16,6 +16,7 @@
 #include "LoxBusTreeTouch.hpp"
 #include "LoxCANDriver_STM32.hpp"
 #include "LoxLegacyRelayExtension.hpp"
+#include "LoxLegacyRS232Extension.hpp"
 
 int main(void) {
   HAL_Init();
@@ -29,11 +30,12 @@ int main(void) {
   HAL_GetUID(uid);
   uint32_t serial_base = (uid[0] ^ uid[1] ^ uid[2]) & 0xFFFFFF;
 
-  static LoxCANDriver_STM32 gLoxCANDriver(tLoxCANDriverType_TreeBus);
+  static LoxCANDriver_STM32 gLoxCANDriver(tLoxCANDriverType_LoxoneLink);
+  static LoxLegacyRS232Extension gLoxLegacyRS232Extension(gLoxCANDriver, serial_base);
   //  static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, sResetReason);
   //  static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
   //static LoxBusTreeExtension gTreeExtension(gLoxCANDriver, serial_base, sResetReason);
-  static LoxBusTreeRoomComfortSensor gTreeRoomComfortSensor(gLoxCANDriver, 0xb0112233, sResetReason);
+  //static LoxBusTreeRoomComfortSensor gTreeRoomComfortSensor(gLoxCANDriver, 0xb0112233, sResetReason);
   //static LoxBusTreeTouch gLoxBusTreeTouch(gLoxCANDriver, 0xb010035b, sResetReason);
   //static LoxBusTreeAlarmSiren gLoxBusTreeAlarmSiren(gLoxCANDriver, 0xb010035c, sResetReason);
 
@@ -42,11 +44,12 @@ int main(void) {
 #endif
   gLED.Startup();
   gLoxCANDriver.Startup();
+  gLoxLegacyRS232Extension.Startup();
   //  gRelayExtension.Startup();
   //  gDIExtension.Startup();
   //  gTreeExtension.Startup();
   //gLoxBusTreeAlarmSiren.Startup();
-  gTreeRoomComfortSensor.Startup();
+  //gTreeRoomComfortSensor.Startup();
   //gLoxBusTreeTouch.Startup();
 
   Start_Watchdog();
