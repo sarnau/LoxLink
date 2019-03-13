@@ -35,10 +35,15 @@ LoxLegacyRS232Extension::LoxLegacyRS232Extension(LoxCANBaseDriver &driver, uint3
 void LoxLegacyRS232Extension::vRS232RXTask(void *pvParameters) {
   LoxLegacyRS232Extension *_this = (LoxLegacyRS232Extension *)pvParameters;
   while (1) {
-    uint8_t buf[1];
-    size_t count = xStreamBufferReceive(gUART_RX_Stream, buf, sizeof(buf), 10);
-    if (count > 0) {
-      printf("R[%02x]", buf[0]);
+    static uint8_t buffer[128];
+    size_t byteCount = xStreamBufferReceive(gUART_RX_Stream, buffer, sizeof(buffer), 10);
+    if (byteCount > 0) {
+      printf("R[%d", byteCount);
+      for (int i = 0; i < byteCount; ++i) {
+        printf(" %02x", buffer[i]);
+      }
+      printf("]\n");
+      _this->send_fragmented_data(FragCmd_C232_bytes_received, &buffer, byteCount);
     }
   }
 }
@@ -276,7 +281,30 @@ extern "C" void HAL_UART_MspDeInit(UART_HandleTypeDef *huart) {
   }
 }
 
-extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+/**
+  * @brief  Tx Transfer completed callbacks.
+  * @param  huart: pointer to a UART_HandleTypeDef structure that contains
+  *                the configuration information for the specified UART module.
+  * @retval None
+  */
+ extern "C" void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+    printf("HAL_UART_TxCpltCallback\n");
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(huart);
+  /* NOTE: This function Should not be modified, when the callback is needed,
+           the HAL_UART_TxCpltCallback could be implemented in the user file
+   */ 
+}
+
+/**
+  * @brief  Rx Transfer completed callbacks.
+  * @param  huart: pointer to a UART_HandleTypeDef structure that contains
+  *                the configuration information for the specified UART module.
+  * @retval None
+  */
+extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
   // Attempt to send the string to the stream buffer.
   BaseType_t xHigherPriorityTaskWoken = pdFALSE; // Initialised to pdFALSE.
   size_t xBytesSent = xStreamBufferSendFromISR(gUART_RX_Stream, &gChar, 1, &xHigherPriorityTaskWoken);
@@ -298,6 +326,22 @@ extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   if (xHigherPriorityTaskWoken) {
     taskYIELD();
   }
+}
+
+/**
+  * @brief  UART error callbacks.
+  * @param  huart: pointer to a UART_HandleTypeDef structure that contains
+  *                the configuration information for the specified UART module.
+  * @retval None
+  */
+ extern "C" void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+    printf("HAL_UART_ErrorCallback\n");
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(huart); 
+  /* NOTE: This function Should not be modified, when the callback is needed,
+           the HAL_UART_ErrorCallback could be implemented in the user file
+   */ 
 }
 
 extern "C" void USART1_IRQHandler(void) {

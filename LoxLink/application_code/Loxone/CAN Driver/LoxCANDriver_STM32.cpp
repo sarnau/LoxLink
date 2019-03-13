@@ -232,11 +232,7 @@ uint8_t LoxCANDriver_STM32::GetReceiveErrorCounter() const {
  *  Send a message by putting it into the transmission queue
  ***/
 void LoxCANDriver_STM32::SendMessage(LoxCanMessage &message) {
-  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-  BaseType_t xResult = xQueueSendToBackFromISR(&this->transmitQueue, &message, &xHigherPriorityTaskWoken);
-  if (xResult != pdFAIL) {
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-  }
+  xQueueSendToBack(&this->transmitQueue, &message, 0);
 }
 
 /**

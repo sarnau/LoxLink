@@ -41,6 +41,69 @@ void LoxLegacyExtension::sendCommandWithValues(LoxMsgLegacyCommand_t command, ui
 /***
  *
  ***/
+void LoxLegacyExtension::send_fragmented_data(LoxMsgLegacyFragmentedCommand_t fragCommand, const void *buffer, uint32_t byteCount) {
+  // never send fragmented package if the extension is not active, except for the page CRC command.
+  if (this->state != eDeviceState_online and FragCmd_page_CRC_external != fragCommand)
+    return;
+  LoxCanMessage message;
+  message.serial = this->serial;
+  message.hardwareType = eDeviceType_t(this->device_type);
+  message.directionLegacy = LoxMsgLegacyDirection_t_fromDevice;
+  message.commandDirection = LoxMsgLegacyCommandDirection_t_fromDevice;
+  if (byteCount > 1530) {      // large fragmented packages
+    if (byteCount < 0x10000) { // max. 64kb
+      message.commandLegacy = fragmented_package_large_start;
+      message.data[0] = 0x00; // unused for the large fragmented package
+      message.data[1] = fragCommand;
+      message.data[2] = 0x00; // unused
+      message.data[3] = byteCount;
+      message.data[4] = byteCount >> 8;
+      uint16_t checksum = 0x0000;
+      for (int i = 0; i < byteCount; ++i)
+        checksum += ((uint8_t *)buffer)[i];
+      message.data[5] = checksum;
+      message.data[6] = checksum >> 8;
+      driver.SendMessage(message);
+      if (byteCount > 0) {
+        message.commandLegacy = fragmented_package_large_data; // 7 bytes per package
+        for (uint32_t offset = 0; offset < byteCount; offset += 7) {
+          int count = byteCount - offset;
+          if (count > 7)
+            count = 7;
+          memcpy(&message.data[0], ((uint8_t *)buffer) + offset, count);
+          driver.SendMessage(message);
+        }
+      }
+    }
+  } else { // smaller fragmented package (6 bytes per package * 255 packages = 1530 bytes maximum size)
+    message.commandLegacy = fragmented_package;
+    message.data[0] = 0x00; // package index 0 = header
+    message.data[1] = fragCommand;
+    message.data[2] = 0x00; // unused
+    message.data[3] = byteCount;
+    message.data[4] = byteCount >> 8;
+    uint16_t checksum = 0x0000;
+    for (int i = 0; i < byteCount; ++i)
+      checksum += ((uint8_t *)buffer)[i];
+    message.data[5] = checksum;
+    message.data[6] = checksum >> 8;
+    driver.SendMessage(message);
+    if (byteCount > 0) {
+      for (uint32_t offset = 0; offset < byteCount; offset += 6) {
+        ++message.data[0]; // package index
+        int count = byteCount - offset;
+        if (count > 6)
+          count = 6;
+        memcpy(&message.data[1], ((uint8_t *)buffer) + offset, count);
+        driver.SendMessage(message);
+      }
+    }
+  }
+}
+
+/***
+ *
+ ***/
 void LoxLegacyExtension::sendCommandWithVersion(LoxMsgLegacyCommand_t command) {
   // 0 contains the configuration bitmask, which is used e.g. for the Extension
   // to confirm the complete configuration has arrived.
@@ -156,8 +219,8 @@ void LoxLegacyExtension::PacketToExtension(LoxCanMessage &message) {
     gLED.blink_orange();
     break;
   case LED_flash_position:
+    SetState(eDeviceState_online);
     gLED.set_sync_offset(message.value32);
-    gLED.blink_green();
     break;
   case alive_reply:
     gLED.blink_green();
