@@ -12,11 +12,11 @@
  *  Constructor
  ***/
 LoxBusTreeAlarmSiren::LoxBusTreeAlarmSiren(LoxCANBaseDriver &driver, uint32_t serial, eAliveReason_t alive)
-  : LoxBusTreeDevice(driver, serial, eDeviceType_t_AlarmSirenTree, 0, 10000725, 1, sizeof(config), &config, alive), hardwareTamperStatus(true), tamperStatusTimer(0), alarmSoundStartTimer(-1) {
+  : LoxBusTreeDevice(driver, serial, eDeviceType_t_AlarmSirenTree, 0, 10000725, 1, sizeof(config), &config, alive), hardwareTamperStatusOk(true), tamperStatusOk(true), tamperStatusTimer(0), alarmSoundMaxDurationTimer(-1) {
 }
 
 void LoxBusTreeAlarmSiren::send_tamper_status(void) {
-  send_digital_value(0, this->hardwareTamperStatus); // 1 = tamper status ok, 0 = tamper status failure
+  send_digital_value(0, this->hardwareTamperStatusOk); // 1 = tamper status ok, 0 = tamper status failure
 }
 
 void LoxBusTreeAlarmSiren::hardware_strobe_light(bool status) {
@@ -24,23 +24,23 @@ void LoxBusTreeAlarmSiren::hardware_strobe_light(bool status) {
 }
 
 void LoxBusTreeAlarmSiren::hardware_alarm_sound(bool status) {
-  this->alarmSoundStartTimer = status ? config.maxAudibleAlarmDuration * 1000 : -1;
+  this->alarmSoundMaxDurationTimer = status ? config.maxAudibleAlarmDuration * 1000 : -1;
   printf("# Alarm sound %s\n", status ? "on" : "off");
 }
 
 void LoxBusTreeAlarmSiren::Timer10ms(void) {
   // send tamper status, if changed or an update every 30s as an alive message
-  if (this->hardwareTamperStatus != this->tamperStatusOk or this->tamperStatusTimer >= 30 * 1000) {
+  if (this->hardwareTamperStatusOk != this->tamperStatusOk or this->tamperStatusTimer >= 30 * 1000) {
     this->tamperStatusTimer = 0;
-    this->tamperStatusOk = this->hardwareTamperStatus;
+    this->tamperStatusOk = this->hardwareTamperStatusOk;
     send_tamper_status();
   }
   this->tamperStatusTimer += 10;
 
   // check the alarm sound timeout
-  if (this->alarmSoundStartTimer >= 0) {
-    this->alarmSoundStartTimer -= 10;
-    if (this->alarmSoundStartTimer < 0) {
+  if (this->alarmSoundMaxDurationTimer >= 0) {
+    this->alarmSoundMaxDurationTimer -= 10;
+    if (this->alarmSoundMaxDurationTimer < 0) {
       hardware_alarm_sound(false);
     }
   }

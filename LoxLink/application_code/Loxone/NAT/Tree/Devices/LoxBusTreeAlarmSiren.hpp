@@ -21,10 +21,10 @@ private:
 class LoxBusTreeAlarmSiren : public LoxBusTreeDevice {
   tTreeAlarmSirenConfig config;
 
-  bool hardwareTamperStatus;
+  bool hardwareTamperStatusOk;
   bool tamperStatusOk;
   int32_t tamperStatusTimer;
-  int32_t alarmSoundStartTimer;
+  int32_t alarmSoundMaxDurationTimer;
 
   void send_tamper_status(void);
   void hardware_strobe_light(bool status);
