@@ -19,7 +19,7 @@
 
 static UART_HandleTypeDef gUART1;
 static uint8_t gChar;
-static uint8_t gUART_RX_Buffer[256];
+static uint8_t gUART_RX_Buffer[RS232_RX_BUFFERSIZE];
 static StreamBufferHandle_t gUART_RX_Stream;
 
 /***
@@ -35,14 +35,12 @@ LoxLegacyRS232Extension::LoxLegacyRS232Extension(LoxCANBaseDriver &driver, uint3
 void LoxLegacyRS232Extension::vRS232RXTask(void *pvParameters) {
   LoxLegacyRS232Extension *_this = (LoxLegacyRS232Extension *)pvParameters;
   while (1) {
-    static uint8_t buffer[128];
+    static uint8_t buffer[RS232_RX_BUFFERSIZE];
     size_t byteCount = xStreamBufferReceive(gUART_RX_Stream, buffer, sizeof(buffer), 10);
     if (byteCount > 0) {
-      printf("R[%d", byteCount);
-      for (int i = 0; i < byteCount; ++i) {
-        printf(" %02x", buffer[i]);
-      }
-      printf("]\n");
+#if DEBUG
+      debug_print_buffer(buffer, byteCount, "RS232 RX:");
+#endif
       _this->send_fragmented_data(FragCmd_C232_bytes_received, &buffer, byteCount);
     }
   }
@@ -56,10 +54,11 @@ void LoxLegacyRS232Extension::vRS232TXTask(void *pvParameters) {
   while (1) {
     uint8_t byte;
     while (xQueueReceive(&_this->txQueue, &byte, 0)) {
-      //      printf("T[%02x]", byte);
       HAL_StatusTypeDef status = HAL_UART_Transmit(&gUART1, &byte, sizeof(byte), 0xFFFF);
       if (status != HAL_OK) {
+#if DEBUG
         printf("### RS232 TX error %d\n", status);
+#endif
       }
     }
   }
@@ -75,7 +74,7 @@ void LoxLegacyRS232Extension::Startup(void) {
   static StaticStreamBuffer_t gUART_RX_Buffer_Stuct;
   gUART_RX_Stream = xStreamBufferCreateStatic(sizeof(gUART_RX_Buffer), 1, gUART_RX_Buffer, &gUART_RX_Buffer_Stuct);
 
-  static uint8_t sRS232TXBuffer[256];
+  static uint8_t sRS232TXBuffer[RS232_TX_BUFFERSIZE];
   xQueueCreateStatic(sizeof(sRS232TXBuffer) / sizeof(sRS232TXBuffer[0]), sizeof(sRS232TXBuffer[0]), (uint8_t *)sRS232TXBuffer, &this->txQueue);
 
   static StackType_t sRS232RXTaskStack[configMINIMAL_STACK_SIZE];
@@ -87,7 +86,7 @@ void LoxLegacyRS232Extension::Startup(void) {
   xTaskCreateStatic(LoxLegacyRS232Extension::vRS232TXTask, "RS232TXTask", configMINIMAL_STACK_SIZE, this, 2, sRS232TXTaskStack, &sRS232TXTask);
 
   gUART1.Instance = USART1;
-  gUART1.Init.BaudRate = 115200;
+  gUART1.Init.BaudRate = 9600;
   gUART1.Init.WordLength = UART_WORDLENGTH_8B;
   gUART1.Init.StopBits = UART_STOPBITS_1;
   gUART1.Init.Parity = UART_PARITY_NONE;
@@ -282,29 +281,12 @@ extern "C" void HAL_UART_MspDeInit(UART_HandleTypeDef *huart) {
 }
 
 /**
-  * @brief  Tx Transfer completed callbacks.
-  * @param  huart: pointer to a UART_HandleTypeDef structure that contains
-  *                the configuration information for the specified UART module.
-  * @retval None
-  */
- extern "C" void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-    printf("HAL_UART_TxCpltCallback\n");
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(huart);
-  /* NOTE: This function Should not be modified, when the callback is needed,
-           the HAL_UART_TxCpltCallback could be implemented in the user file
-   */ 
-}
-
-/**
   * @brief  Rx Transfer completed callbacks.
   * @param  huart: pointer to a UART_HandleTypeDef structure that contains
   *                the configuration information for the specified UART module.
   * @retval None
   */
-extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
+extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   // Attempt to send the string to the stream buffer.
   BaseType_t xHigherPriorityTaskWoken = pdFALSE; // Initialised to pdFALSE.
   size_t xBytesSent = xStreamBufferSendFromISR(gUART_RX_Stream, &gChar, 1, &xHigherPriorityTaskWoken);
@@ -326,22 +308,6 @@ extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   if (xHigherPriorityTaskWoken) {
     taskYIELD();
   }
-}
-
-/**
-  * @brief  UART error callbacks.
-  * @param  huart: pointer to a UART_HandleTypeDef structure that contains
-  *                the configuration information for the specified UART module.
-  * @retval None
-  */
- extern "C" void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
-{
-    printf("HAL_UART_ErrorCallback\n");
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(huart); 
-  /* NOTE: This function Should not be modified, when the callback is needed,
-           the HAL_UART_ErrorCallback could be implemented in the user file
-   */ 
 }
 
 extern "C" void USART1_IRQHandler(void) {
