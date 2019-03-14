@@ -37,7 +37,6 @@ typedef enum { // some of these commands have different meanings, depending on t
 class LoxLegacyExtension : public LoxExtension {
 protected:
   bool isMuted;
-  bool isDeviceIdentified;
   bool forceStartMessage;
   int32_t aliveCountdown;
 

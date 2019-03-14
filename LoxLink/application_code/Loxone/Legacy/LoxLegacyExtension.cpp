@@ -16,7 +16,7 @@
  *  Constructor
  ***/
 LoxLegacyExtension::LoxLegacyExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version)
-  : LoxExtension(driver, serial, device_type, hardware_version, version), aliveCountdown(0), isMuted(false), isDeviceIdentified(false), forceStartMessage(true), firmwareUpdateActive(false) {
+  : LoxExtension(driver, serial, device_type, hardware_version, version), aliveCountdown(0), isMuted(false), forceStartMessage(true), firmwareUpdateActive(false) {
   SetState(eDeviceState_offline);
   gLED.identify_off();
   gLED.blink_red();
@@ -117,6 +117,7 @@ void LoxLegacyExtension::Timer10ms(void) {
   if (this->forceStartMessage) { // a start request needed?
     this->forceStartMessage = false;
     this->aliveCountdown = 1000 * ((this->serial & 0x3f) + 6 * 60);
+    this->isMuted = false;
     sendCommandWithVersion(start_request);
   } else if (this->aliveCountdown <= 0) { // timeout?
     this->aliveCountdown = 1000 * ((this->serial & 0x3f) + 6 * 60);
@@ -134,20 +135,16 @@ void LoxLegacyExtension::PacketMulticastAll(LoxCanMessage &message) {
     gLED.identify_off();
     break;
   case identify_unknown_extensions:
-    this->isMuted = false;
-    if (not this->isDeviceIdentified)
+    if (this->state == eDeviceState_parked)
       this->forceStartMessage = true;
     break;
   case extension_offline:
   case park_extension:
     this->isMuted = false;
-    this->isDeviceIdentified = false;
-    gLED.blink_orange();
+    SetState(eDeviceState_parked);
     break;
   case sync_ticks:
     gLED.sync(message.value32);
-    break;
-  case sync_date_time:
     break;
   default:
     break;
@@ -198,39 +195,30 @@ void LoxLegacyExtension::PacketMulticastExtension(LoxCanMessage &message) {
 
 void LoxLegacyExtension::PacketToExtension(LoxCanMessage &message) {
   switch (message.commandLegacy) {
-  case identify:
-    this->isDeviceIdentified = true;
-    this->isMuted = false;
-    this->forceStartMessage = true;
+  case identify: // first direct command from the Miniserver after boot
     this->firmwareUpdateActive = false;
-    gLED.blink_green();
+    this->forceStartMessage = true;
     break;
   case identify_LED:
     gLED.identify_on();
     break;
   case alive:
     sendCommandWithVersion(alive_reply);
-    gLED.blink_green();
     break;
   case extension_offline:
   case park_extension:
     this->isMuted = false;
-    this->isDeviceIdentified = false;
-    gLED.blink_orange();
+    SetState(eDeviceState_parked);
     break;
   case LED_flash_position:
-    SetState(eDeviceState_online);
     gLED.set_sync_offset(message.value32);
-    break;
-  case alive_reply:
-    gLED.blink_green();
+    SetState(eDeviceState_online);
     break;
   case LinkDiagnosis_request:
     sendCommandWithValues(LinkDiagnosis_reply, 0, (driver.GetReceiveErrorCounter() & 0x7F) + ((driver.GetTransmitErrorCounter() & 0x7F) << 8), driver.GetErrorCounter());
     break;
   case mute_all:
     this->isMuted = true;
-    gLED.blink_green();
     break;
   default:
     break;
