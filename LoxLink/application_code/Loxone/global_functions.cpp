@@ -23,7 +23,7 @@ void random_init(uint32_t seed) {
   gRandomSeed = seed;
 }
 
-uint8_t crc8_default(const void *data, int len) {
+uint8_t crc8_default(const void *data, size_t len) {
   uint8_t crc = 0x00;
   for (int i = 0; i < len; i++) {
     crc ^= ((uint8_t *)data)[i];
@@ -37,7 +37,7 @@ uint8_t crc8_default(const void *data, int len) {
   return crc;
 }
 
-uint8_t crc8_OneWire(const uint8_t *data, int size) {
+uint8_t crc8_OneWire(const uint8_t *data, size_t size) {
   uint8_t crc = 0x00;
   for (int i = 0; i < size; i++) {
     uint8_t inbyte = ((uint8_t *)data)[i];
@@ -52,6 +52,10 @@ uint8_t crc8_OneWire(const uint8_t *data, int size) {
   return crc;
 }
 
+uint16_t crc16_Modus(const void *data, size_t size) {
+  return 0x0000;
+}
+
 uint32_t crc32_stm32_word(uint32_t crc, uint32_t data) {
   crc = crc ^ data;
   for (int i = 0; i < 32; i++) {
@@ -63,7 +67,7 @@ uint32_t crc32_stm32_word(uint32_t crc, uint32_t data) {
   return crc;
 }
 
-uint32_t crc32_stm32_aligned(const void *data, int size) {
+uint32_t crc32_stm32_aligned(const void *data, size_t size) {
   uint32_t crc = -1;
   if (size >> 2) {
     for (int i = 0; i < size - (size & 3); i += 4) {
@@ -72,14 +76,14 @@ uint32_t crc32_stm32_aligned(const void *data, int size) {
   }
   if (size & 3) { // the remainder is filled with zero bytes
     uint32_t value = 0;
-    memcpy(&value, (uint8_t *)data + size - (size & 3), size & 3);
+    memmove(&value, (uint8_t *)data + size - (size & 3), size & 3);
     crc = crc32_stm32_word(crc, value);
   }
   return crc;
 }
 
 #if DEBUG
-void debug_print_buffer(const void *data, int size, const char *header) {
+void debug_print_buffer(const void *data, size_t size, const char *header) {
   const int LineLength = 16;
   const uint8_t *dp = (const uint8_t *)data;
   for (int loffset = 0; loffset < size; loffset += LineLength) {

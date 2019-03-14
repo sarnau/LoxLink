@@ -40,6 +40,8 @@ class LoxLegacyRS232Extension : public LoxLegacyExtension {
   uint8_t endCharacter;
   eRS232ChecksumMode checksumMode;
 
+  void forwardBuffer(const uint8_t *buffer, size_t byteCount);
+  void sendBuffer(const uint8_t *buffer, size_t byteCount);
   static void vRS232RXTask(void *pvParameters);
   static void vRS232TXTask(void *pvParameters);
 

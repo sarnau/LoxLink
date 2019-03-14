@@ -72,7 +72,7 @@ void LoxLegacyExtension::send_fragmented_data(LoxMsgLegacyFragmentedCommand_t fr
           int count = byteCount - offset;
           if (count > 7)
             count = 7;
-          memcpy(&message.data[0], ((uint8_t *)buffer) + offset, count);
+          memmove(&message.data[0], ((uint8_t *)buffer) + offset, count);
           driver.SendMessage(message);
         }
       }
@@ -96,7 +96,7 @@ void LoxLegacyExtension::send_fragmented_data(LoxMsgLegacyFragmentedCommand_t fr
         int count = byteCount - offset;
         if (count > 6)
           count = 6;
-        memcpy(&message.data[1], ((uint8_t *)buffer) + offset, count);
+        memmove(&message.data[1], ((uint8_t *)buffer) + offset, count);
         driver.SendMessage(message);
       }
     }

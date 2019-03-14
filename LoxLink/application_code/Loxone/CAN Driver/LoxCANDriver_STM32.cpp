@@ -265,7 +265,7 @@ extern "C" void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
     if (rx_header.IDE == CAN_ID_EXT && rx_header.RTR == CAN_RTR_DATA && rx_header.DLC == 8) { // only accept standard Loxone packages
       LoxCanMessage msg;
       msg.identifier = rx_header.ExtId;
-      memcpy(msg.can_data, rx_data, 8);
+      memmove(msg.can_data, rx_data, 8);
       BaseType_t xHigherPriorityTaskWoken = pdFALSE;
       BaseType_t xResult = xQueueSendToBackFromISR(&gCanReceiveQueue, &msg, &xHigherPriorityTaskWoken);
       assert_param(xResult != pdFAIL);

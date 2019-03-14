@@ -108,7 +108,7 @@ void LoxNATExtension::send_fragmented_message(LoxMsgNATCommand_t command, const 
     if (packageCount == 0)
       packageSize = size - offset;
     memset(&msg.data, 0, 7); // remove garbage data
-    memcpy(&msg.data, (uint8_t *)data + offset, packageSize);
+    memmove(&msg.data, (uint8_t *)data + offset, packageSize);
     offset += 7;
     lox_send_package_if_nat(Fragment_Data, msg);
   }
@@ -207,7 +207,7 @@ void LoxNATExtension::config_data(const tConfigHeader *config) {
     return;
   assert(config->size >= 12);
   if (config->size == configSize && config->version == configVersion) {
-    memcpy(this->configPtr, config, config->size);
+    memmove(this->configPtr, config, config->size);
     this->offlineTimeout = this->configPtr->offlineTimeout;
     gLED.set_sync_offset(this->configPtr->blinkSyncOffset);
     ConfigUpdate();
@@ -436,7 +436,7 @@ void LoxNATExtension::ReceiveMessage(LoxCanMessage &message) {
       int size = this->fragSize - this->fragOffset;
       if (size > sizeof(message.data))
         size = sizeof(message.data);
-      memcpy(this->fragBuffer + this->fragOffset, message.data, size);
+      memmove(this->fragBuffer + this->fragOffset, message.data, size);
       this->fragOffset += size;
       if (this->fragOffset != this->fragSize) // not enough bytes received?
         break;

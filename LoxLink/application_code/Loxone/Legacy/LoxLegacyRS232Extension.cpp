@@ -30,18 +30,111 @@ LoxLegacyRS232Extension::LoxLegacyRS232Extension(LoxCANBaseDriver &driver, uint3
 }
 
 /***
+ *  Forward a received buffer to the CAN bus
+ ***/
+void LoxLegacyRS232Extension::forwardBuffer(const uint8_t *buffer, size_t byteCount) {
+  // ACK/NAK only works if a checksum mode is active
+  if (this->checksumMode != eRS232ChecksumMode_none and (this->hasAck or this->hasNak)) {
+    bool checksumValid = false;
+    switch (this->checksumMode) {
+    case eRS232ChecksumMode_none:
+      checksumValid = true;
+      break;
+    case eRS232ChecksumMode_XOR: {
+      uint8_t checksumXor = 0x00;
+      if (byteCount > 1) {
+        for (size_t i = 0; i < byteCount - 1; ++i)
+          checksumXor ^= buffer[i];
+      }
+      checksumValid = buffer[byteCount - 1] == checksumXor;
+      break;
+    }
+    case eRS232ChecksumMode_Sum: {
+      uint8_t checksumSum = 0x00;
+      if (byteCount > 1) {
+        for (size_t i = 0; i < byteCount - 1; ++i)
+          checksumSum += buffer[i];
+      }
+      checksumValid = buffer[byteCount - 1] == checksumSum;
+      break;
+    }
+    case eRS232ChecksumMode_CRC:
+      checksumValid = buffer[byteCount - 1] == crc8_default(buffer, byteCount - 1);
+      break;
+    case eRS232ChecksumMode_ModbusCRC: {
+      uint16_t checksum = crc16_Modus(buffer, byteCount - 2);
+      checksumValid = buffer[byteCount - 2] == (checksum & 0xFF) and buffer[byteCount - 1] == (checksum >> 8);
+      break;
+    }
+    case eRS232ChecksumMode_Fronius:
+      uint8_t checksumSum = 0x00;
+      if (byteCount > 4) {
+        for (size_t i = 3; i < byteCount - 1; ++i)
+          checksumSum += buffer[i];
+      }
+      checksumValid = buffer[0] == 0x80 and buffer[1] == 0x80 and buffer[2] == 0x80 and buffer[byteCount - 1] == checksumSum;
+      break;
+    }
+    if (checksumValid) {
+      if (this->hasAck)
+        sendBuffer(&this->ack_byte, 1);
+    } else {
+      if (this->hasNak)
+        sendBuffer(&this->nak_byte, 1);
+    }
+  }
+#if DEBUG
+  debug_print_buffer(buffer, byteCount, "RS232 MS:");
+#endif
+  send_fragmented_data(FragCmd_C232_bytes_received, buffer, byteCount);
+}
+
+/***
+ *  Send a buffer to the RS232
+ ***/
+void LoxLegacyRS232Extension::sendBuffer(const uint8_t *buffer, size_t byteCount) {
+#if DEBUG
+  debug_print_buffer(buffer, byteCount, "RS232 TX:");
+#endif
+  for (int i = 0; i < byteCount; ++i) {
+    xQueueSendToBack(&this->txQueue, &buffer[i], 0);
+  }
+}
+
+/***
  *  RS232 RX Task
  ***/
 void LoxLegacyRS232Extension::vRS232RXTask(void *pvParameters) {
   LoxLegacyRS232Extension *_this = (LoxLegacyRS232Extension *)pvParameters;
+  static uint8_t buffer[RS232_RX_BUFFERSIZE];
+  size_t bufferFill = 0;
   while (1) {
-    static uint8_t buffer[RS232_RX_BUFFERSIZE];
-    size_t byteCount = xStreamBufferReceive(gUART_RX_Stream, buffer, sizeof(buffer), 10);
-    if (byteCount > 0) {
-#if DEBUG
-      debug_print_buffer(buffer, byteCount, "RS232 RX:");
+    size_t byteCount = xStreamBufferReceive(gUART_RX_Stream, buffer + bufferFill, RS232_RX_BUFFERSIZE - bufferFill, 10);
+    bufferFill += byteCount;
+#if DEBUG && 0
+    debug_print_buffer(buffer, byteCount, "RS232 RX:");
 #endif
-      _this->send_fragmented_data(FragCmd_C232_bytes_received, &buffer, byteCount);
+    if (byteCount > 0) {
+      if (not _this->hasEndCharacter or bufferFill == RS232_RX_BUFFERSIZE) {
+        // if we don't wait for an end-character or the buffer is full anyway
+        // just sent the data
+        _this->forwardBuffer(buffer, bufferFill);
+        bufferFill = 0;
+      } else {
+        for (size_t pos = 0; pos < bufferFill; ++pos) {
+          if (buffer[pos] == _this->endCharacter) {
+            size_t count = pos + 1; // number of bytes including the end character
+            _this->forwardBuffer(buffer, count);
+            // move the remaining bytes down
+            bufferFill -= count;
+            memmove(buffer, buffer + count, bufferFill);
+#if DEBUG
+            memset(buffer + bufferFill, 0, RS232_RX_BUFFERSIZE - bufferFill);
+#endif
+            break;
+          }
+        }
+      }
     }
   }
 }
@@ -72,10 +165,10 @@ void LoxLegacyRS232Extension::Startup(void) {
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   static StaticStreamBuffer_t gUART_RX_Buffer_Stuct;
-  gUART_RX_Stream = xStreamBufferCreateStatic(sizeof(gUART_RX_Buffer), 1, gUART_RX_Buffer, &gUART_RX_Buffer_Stuct);
+  gUART_RX_Stream = xStreamBufferCreateStatic(RS232_RX_BUFFERSIZE, 1, gUART_RX_Buffer, &gUART_RX_Buffer_Stuct);
 
   static uint8_t sRS232TXBuffer[RS232_TX_BUFFERSIZE];
-  xQueueCreateStatic(sizeof(sRS232TXBuffer) / sizeof(sRS232TXBuffer[0]), sizeof(sRS232TXBuffer[0]), (uint8_t *)sRS232TXBuffer, &this->txQueue);
+  xQueueCreateStatic(RS232_TX_BUFFERSIZE, 1, (uint8_t *)sRS232TXBuffer, &this->txQueue);
 
   static StackType_t sRS232RXTaskStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sRS232RXTask;
@@ -165,29 +258,17 @@ void LoxLegacyRS232Extension::PacketToExtension(LoxCanMessage &message) {
         if (count > 6)
           count = 6;
         this->sendFill += count;
-        memcpy(&this->sendData[offset], &message.data[1], count);
+        memmove(&this->sendData[offset], &message.data[1], count);
       }
     } else {
       //      printf("# RS232 send header: %d bytes, CRC:0x%02x Bytes:0x%02x.0x%02x.0x%02x.0x%02x\n", message.data[1], message.data[2], message.data[3], message.data[4], message.data[5], message.data[6]);
       this->sendCount = message.data[1];
       this->sendCRC = message.data[2];
-      memcpy(this->sendData, &message.data[3], 4);
+      memmove(this->sendData, &message.data[3], 4);
       this->sendFill = 4;
     }
     if (this->sendFill >= this->sendCount && this->sendCRC == crc8_default(this->sendData, this->sendCount)) {
-#if DEBUG
-      debug_print_buffer(this->sendData, this->sendCount, "RS232 TX:");
-#endif
-      BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-      BaseType_t xResult = pdFAIL;
-      for (int i = 0; i < this->sendCount; ++i) {
-        xResult = xQueueSendToBackFromISR(&this->txQueue, &this->sendData[i], &xHigherPriorityTaskWoken);
-        if (xResult == pdFAIL)
-          break;
-      }
-      if (xResult != pdFAIL) {
-        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-      }
+      sendBuffer(this->sendData, this->sendCount);
     }
     break;
   }
