@@ -23,9 +23,11 @@ LoxLegacyExtension::LoxLegacyExtension(LoxCANBaseDriver &driver, uint32_t serial
 }
 
 /***
- *
+ *  Send a command to the Miniserver if not muted.
  ***/
 void LoxLegacyExtension::sendCommandWithValues(LoxMsgLegacyCommand_t command, uint8_t val8, uint16_t val16, uint32_t val32) {
+  if (this->isMuted)
+    return;
   LoxCanMessage message;
   message.serial = this->serial;
   message.hardwareType = eDeviceType_t(this->device_type);
@@ -39,11 +41,11 @@ void LoxLegacyExtension::sendCommandWithValues(LoxMsgLegacyCommand_t command, ui
 }
 
 /***
- *
+ *  Send a fragmented command to the Miniserver
  ***/
 void LoxLegacyExtension::send_fragmented_data(LoxMsgLegacyFragmentedCommand_t fragCommand, const void *buffer, uint32_t byteCount) {
   // never send fragmented package if the extension is not active, except for the page CRC command.
-  if (this->state != eDeviceState_online and FragCmd_page_CRC_external != fragCommand)
+  if ((this->state != eDeviceState_online or this->isMuted) and FragCmd_page_CRC_external != fragCommand)
     return;
   LoxCanMessage message;
   message.serial = this->serial;
@@ -102,7 +104,7 @@ void LoxLegacyExtension::send_fragmented_data(LoxMsgLegacyFragmentedCommand_t fr
 }
 
 /***
- *
+ *  Send a command with version information to the Miniserver
  ***/
 void LoxLegacyExtension::sendCommandWithVersion(LoxMsgLegacyCommand_t command) {
   // 0 contains the configuration bitmask, which is used e.g. for the Extension
@@ -114,20 +116,23 @@ void LoxLegacyExtension::sendCommandWithVersion(LoxMsgLegacyCommand_t command) {
  *  10ms Timer to be called 100x per second
  ***/
 void LoxLegacyExtension::Timer10ms(void) {
-  if (this->forceStartMessage) { // a start request needed?
+  bool resetAliveCountdown = false;
+  if (this->forceStartMessage) { // a start request needed? This happens directly after boot or if requested by the Miniserver
     this->forceStartMessage = false;
-    this->aliveCountdown = 1000 * ((this->serial & 0x3f) + 6 * 60);
     this->isMuted = false;
     sendCommandWithVersion(start_request);
-  } else if (this->aliveCountdown <= 0) { // timeout?
-    this->aliveCountdown = 1000 * ((this->serial & 0x3f) + 6 * 60);
+    resetAliveCountdown = true;
+  } else if (this->aliveCountdown <= 0) {
     sendCommandWithVersion(alive);
+    resetAliveCountdown = true;
   }
+  if(resetAliveCountdown)
+    this->aliveCountdown = 1000 * ((this->serial & 0x3f) + 6 * 60); // avoid that all alive packages from all extensions are sent at the same time
   this->aliveCountdown -= 10;
 }
 
 /***
- *  Handling of the five different package types
+ *  Multicast to all extensions for broadcast commands
  ***/
 void LoxLegacyExtension::PacketMulticastAll(LoxCanMessage &message) {
   switch (message.commandLegacy) {
@@ -151,6 +156,9 @@ void LoxLegacyExtension::PacketMulticastAll(LoxCanMessage &message) {
   }
 }
 
+/***
+ *  Multicast to all extensions of a certain type are used for the software update case only
+ ***/
 void LoxLegacyExtension::PacketMulticastExtension(LoxCanMessage &message) {
   switch (message.commandLegacy) {
   case software_update_init:
@@ -165,11 +173,11 @@ void LoxLegacyExtension::PacketMulticastExtension(LoxCanMessage &message) {
     }
     break;
   case reboot_all:
-    this->isMuted = false;
-    this->firmwareUpdateActive = false;
     if (message.value16 == 0xDEAD or message.value32 != this->version) {
       NVIC_SystemReset(); // reboot (with new firmware...)
     }
+    this->firmwareUpdateActive = false;
+    this->isMuted = false;
     break;
   case software_update_verify:
     if (this->firmwareUpdateActive) {
@@ -193,6 +201,9 @@ void LoxLegacyExtension::PacketMulticastExtension(LoxCanMessage &message) {
   }
 }
 
+/***
+ *  Packages to a specific extension based on it's serial number
+ ***/
 void LoxLegacyExtension::PacketToExtension(LoxCanMessage &message) {
   switch (message.commandLegacy) {
   case identify: // first direct command from the Miniserver after boot
@@ -207,8 +218,8 @@ void LoxLegacyExtension::PacketToExtension(LoxCanMessage &message) {
     break;
   case extension_offline:
   case park_extension:
-    this->isMuted = false;
     SetState(eDeviceState_parked);
+    this->isMuted = false;
     break;
   case LED_flash_position:
     gLED.set_sync_offset(message.value32);
@@ -225,10 +236,15 @@ void LoxLegacyExtension::PacketToExtension(LoxCanMessage &message) {
   }
 }
 
+/***
+ *  Messages on the CAN bus _from_ this extension. These can be ignored, because they come from this extension anyway
+ ***/
 void LoxLegacyExtension::PacketFromExtension(LoxCanMessage &message) {
-  // these packages can be ignored, as they come _from_ the extension anyway
 }
 
+/***
+ *  Packages with firmware update data, sent to all extensions of a certain type.
+ ***/
 void LoxLegacyExtension::PacketFirmwareUpdate(LoxCanMessage &message) {
 }
 
