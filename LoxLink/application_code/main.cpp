@@ -32,8 +32,8 @@ int main(void) {
 
   static LoxCANDriver_STM32 gLoxCANDriver(tLoxCANDriverType_LoxoneLink);
   //static LoxLegacyRS232Extension gLoxLegacyRS232Extension(gLoxCANDriver, serial_base);
-    static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, sResetReason);
-  //  static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
+  //static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, sResetReason);
+  //static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
   //static LoxBusTreeExtension gTreeExtension(gLoxCANDriver, serial_base, sResetReason);
   //static LoxBusTreeRoomComfortSensor gTreeRoomComfortSensor(gLoxCANDriver, 0xb0112233, sResetReason);
   //static LoxBusTreeTouch gLoxBusTreeTouch(gLoxCANDriver, 0xb010035b, sResetReason);
