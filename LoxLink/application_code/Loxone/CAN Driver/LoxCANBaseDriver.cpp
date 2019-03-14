@@ -24,6 +24,8 @@ LoxCANBaseDriver::LoxCANBaseDriver(tLoxCANDriverType type) : driverType(type), e
  *  Initialize the CAN bus and all tasks, etc
  ***/
 void LoxCANBaseDriver::Startup(void) {
+  for (int i = 0; i < this->extensionCount; ++i)
+    this->extensions[i]->Startup();
 }
 
 /***

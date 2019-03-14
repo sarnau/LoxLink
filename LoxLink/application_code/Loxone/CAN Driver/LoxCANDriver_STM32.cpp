@@ -170,6 +170,8 @@ void LoxCANDriver_STM32::Startup(void) {
 #if DEBUG
   FilterAllowAll(10);
 #endif
+
+  LoxCANBaseDriver::Startup();
 }
 
 /***

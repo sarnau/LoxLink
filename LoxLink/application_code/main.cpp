@@ -31,8 +31,8 @@ int main(void) {
   uint32_t serial_base = (uid[0] ^ uid[1] ^ uid[2]) & 0xFFFFFF;
 
   static LoxCANDriver_STM32 gLoxCANDriver(tLoxCANDriverType_LoxoneLink);
-  static LoxLegacyRS232Extension gLoxLegacyRS232Extension(gLoxCANDriver, serial_base);
-  //  static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, sResetReason);
+  //static LoxLegacyRS232Extension gLoxLegacyRS232Extension(gLoxCANDriver, serial_base);
+    static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, sResetReason);
   //  static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
   //static LoxBusTreeExtension gTreeExtension(gLoxCANDriver, serial_base, sResetReason);
   //static LoxBusTreeRoomComfortSensor gTreeRoomComfortSensor(gLoxCANDriver, 0xb0112233, sResetReason);
@@ -44,13 +44,6 @@ int main(void) {
 #endif
   gLED.Startup();
   gLoxCANDriver.Startup();
-  gLoxLegacyRS232Extension.Startup();
-  //  gRelayExtension.Startup();
-  //  gDIExtension.Startup();
-  //  gTreeExtension.Startup();
-  //gLoxBusTreeAlarmSiren.Startup();
-  //gTreeRoomComfortSensor.Startup();
-  //gLoxBusTreeTouch.Startup();
 
   Start_Watchdog();
   vTaskStartScheduler();
