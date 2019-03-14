@@ -42,7 +42,7 @@ uint8_t crc8_OneWire(const uint8_t *data, size_t size) {
   for (int i = 0; i < size; i++) {
     uint8_t inbyte = ((uint8_t *)data)[i];
     for (int j = 0; j < 8; j++) {
-      uint8_t mix = (crc ^ inbyte) & 0x01;
+      bool mix = ((crc ^ inbyte) & 1) == 1;
       crc >>= 1;
       if (mix)
         crc ^= 0x8C;
@@ -53,7 +53,17 @@ uint8_t crc8_OneWire(const uint8_t *data, size_t size) {
 }
 
 uint16_t crc16_Modus(const void *data, size_t size) {
-  return 0x0000;
+  uint16_t crc = 0xFFFF;
+  for (int i = 0; i < size; i++) {
+    crc ^= ((uint8_t *)data)[i];
+    for (int j = 0; j < 8; j++) {
+      bool mix = (crc & 1) == 1;
+      crc >>= 1;
+      if (mix)
+        crc ^= 0xA001;
+    }
+  }
+  return crc;
 }
 
 uint32_t crc32_stm32_word(uint32_t crc, uint32_t data) {

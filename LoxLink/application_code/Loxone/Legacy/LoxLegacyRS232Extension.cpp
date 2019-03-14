@@ -30,7 +30,7 @@ LoxLegacyRS232Extension::LoxLegacyRS232Extension(LoxCANBaseDriver &driver, uint3
 }
 
 /***
- *  Forward a received buffer to the CAN bus
+ *  Forward a received buffer to the CAN bus to the Miniserver
  ***/
 void LoxLegacyRS232Extension::forwardBuffer(const uint8_t *buffer, size_t byteCount) {
   // ACK/NAK only works if a checksum mode is active
@@ -38,7 +38,6 @@ void LoxLegacyRS232Extension::forwardBuffer(const uint8_t *buffer, size_t byteCo
     bool checksumValid = false;
     switch (this->checksumMode) {
     case eRS232ChecksumMode_none:
-      checksumValid = true;
       break;
     case eRS232ChecksumMode_XOR: {
       uint8_t checksumXor = 0x00;
@@ -83,7 +82,7 @@ void LoxLegacyRS232Extension::forwardBuffer(const uint8_t *buffer, size_t byteCo
         sendBuffer(&this->nak_byte, 1);
     }
   }
-#if DEBUG
+#if DEBUG && 0
   debug_print_buffer(buffer, byteCount, "RS232 MS:");
 #endif
   send_fragmented_data(FragCmd_C232_bytes_received, buffer, byteCount);
@@ -93,7 +92,7 @@ void LoxLegacyRS232Extension::forwardBuffer(const uint8_t *buffer, size_t byteCo
  *  Send a buffer to the RS232
  ***/
 void LoxLegacyRS232Extension::sendBuffer(const uint8_t *buffer, size_t byteCount) {
-#if DEBUG
+#if DEBUG && 0
   debug_print_buffer(buffer, byteCount, "RS232 TX:");
 #endif
   for (int i = 0; i < byteCount; ++i) {
@@ -124,13 +123,16 @@ void LoxLegacyRS232Extension::vRS232RXTask(void *pvParameters) {
         for (size_t pos = 0; pos < bufferFill; ++pos) {
           if (buffer[pos] == _this->endCharacter) {
             size_t count = pos + 1; // number of bytes including the end character
+             // WARNING Loxone RS232 extension forwards `count`, not `count - 1`,
+             // which means it never works with a checksum active, because the
+             // endCharacter is stored in the last byte, which is where the following
+             // code expects the checksum to be. Without the checksum, ACK/NAK will
+             // obviously not work. So, for Loxone it will always send NAK (and
+             // sometimes, 1/256%, ACK). Feels like a Loxone bug.
             _this->forwardBuffer(buffer, count);
             // move the remaining bytes down
             bufferFill -= count;
             memmove(buffer, buffer + count, bufferFill);
-#if DEBUG
-            memset(buffer + bufferFill, 0, RS232_RX_BUFFERSIZE - bufferFill);
-#endif
             break;
           }
         }
@@ -147,7 +149,7 @@ void LoxLegacyRS232Extension::vRS232TXTask(void *pvParameters) {
   while (1) {
     uint8_t byte;
     while (xQueueReceive(&_this->txQueue, &byte, 0)) {
-      HAL_StatusTypeDef status = HAL_UART_Transmit(&gUART1, &byte, sizeof(byte), 0xFFFF);
+      HAL_StatusTypeDef status = HAL_UART_Transmit(&gUART1, &byte, sizeof(byte), 50);
       if (status != HAL_OK) {
 #if DEBUG
         printf("### RS232 TX error %d\n", status);
