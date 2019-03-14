@@ -111,7 +111,8 @@ void LoxLegacyRS232Extension::PacketToExtension(LoxCanMessage &message) {
     int bits = (message.data[0] & 3) + 5; // 5..8
     int parity = (message.data[0] >> 2) & 0xf;
     int stopBits = (message.data[0] & 0x40) ? 2 : 1;
-    bool hasEndCharacter = (message.data[0] & 0x80) == 0x80;
+    this->hasEndCharacter = (message.data[0] & 0x80) == 0x80;
+    this->endCharacter = message.data[1];
 #if DEBUG
     const char *pstr = "?";
     switch (parity) {
@@ -131,7 +132,7 @@ void LoxLegacyRS232Extension::PacketToExtension(LoxCanMessage &message) {
       pstr = "1";
       break;
     }
-    printf("# RS232 config hardware %d%s%d, %d baud, endChar:%d:0x%02x, unknown:0x%02x\n", bits, pstr, stopBits, message.value32, hasEndCharacter, message.data[1], message.data[2]);
+    printf("# RS232 config hardware %d%s%d, %d baud, endChar:%d:0x%02x, unknown:0x%02x\n", bits, pstr, stopBits, message.value32, this->hasEndCharacter, this->endCharacter, message.data[2]);
 #endif
     if (HAL_UART_DeInit(&gUART1) != HAL_OK) {
 #if DEBUG
@@ -190,32 +191,35 @@ void LoxLegacyRS232Extension::PacketToExtension(LoxCanMessage &message) {
     }
     break;
   }
-  case config_checksum: // configuration is not stored in the FLASH, so we can ignore this command
-    break;
   case RS232_config_protocol: {
+    this->hasAck = message.data[0];
+    this->ack_byte = message.data[2];
+    this->hasNak = message.data[1];
+    this->nak_byte = message.data[3];
+    this->checksumMode = eRS232ChecksumMode(message.data[4]);
 #if DEBUG
     const char *checksumModeStr = "?";
-    switch (message.data[4]) {
-    case 0:
+    switch (this->checksumMode) {
+    case eRS232ChecksumMode_none:
       checksumModeStr = "None";
       break;
-    case 1:
+    case eRS232ChecksumMode_XOR:
       checksumModeStr = "XOR";
       break;
-    case 2:
+    case eRS232ChecksumMode_Sum:
       checksumModeStr = "Sum";
       break;
-    case 3:
+    case eRS232ChecksumMode_CRC:
       checksumModeStr = "CRC";
       break;
-    case 4:
+    case eRS232ChecksumMode_ModbusCRC:
       checksumModeStr = "Modbus CRC";
       break;
-    case 5:
+    case eRS232ChecksumMode_Fronius:
       checksumModeStr = "Fronius";
       break;
     }
-    printf("# RS232 config protocol ACK:%d:0x%02x NAK:%d:0x%02x Checksum-Mode:%s\n", message.data[0], message.data[2], message.data[1], message.data[3], checksumModeStr);
+    printf("# RS232 config protocol ACK:%d:0x%02x NAK:%d:0x%02x Checksum-Mode:%s\n", this->hasAck, this->ack_byte, this->hasNak, this->nak_byte, checksumModeStr);
 #endif
     break;
   }
