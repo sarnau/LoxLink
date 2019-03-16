@@ -56,40 +56,127 @@
 *                                                                    *
 **********************************************************************
 -------------------------- END-OF-HEADER -----------------------------
+File    : SEGGER_SYSVIEW_ConfDefaults.h
+Purpose : Defines defaults for configurable defines used in
+          SEGGER SystemView.
+Revision: $Rev: 12706 $
 */
 
-#ifndef GLOBAL_H            // Guard against multiple inclusion
-#define GLOBAL_H
+#ifndef SEGGER_SYSVIEW_CONFDEFAULTS_H
+#define SEGGER_SYSVIEW_CONFDEFAULTS_H
 
-#define U8    unsigned char
-#define U16   unsigned short
-#define U32   unsigned long
-#define I8    signed char
-#define I16   signed short
-#define I32   signed long
+/*********************************************************************
+*
+*       #include Section
+*
+**********************************************************************
+*/
 
-#ifdef _WIN32
-  //
-  // Microsoft VC6 compiler related
-  //
-  #define U64   unsigned __int64
-  #define U128  unsigned __int128
-  #define I64   __int64
-  #define I128  __int128
-  #if _MSC_VER <= 1200
-    #define U64_C(x) x##UI64
-  #else
-    #define U64_C(x) x##ULL
-  #endif
-#else 
-  //
-  // C99 compliant compiler
-  //
-  #define U64   unsigned long long
-  #define I64   signed long long
-  #define U64_C(x) x##ULL
+#include "SEGGER_SYSVIEW_Conf.h"
+#include "SEGGER_RTT_Conf.h"
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#endif                      // Avoid multiple inclusion
+/*********************************************************************
+*
+*       Configuration defaults
+*
+**********************************************************************
+*/
+
+// Number of bytes that SystemView uses for a buffer.
+#ifndef   SEGGER_SYSVIEW_RTT_BUFFER_SIZE
+  #define SEGGER_SYSVIEW_RTT_BUFFER_SIZE    1024
+#endif
+
+// The RTT channel that SystemView will use.
+#ifndef   SEGGER_SYSVIEW_RTT_CHANNEL
+  #define SEGGER_SYSVIEW_RTT_CHANNEL        0
+#endif
+// Sanity check of RTT channel
+#if (SEGGER_SYSVIEW_RTT_CHANNEL == 0) && (SEGGER_RTT_MAX_NUM_UP_BUFFERS < 2)
+  #error "SEGGER_RTT_MAX_NUM_UP_BUFFERS in SEGGER_RTT_Conf.h has to be > 1!"
+#elif (SEGGER_SYSVIEW_RTT_CHANNEL >= SEGGER_RTT_MAX_NUM_UP_BUFFERS)
+  #error "SEGGER_RTT_MAX_NUM_UP_BUFFERS  in SEGGER_RTT_Conf.h has to be > SEGGER_SYSVIEW_RTT_CHANNEL!"
+#endif
+
+// Place the SystemView buffer into its own/the RTT section
+#if !(defined SEGGER_SYSVIEW_BUFFER_SECTION) && (defined SEGGER_RTT_SECTION)
+  #define SEGGER_SYSVIEW_BUFFER_SECTION            SEGGER_RTT_SECTION
+#endif
+
+// Retrieve a system timestamp.  This gets the Cortex-M cycle counter.
+#ifndef   SEGGER_SYSVIEW_GET_TIMESTAMP
+  #error "SEGGER_SYSVIEW_GET_TIMESTAMP has to be defined in SEGGER_SYSVIEW_Conf.h!"
+#endif
+
+// Define number of valid bits low-order delivered by clock source.
+#ifndef   SEGGER_SYSVIEW_TIMESTAMP_BITS
+  #define SEGGER_SYSVIEW_TIMESTAMP_BITS     32
+#endif
+
+// Lowest Id reported by the Application.
+#ifndef   SEGGER_SYSVIEW_ID_BASE 
+  #define SEGGER_SYSVIEW_ID_BASE            0
+#endif
+
+// Number of bits to shift Ids to save bandwidth
+#ifndef   SEGGER_SYSVIEW_ID_SHIFT
+  #define SEGGER_SYSVIEW_ID_SHIFT           0
+#endif
+
+#ifndef   SEGGER_SYSVIEW_GET_INTERRUPT_ID
+  #error "SEGGER_SYSVIEW_GET_INTERRUPT_ID has to be defined in SEGGER_SYSVIEW_Conf.h!"
+#endif
+
+#ifndef   SEGGER_SYSVIEW_MAX_ARGUMENTS
+  #define SEGGER_SYSVIEW_MAX_ARGUMENTS      16
+#endif
+
+#ifndef   SEGGER_SYSVIEW_MAX_STRING_LEN
+  #define SEGGER_SYSVIEW_MAX_STRING_LEN     128
+#endif
+
+#ifndef   SEGGER_SYSVIEW_PRINTF_IMPLICIT_FORMAT
+  #define SEGGER_SYSVIEW_PRINTF_IMPLICIT_FORMAT 0
+#endif
+
+// Use a static buffer instead of a buffer on the stack for packets
+#ifndef   SEGGER_SYSVIEW_USE_STATIC_BUFFER
+  #define SEGGER_SYSVIEW_USE_STATIC_BUFFER  1
+#endif
+
+// Maximum packet size used by SystemView for the static buffer
+#ifndef   SEGGER_SYSVIEW_MAX_PACKET_SIZE
+  #define SEGGER_SYSVIEW_MAX_PACKET_SIZE   SEGGER_SYSVIEW_INFO_SIZE + SEGGER_SYSVIEW_MAX_STRING_LEN + 2 * SEGGER_SYSVIEW_QUANTA_U32 + SEGGER_SYSVIEW_MAX_ARGUMENTS * SEGGER_SYSVIEW_QUANTA_U32
+#endif
+
+// Use post-mortem analysis instead of real-time analysis
+#ifndef   SEGGER_SYSVIEW_POST_MORTEM_MODE
+  #define SEGGER_SYSVIEW_POST_MORTEM_MODE   0
+#endif
+
+// Configure how frequently syncronization is sent
+#ifndef   SEGGER_SYSVIEW_SYNC_PERIOD_SHIFT
+  #define SEGGER_SYSVIEW_SYNC_PERIOD_SHIFT  8
+#endif
+
+// Lock SystemView (nestable)
+#ifndef   SEGGER_SYSVIEW_LOCK
+  #define SEGGER_SYSVIEW_LOCK()             SEGGER_RTT_LOCK()
+#endif
+
+// Unlock SystemView (nestable)
+#ifndef   SEGGER_SYSVIEW_UNLOCK
+  #define SEGGER_SYSVIEW_UNLOCK()           SEGGER_RTT_UNLOCK()
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
 
 /*************************** End of file ****************************/

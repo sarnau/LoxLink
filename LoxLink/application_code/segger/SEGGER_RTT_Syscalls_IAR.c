@@ -55,41 +55,74 @@
 *       SystemView version: V2.52g                                    *
 *                                                                    *
 **********************************************************************
--------------------------- END-OF-HEADER -----------------------------
+---------------------------END-OF-HEADER------------------------------
+File    : SEGGER_RTT_Syscalls_IAR.c
+Purpose : Low-level functions for using printf() via RTT in IAR.
+          To use RTT for printf output, include this file in your 
+          application and set the Library Configuration to Normal.
+Revision: $Rev: 12303 $
+----------------------------------------------------------------------
 */
+#ifdef __IAR_SYSTEMS_ICC__
 
-#ifndef GLOBAL_H            // Guard against multiple inclusion
-#define GLOBAL_H
-
-#define U8    unsigned char
-#define U16   unsigned short
-#define U32   unsigned long
-#define I8    signed char
-#define I16   signed short
-#define I32   signed long
-
-#ifdef _WIN32
-  //
-  // Microsoft VC6 compiler related
-  //
-  #define U64   unsigned __int64
-  #define U128  unsigned __int128
-  #define I64   __int64
-  #define I128  __int128
-  #if _MSC_VER <= 1200
-    #define U64_C(x) x##UI64
-  #else
-    #define U64_C(x) x##ULL
-  #endif
-#else 
-  //
-  // C99 compliant compiler
-  //
-  #define U64   unsigned long long
-  #define I64   signed long long
-  #define U64_C(x) x##ULL
+//
+// Since IAR EWARM V8 yfuns.h is considered as deprecated and LowLevelIOInterface.h shall be used instead
+// To not break any compatibility with older compiler versions, we have a version check in here
+//
+#if __VER__ >= 8000000
+  #include <LowLevelIOInterface.h>
+#else
+  #include <yfuns.h>
 #endif
 
-#endif                      // Avoid multiple inclusion
+#include "SEGGER_RTT.h"
+#pragma module_name = "?__write"
 
-/*************************** End of file ****************************/
+/*********************************************************************
+*
+*       Function prototypes
+*
+**********************************************************************
+*/
+size_t __write(int handle, const unsigned char * buffer, size_t size);
+
+/*********************************************************************
+*
+*       Global functions
+*
+**********************************************************************
+*/
+/*********************************************************************
+*
+*       __write()
+*
+* Function description
+*   Low-level write function.
+*   Standard library subroutines will use this system routine
+*   for output to all files, including stdout.
+*   Write data via RTT.
+*/
+size_t __write(int handle, const unsigned char * buffer, size_t size) {
+  (void) handle;  /* Not used, avoid warning */
+  SEGGER_RTT_Write(0, (const char*)buffer, size);
+  return size;
+}
+
+/*********************************************************************
+*
+*       __write_buffered()
+*
+* Function description
+*   Low-level write function.
+*   Standard library subroutines will use this system routine
+*   for output to all files, including stdout.
+*   Write data via RTT.
+*/
+size_t __write_buffered(int handle, const unsigned char * buffer, size_t size) {
+  (void) handle;  /* Not used, avoid warning */
+  SEGGER_RTT_Write(0, (const char*)buffer, size);
+  return size;
+}
+
+#endif
+/****** End Of File *************************************************/

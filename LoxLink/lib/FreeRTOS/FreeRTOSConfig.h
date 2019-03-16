@@ -96,8 +96,13 @@
 #define INCLUDE_vTaskDelayUntil                      0
 #define INCLUDE_vTaskDelay                           1
 #define INCLUDE_xTaskGetSchedulerState               0
-#define INCLUDE_xTaskGetIdleTaskHandle               0
-#define INCLUDE_pxTaskGetStackStart                  0
+#if defined(USE_SYSVIEW)
+    #define INCLUDE_xTaskGetIdleTaskHandle           1
+    #define INCLUDE_pxTaskGetStackStart              1
+#else
+    #define INCLUDE_xTaskGetIdleTaskHandle           0
+    #define INCLUDE_pxTaskGetStackStart              0
+#endif
 #define INCLUDE_xTimerPendFunctionCall               1
 
 /* Cortex-M specific definitions. */

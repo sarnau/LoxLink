@@ -54,15 +54,15 @@ void LED::vLEDTask(void *pvParameters) {
     if (state.identify) { // no delay during identify
       LED_on_off(state.color);
       int period = ((base_period * 12) / 100) / identifySpeedup; // 12% on (measured via looking at video material)
-      for (int i = 0; i < period; ++i) {
-        vTaskDelay(pdMS_TO_TICKS(1));
+      for (int i = 0; i < period/10; ++i) {
+        vTaskDelay(pdMS_TO_TICKS(10));
         if (state.state != _this->led_state.state || _this->resync_flag)
           goto restart;
       }
       LED_on_off(eLED_off);
       period = (base_period - period) / identifySpeedup;
-      for (int i = 0; i < period; ++i) {
-        vTaskDelay(pdMS_TO_TICKS(1));
+      for (int i = 0; i < period/10; ++i) {
+        vTaskDelay(pdMS_TO_TICKS(10));
         if (state.state != _this->led_state.state || _this->resync_flag)
           goto restart;
       }
@@ -70,21 +70,21 @@ void LED::vLEDTask(void *pvParameters) {
       int ldelay = 0;
       // 15ms delay per unit in the rack, in which 5 is 15ms
       ldelay = _this->sync_offset * 3;
-      for (int i = 0; i < ldelay; ++i) {
-        vTaskDelay(pdMS_TO_TICKS(1));
+      for (int i = 0; i < ldelay/10; ++i) {
+        vTaskDelay(pdMS_TO_TICKS(10));
         if (state.state != _this->led_state.state || _this->resync_flag)
           goto restart; // force resync when the LED change or a sync is received
       }
       LED_on_off(state.color);
       int period = (base_period * 12) / 100; // 12% on (measured via looking at video material)
-      for (int i = 0; i < period; ++i) {
-        vTaskDelay(pdMS_TO_TICKS(1));
+      for (int i = 0; i < period/10; ++i) {
+        vTaskDelay(pdMS_TO_TICKS(10));
         if (state.state != _this->led_state.state || _this->resync_flag)
           goto restart;
       }
       LED_on_off(eLED_off);
-      for (int i = 0; i < base_period - period - ldelay; ++i) {
-        vTaskDelay(pdMS_TO_TICKS(1));
+      for (int i = 0; i < (base_period - period - ldelay)/10; ++i) {
+        vTaskDelay(pdMS_TO_TICKS(10));
         if (state.state != _this->led_state.state || _this->resync_flag)
           goto restart;
       }

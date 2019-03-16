@@ -56,40 +56,55 @@
 *                                                                    *
 **********************************************************************
 -------------------------- END-OF-HEADER -----------------------------
+File    : SEGGER_SYSVIEW_Int.h
+Purpose : SEGGER SystemView internal header.
+Revision: $Rev: 12706 $
 */
 
-#ifndef GLOBAL_H            // Guard against multiple inclusion
-#define GLOBAL_H
+#ifndef SEGGER_SYSVIEW_INT_H
+#define SEGGER_SYSVIEW_INT_H
 
-#define U8    unsigned char
-#define U16   unsigned short
-#define U32   unsigned long
-#define I8    signed char
-#define I16   signed short
-#define I32   signed long
+/*********************************************************************
+*
+*       #include Section
+*
+**********************************************************************
+*/
 
-#ifdef _WIN32
-  //
-  // Microsoft VC6 compiler related
-  //
-  #define U64   unsigned __int64
-  #define U128  unsigned __int128
-  #define I64   __int64
-  #define I128  __int128
-  #if _MSC_VER <= 1200
-    #define U64_C(x) x##UI64
-  #else
-    #define U64_C(x) x##ULL
-  #endif
-#else 
-  //
-  // C99 compliant compiler
-  //
-  #define U64   unsigned long long
-  #define I64   signed long long
-  #define U64_C(x) x##ULL
+#include "SEGGER_SYSVIEW.h"
+#include "SEGGER_SYSVIEW_Conf.h"
+#include "SEGGER_SYSVIEW_ConfDefaults.h"
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#endif                      // Avoid multiple inclusion
+
+/*********************************************************************
+*
+*       Private data types
+*
+**********************************************************************
+*/
+//
+// Commands that Host can send to target
+//
+typedef enum {
+  SEGGER_SYSVIEW_COMMAND_ID_START = 1,
+  SEGGER_SYSVIEW_COMMAND_ID_STOP,
+  SEGGER_SYSVIEW_COMMAND_ID_GET_SYSTIME,
+  SEGGER_SYSVIEW_COMMAND_ID_GET_TASKLIST,
+  SEGGER_SYSVIEW_COMMAND_ID_GET_SYSDESC,
+  SEGGER_SYSVIEW_COMMAND_ID_GET_NUMMODULES,
+  SEGGER_SYSVIEW_COMMAND_ID_GET_MODULEDESC,
+  // Extended commands: Commands >= 128 have a second parameter
+  SEGGER_SYSVIEW_COMMAND_ID_GET_MODULE = 128
+} SEGGER_SYSVIEW_COMMAND_ID;
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
 
 /*************************** End of file ****************************/

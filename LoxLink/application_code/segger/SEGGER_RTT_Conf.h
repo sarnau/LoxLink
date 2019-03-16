@@ -3,22 +3,35 @@
 *                        The Embedded Experts                        *
 **********************************************************************
 *                                                                    *
-*            (c) 2014 - 2018 SEGGER Microcontroller GmbH             *
+*            (c) 1995 - 2019 SEGGER Microcontroller GmbH             *
 *                                                                    *
 *       www.segger.com     Support: support@segger.com               *
 *                                                                    *
 **********************************************************************
 *                                                                    *
+*       SEGGER SystemView * Real-time application analysis           *
+*                                                                    *
+**********************************************************************
+*                                                                    *
 * All rights reserved.                                               *
+*                                                                    *
+* SEGGER strongly recommends to not make any changes                 *
+* to or modify the source code of this software in order to stay     *
+* compatible with the RTT protocol and J-Link.                       *
 *                                                                    *
 * Redistribution and use in source and binary forms, with or         *
 * without modification, are permitted provided that the following    *
 * conditions are met:                                                *
 *                                                                    *
-* - Redistributions of source code must retain the above copyright   *
+* o Redistributions of source code must retain the above copyright   *
 *   notice, this list of conditions and the following disclaimer.    *
 *                                                                    *
-* - Neither the name of SEGGER Microcontroller GmbH                  *
+* o Redistributions in binary form must reproduce the above          *
+*   copyright notice, this list of conditions and the following      *
+*   disclaimer in the documentation and/or other materials provided  *
+*   with the distribution.                                           *
+*                                                                    *
+* o Neither the name of SEGGER Microcontroller GmbH         *
 *   nor the names of its contributors may be used to endorse or      *
 *   promote products derived from this software without specific     *
 *   prior written permission.                                        *
@@ -27,8 +40,7 @@
 * CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,        *
 * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF           *
 * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE           *
-* DISCLAIMED.                                                        *
-* IN NO EVENT SHALL SEGGER Microcontroller GmbH BE LIABLE FOR        *
+* DISCLAIMED. IN NO EVENT SHALL SEGGER Microcontroller BE LIABLE FOR *
 * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR           *
 * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT  *
 * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;    *
@@ -39,12 +51,16 @@
 * DAMAGE.                                                            *
 *                                                                    *
 **********************************************************************
+*                                                                    *
+*       SystemView version: V2.52g                                    *
+*                                                                    *
+**********************************************************************
 ---------------------------END-OF-HEADER------------------------------
 File    : SEGGER_RTT_Conf.h
 Purpose : Implementation of SEGGER real-time transfer (RTT) which
           allows real-time communication on targets which support
           debugger memory accesses while the CPU is running.
-Revision: $Rev: 7859 $
+Revision: $Rev: 13430 $
 
 */
 
@@ -62,8 +78,8 @@ Revision: $Rev: 7859 $
 **********************************************************************
 */
 
-#define SEGGER_RTT_MAX_NUM_UP_BUFFERS             (2)     // Max. number of up-buffers (T->H) available on this target    (Default: 2)
-#define SEGGER_RTT_MAX_NUM_DOWN_BUFFERS           (2)     // Max. number of down-buffers (H->T) available on this target  (Default: 2)
+#define SEGGER_RTT_MAX_NUM_UP_BUFFERS             (3)     // Max. number of up-buffers (T->H) available on this target    (Default: 3)
+#define SEGGER_RTT_MAX_NUM_DOWN_BUFFERS           (3)     // Max. number of down-buffers (H->T) available on this target  (Default: 3)
 
 #define BUFFER_SIZE_UP                            (1024)  // Size of the buffer for terminal output of target, up to host (Default: 1k)
 #define BUFFER_SIZE_DOWN                          (16)    // Size of the buffer for terminal input to target from host (Usually keyboard input) (Default: 16)
@@ -294,6 +310,20 @@ Revision: $Rev: 7859 $
     #define SEGGER_RTT_UNLOCK()   _set_interrupt_priority(LockState);                               \
                                 }
   #endif
+#endif
+
+/*********************************************************************
+*
+*       RTT lock configuration for CCRX
+*/
+#ifdef __RX
+  #define SEGGER_RTT_LOCK()   {                                                                     \
+                                unsigned long LockState;                                            \
+                                LockState = get_psw() & 0x010000;                                   \
+                                clrpsw_i();                           
+                                    
+  #define SEGGER_RTT_UNLOCK()   set_psw(get_psw() | LockState);                                     \
+                              }
 #endif
 
 /*********************************************************************

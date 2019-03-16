@@ -47,6 +47,8 @@
         <file file_name="lib/FreeRTOS/timers.c" />
         <file file_name="lib/FreeRTOS/portable/GCC/ARM_CM3/port.c" />
         <file file_name="lib/FreeRTOS/FreeRTOSConfig.h" />
+        <file file_name="lib/FreeRTOS/SEGGER_SYSVIEW_FreeRTOS.h" />
+        <file file_name="lib/FreeRTOS/SEGGER_SYSVIEW_FreeRTOS.c" />
       </folder>
       <folder
         Name="STM32F1xx"
@@ -61,7 +63,7 @@
   </project>
   <configuration
     Name="Debug"
-    c_preprocessor_definitions="DEBUG"
+    c_preprocessor_definitions="DEBUG;USE_SYSVIEW"
     gcc_debugging_level="Level 3"
     gcc_optimization_level="None"
     linker_printf_fp_enabled="Float" />

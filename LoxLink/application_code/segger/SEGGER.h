@@ -1,9 +1,9 @@
 /*********************************************************************
-*                SEGGER Microcontroller GmbH & Co. KG                *
+*                    SEGGER Microcontroller GmbH                     *
 *                        The Embedded Experts                        *
 **********************************************************************
 *                                                                    *
-*       (c) 2015 - 2017  SEGGER Microcontroller GmbH & Co. KG        *
+*            (c) 1995 - 2019 SEGGER Microcontroller GmbH             *
 *                                                                    *
 *       www.segger.com     Support: support@segger.com               *
 *                                                                    *
@@ -31,7 +31,7 @@
 *   disclaimer in the documentation and/or other materials provided  *
 *   with the distribution.                                           *
 *                                                                    *
-* o Neither the name of SEGGER Microcontroller GmbH & Co. KG         *
+* o Neither the name of SEGGER Microcontroller GmbH         *
 *   nor the names of its contributors may be used to endorse or      *
 *   promote products derived from this software without specific     *
 *   prior written permission.                                        *
@@ -52,13 +52,10 @@
 *                                                                    *
 **********************************************************************
 *                                                                    *
-*       SystemView version: V2.52a                                    *
+*       SystemView version: V2.52g                                    *
 *                                                                    *
 **********************************************************************
-----------------------------------------------------------------------
-File    : SEGGER.h
-Purpose : Global types etc & general purpose utility functions
----------------------------END-OF-HEADER------------------------------
+-------------------------- END-OF-HEADER -----------------------------
 */
 
 #ifndef SEGGER_H            // Guard against multiple inclusion
@@ -153,7 +150,7 @@ typedef struct {
 } SEGGER_BUFFER_DESC;
 
 typedef struct {
-  int  CacheLineSize;                                 // 0: No Cache. Most Systems such as ARM9 use a 32 bytes cache line size.
+  unsigned int CacheLineSize;                         // 0: No Cache. Most Systems such as ARM9 use a 32 bytes cache line size.
   void (*pfDMB)       (void);                         // Optional DMB function for Data Memory Barrier to make sure all memory operations are completed.
   void (*pfClean)     (void *p, unsigned NumBytes);   // Optional clean function for cached memory.
   void (*pfInvalidate)(void *p, unsigned NumBytes);   // Optional invalidate function for cached memory.
@@ -192,7 +189,7 @@ typedef struct SEGGER_PRINTF_FORMATTER {
 // Memory operations.
 //
 void SEGGER_ARM_memcpy(void* pDest, const void* pSrc, int NumBytes);
-void SEGGER_memcpy    (void* pDest, const void* pSrc, int NumBytes);
+void SEGGER_memcpy    (void* pDest, const void* pSrc, unsigned NumBytes);
 void SEGGER_memxor    (void* pDest, const void* pSrc, unsigned NumBytes);
 
 //

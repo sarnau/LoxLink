@@ -55,41 +55,80 @@
 *       SystemView version: V2.52g                                    *
 *                                                                    *
 **********************************************************************
--------------------------- END-OF-HEADER -----------------------------
+---------------------------END-OF-HEADER------------------------------
+File    : SEGGER_RTT_Syscalls_GCC.c
+Purpose : Low-level functions for using printf() via RTT in GCC.
+          To use RTT for printf output, include this file in your 
+          application.
+Revision: $Rev: 9599 $
+----------------------------------------------------------------------
+*/
+#if (defined __GNUC__) && !(defined __SES_ARM) && !(defined __CROSSWORKS_ARM)
+
+#include <reent.h>  // required for _write_r
+#include "SEGGER_RTT.h"
+
+
+/*********************************************************************
+*
+*       Types
+*
+**********************************************************************
+*/
+//
+// If necessary define the _reent struct 
+// to match the one passed by the used standard library.
+//
+struct _reent;
+
+/*********************************************************************
+*
+*       Function prototypes
+*
+**********************************************************************
+*/
+int _write(int file, char *ptr, int len);
+int _write_r(struct _reent *r, int file, const void *ptr, int len);
+
+/*********************************************************************
+*
+*       Global functions
+*
+**********************************************************************
 */
 
-#ifndef GLOBAL_H            // Guard against multiple inclusion
-#define GLOBAL_H
+/*********************************************************************
+*
+*       _write()
+*
+* Function description
+*   Low-level write function.
+*   libc subroutines will use this system routine for output to all files,
+*   including stdout.
+*   Write data via RTT.
+*/
+int _write(int file, char *ptr, int len) {
+  (void) file;  /* Not used, avoid warning */
+  SEGGER_RTT_Write(0, ptr, len);
+  return len;
+}
 
-#define U8    unsigned char
-#define U16   unsigned short
-#define U32   unsigned long
-#define I8    signed char
-#define I16   signed short
-#define I32   signed long
+/*********************************************************************
+*
+*       _write_r()
+*
+* Function description
+*   Low-level reentrant write function.
+*   libc subroutines will use this system routine for output to all files,
+*   including stdout.
+*   Write data via RTT.
+*/
+int _write_r(struct _reent *r, int file, const void *ptr, int len) {
+  (void) file;  /* Not used, avoid warning */
+  (void) r;     /* Not used, avoid warning */
+  SEGGER_RTT_Write(0, ptr, len);
+  return len;
+}
 
-#ifdef _WIN32
-  //
-  // Microsoft VC6 compiler related
-  //
-  #define U64   unsigned __int64
-  #define U128  unsigned __int128
-  #define I64   __int64
-  #define I128  __int128
-  #if _MSC_VER <= 1200
-    #define U64_C(x) x##UI64
-  #else
-    #define U64_C(x) x##ULL
-  #endif
-#else 
-  //
-  // C99 compliant compiler
-  //
-  #define U64   unsigned long long
-  #define I64   signed long long
-  #define U64_C(x) x##ULL
 #endif
-
-#endif                      // Avoid multiple inclusion
-
-/*************************** End of file ****************************/
+/****** End Of File *************************************************/

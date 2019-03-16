@@ -88,12 +88,12 @@ void LoxCANDriver_STM32::vCANTXTask(void *pvParameters) {
   LoxCANDriver_STM32 *_this = (LoxCANDriver_STM32 *)pvParameters;
   const TickType_t xDelay4ms = pdMS_TO_TICKS(4);
   while (1) {
-    UBaseType_t tq = uxQueueMessagesWaiting(&gCanReceiveQueue);
-    _this->statistics.TQ = tq;
-    if (tq > _this->statistics.mTQ)
-      _this->statistics.mTQ = tq;
     LoxCanMessage message;
-    while (xQueueReceive(&_this->transmitQueue, &message, 0)) {
+    while (xQueueReceive(&_this->transmitQueue, &message, portMAX_DELAY)) {
+      UBaseType_t tq = uxQueueMessagesWaiting(&gCanReceiveQueue) + 1; // plus the one message, we just received
+      _this->statistics.TQ = tq;
+      if (tq > _this->statistics.mTQ)
+        _this->statistics.mTQ = tq;
       ++_this->statistics.Sent;
 #if DEBUG
       printf("CANS:");
@@ -346,26 +346,34 @@ extern "C" void HAL_CAN_MspDeInit(CAN_HandleTypeDef *hcan) {
 * @brief This function handles USB high priority or CAN TX interrupts.
 */
 extern "C" void CAN1_TX_IRQHandler(void) {
+  traceISR_ENTER();
   HAL_CAN_IRQHandler(&gCan);
+  traceISR_EXIT();
 }
 
 /**
 * @brief This function handles USB low priority or CAN RX0 interrupts.
 */
 extern "C" void CAN1_RX0_IRQHandler(void) {
+  traceISR_ENTER();
   HAL_CAN_IRQHandler(&gCan);
+  traceISR_EXIT();
 }
 
 /**
 * @brief This function handles CAN RX1 interrupt.
 */
 extern "C" void CAN1_RX1_IRQHandler(void) {
+  traceISR_ENTER();
   HAL_CAN_IRQHandler(&gCan);
+  traceISR_EXIT();
 }
 
 /**
 * @brief This function handles CAN SCE interrupt.
 */
 extern "C" void CAN1_SCE_IRQHandler(void) {
+  traceISR_ENTER();
   HAL_CAN_IRQHandler(&gCan);
+  traceISR_EXIT();
 }
