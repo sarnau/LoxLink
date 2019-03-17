@@ -69,7 +69,7 @@ void LoxBusTreeAlarmSiren::ReceiveDirect(LoxCanMessage &message) {
   switch (message.commandNat) {
   case Digital_Value:
     hardware_strobe_light((message.value32 & 1) == 1);
-    hardware_alarm_sound((message.value32 & 1) == 1);
+    hardware_alarm_sound((message.value32 & 2) == 2);
     break;
   default:
     LoxBusTreeDevice::ReceiveDirect(message);
