@@ -167,10 +167,6 @@ void LoxCANDriver_STM32::Startup(void) {
   HAL_CAN_Start(&gCan);
 
   // FYI: At least one filter is required to be able to receive any data.
-#if DEBUG
-  FilterAllowAll(10);
-#endif
-
   LoxCANBaseDriver::Startup();
 }
 
@@ -179,6 +175,7 @@ void LoxCANDriver_STM32::Startup(void) {
  *  desirable to filter in "hardware" everything we do not care about.
  ***/
 void LoxCANDriver_STM32::FilterSetup(uint32_t filterBank, uint32_t filterId, uint32_t filterMaskId, uint32_t filterFIFOAssignment) {
+#if 0
   filterId = (filterId << 3) | CAN_ID_EXT;
   filterMaskId = (filterMaskId << 3) | CAN_ID_EXT;
   CAN_FilterTypeDef filterInit = {
@@ -194,6 +191,9 @@ void LoxCANDriver_STM32::FilterSetup(uint32_t filterBank, uint32_t filterId, uin
     .SlaveStartFilterBank = 0,
   };
   HAL_CAN_ConfigFilter(&gCan, &filterInit);
+#endif
+  // do not filter anything, because we might implement more than one extension/device
+  FilterAllowAll(0);
 }
 
 /***
@@ -234,7 +234,7 @@ uint8_t LoxCANDriver_STM32::GetReceiveErrorCounter() const {
  *  Send a message by putting it into the transmission queue
  ***/
 void LoxCANDriver_STM32::SendMessage(LoxCanMessage &message) {
-  xQueueSendToBack(&this->transmitQueue, &message, 0);
+  xQueueSendToBack(&this->transmitQueue, &message, 10);
 }
 
 /**

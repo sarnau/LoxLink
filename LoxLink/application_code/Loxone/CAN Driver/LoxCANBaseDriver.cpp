@@ -46,7 +46,7 @@ void LoxCANBaseDriver::FilterSetupNAT(int filterIndex, LoxCmdNATBus_t busType, u
   msg.directionNat = LoxCmdNATDirection_t_fromServer;
   msg.extensionNat = extensionNAT;
   FilterSetup(filterIndex, msg.identifier, 0x1F2FF000, 0);
-#if DEBUG
+#if DEBUG && 0
   printf("Filter #%d mask:%08x value:%08x\n", filterIndex, 0x1F2FF000, msg.identifier);
 #endif
 }

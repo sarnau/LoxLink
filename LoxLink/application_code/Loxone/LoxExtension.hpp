@@ -34,8 +34,6 @@ protected:
   virtual void SetState(eDeviceState state);
   virtual void ReceiveDirect(LoxCanMessage &message){};
   virtual void ReceiveBroadcast(LoxCanMessage &message){};
-  virtual void ReceiveDirectFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size){};
-  virtual void ReceiveBroadcastFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size){};
 
 public:
   LoxExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version);

@@ -107,7 +107,9 @@ void LoxNATExtension::send_fragmented_message(LoxMsgNATCommand_t command, const 
     int packageSize = 7;
     if (packageCount == 0)
       packageSize = size - offset;
+#if DEBUG
     memset(&msg.data, 0, 7); // remove garbage data
+#endif
     memmove(&msg.data, (uint8_t *)data + offset, packageSize);
     offset += 7;
     lox_send_package_if_nat(Fragment_Data, msg);
@@ -337,7 +339,7 @@ void LoxNATExtension::ReceiveBroadcast(LoxCanMessage &message) {
 /***
  *  A direct fragmented message received
  ***/
-void LoxNATExtension::ReceiveDirectFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size) {
+void LoxNATExtension::ReceiveDirectFragment(LoxMsgNATCommand_t command, uint8_t extensionNAT, uint8_t deviceNAT, const uint8_t *data, uint16_t size) {
   switch (command) {
   case Config_Data:
     config_data((const tConfigHeader *)data);
@@ -353,7 +355,7 @@ void LoxNATExtension::ReceiveDirectFragment(LoxMsgNATCommand_t command, const ui
 /***
  *  A broadcast fragmented message received
  ***/
-void LoxNATExtension::ReceiveBroadcastFragment(LoxMsgNATCommand_t command, const uint8_t *data, uint16_t size) {
+void LoxNATExtension::ReceiveBroadcastFragment(LoxMsgNATCommand_t command, uint8_t extensionNAT, uint8_t deviceNAT, const uint8_t *data, uint16_t size) {
   switch (command) {
   case Update_Reply:
     update((const eUpdatePackage *)data);
@@ -444,11 +446,9 @@ void LoxNATExtension::ReceiveMessage(LoxCanMessage &message) {
         break;
       // complete fragmented message received
       if (message.extensionNat == 0xFF) {
-        ReceiveBroadcastFragment(this->fragCommand, this->fragBuffer, this->fragSize);
+        ReceiveBroadcastFragment(this->fragCommand, message.extensionNat, message.deviceNAT, this->fragBuffer, this->fragSize);
       } else if (this->extensionNAT && message.extensionNat == this->extensionNAT) {
-        if (message.deviceNAT == 0x00 || driver.isTreeBusDriver()) { // to this device?
-          ReceiveDirectFragment(this->fragCommand, this->fragBuffer, this->fragSize);
-        }
+          ReceiveDirectFragment(this->fragCommand, message.extensionNat, message.deviceNAT, this->fragBuffer, this->fragSize);
       }
     }
     break;
@@ -457,9 +457,9 @@ void LoxNATExtension::ReceiveMessage(LoxCanMessage &message) {
     if (message.extensionNat == 0xFF) {
       ReceiveBroadcast(message);
     } else if (this->extensionNAT && message.extensionNat == this->extensionNAT) {
-      if (message.deviceNAT == 0x00 || driver.isTreeBusDriver()) { // to this device?
+//      if (message.deviceNAT == 0x00 || driver.isTreeBusDriver()) { // to this device?
         ReceiveDirect(message);
-      }
+//      }
     }
   }
 }

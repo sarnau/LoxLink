@@ -41,8 +41,10 @@ int main(void) {
   //static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, sResetReason);
   //static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
   static LoxBusTreeExtension gTreeExtension(gLoxCANDriver, serial_base, sResetReason);
-  //static LoxBusTreeRoomComfortSensor gTreeRoomComfortSensor(gLoxCANDriver, 0xb0112233, sResetReason);
-  //static LoxBusTreeTouch gLoxBusTreeTouch(gLoxCANDriver, 0xb010035b, sResetReason);
+  static LoxBusTreeRoomComfortSensor gTreeRoomComfortSensor(gTreeExtension.Driver(eTreeBranch_rightBranch), 0xb0112233, sResetReason);
+  gTreeExtension.AddDevice(&gTreeRoomComfortSensor, eTreeBranch_rightBranch);
+  static LoxBusTreeTouch gLoxBusTreeTouch(gTreeExtension.Driver(eTreeBranch_leftBranch), 0xb010035b, sResetReason);
+  gTreeExtension.AddDevice(&gLoxBusTreeTouch, eTreeBranch_leftBranch);
   //static LoxBusTreeAlarmSiren gLoxBusTreeAlarmSiren(gLoxCANDriver, 0xb010035c, sResetReason);
 
 #if DEBUG && 0

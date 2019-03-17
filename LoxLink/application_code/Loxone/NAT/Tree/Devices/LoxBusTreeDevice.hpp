@@ -9,6 +9,7 @@
 #define LoxBusTreeDevice_hpp
 
 #include "LoxNATExtension.hpp"
+#include <stdio.h>
 
 class LoxBusTreeDevice : public LoxNATExtension {
 public:
