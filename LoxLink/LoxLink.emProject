@@ -63,7 +63,7 @@
   </project>
   <configuration
     Name="Debug"
-    c_preprocessor_definitions="DEBUG;USE_SYSVIEW"
+    c_preprocessor_definitions="DEBUG"
     gcc_debugging_level="Level 3"
     gcc_optimization_level="None"
     linker_printf_fp_enabled="Float" />
