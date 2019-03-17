@@ -1,12 +1,12 @@
 //
-//  MMM_LoxNATExtension.hpp
+//  LoxNATExtension.hpp
 //
 //  Created by Markus Fritze on 03.03.19.
 //  Copyright (c) 2019 Markus Fritze. All rights reserved.
 //
 
-#ifndef MMM_LoxNATExtension_hpp
-#define MMM_LoxNATExtension_hpp
+#ifndef LoxNATExtension_hpp
+#define LoxNATExtension_hpp
 
 #include "LoxExtension.hpp"
 #include "system.hpp"
@@ -132,4 +132,4 @@ public:
   virtual void ReceiveMessage(LoxCanMessage &message);
 };
 
-#endif /* MMM_LoxNATExtension_hpp */
+#endif /* LoxNATExtension_hpp */
