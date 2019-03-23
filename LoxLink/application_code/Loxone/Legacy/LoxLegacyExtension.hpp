@@ -34,6 +34,16 @@ typedef enum { // some of these commands have different meanings, depending on t
   FragCmd_dali_log = 0x28,
 } LoxMsgLegacyFragmentedCommand_t;
 
+// Definition of the fragmented header
+typedef struct {
+    uint8_t command;
+    uint8_t packageIndex;
+    uint8_t fragCommand; // LoxMsgLegacyFragmentedCommand_t
+    uint8_t unused;
+    uint16_t size; // number of bytes in the fragment
+    uint16_t checksum; // byte checksum over the fragment
+} LoxFragHeader;
+
 class LoxLegacyExtension : public LoxExtension {
 protected:
   bool isMuted;
@@ -44,6 +54,10 @@ protected:
   bool firmwareUpdateActive;
   uint32_t firmwareNewVersion;
   uint32_t firmwareUpdateCRCs[64];
+  LoxFragHeader fragHeader;
+  int fragLargeIndex;
+  void *fragPtr;
+  uint16_t fragMaxSize;
 
   void sendCommandWithValues(LoxMsgLegacyCommand_t command, uint8_t val8, uint16_t val16, uint32_t val32);
   void sendCommandWithVersion(LoxMsgLegacyCommand_t command);
@@ -54,9 +68,10 @@ protected:
   virtual void PacketToExtension(LoxCanMessage &message);
   virtual void PacketFromExtension(LoxCanMessage &message);
   virtual void PacketFirmwareUpdate(LoxCanMessage &message);
+  virtual void FragmentedPacketToExtension(LoxMsgLegacyFragmentedCommand_t fragCommand, const void *fragData, int size) {};
 
 public:
-  LoxLegacyExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version);
+  LoxLegacyExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version, void *fragPtr = 0, uint16_t fragMaxSize = 0);
 
   virtual void Timer10ms(void);
   virtual void ReceiveMessage(LoxCanMessage &message);

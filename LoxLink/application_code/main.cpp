@@ -17,6 +17,7 @@
 #include "LoxCANDriver_STM32.hpp"
 #include "LoxLegacyRelayExtension.hpp"
 #include "LoxLegacyRS232Extension.hpp"
+#include "LoxLegacyDMXExtension.hpp"
 #include "SEGGER_SYSVIEW.h"
 
 int main(void) {
@@ -40,11 +41,12 @@ int main(void) {
   //static LoxLegacyRS232Extension gLoxLegacyRS232Extension(gLoxCANDriver, serial_base);
   //static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, sResetReason);
   //static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
-  static LoxBusTreeExtension gTreeExtension(gLoxCANDriver, serial_base, sResetReason);
-  static LoxBusTreeRoomComfortSensor gTreeRoomComfortSensor(gTreeExtension.Driver(eTreeBranch_rightBranch), 0xb0112233, sResetReason);
-  gTreeExtension.AddDevice(&gTreeRoomComfortSensor, eTreeBranch_rightBranch);
-  static LoxBusTreeTouch gLoxBusTreeTouch(gTreeExtension.Driver(eTreeBranch_leftBranch), 0xb010035b, sResetReason);
-  gTreeExtension.AddDevice(&gLoxBusTreeTouch, eTreeBranch_leftBranch);
+  static LoxLegacyDMXExtension gDMXExtension(gLoxCANDriver, serial_base);
+  //static LoxBusTreeExtension gTreeExtension(gLoxCANDriver, serial_base, sResetReason);
+  //static LoxBusTreeRoomComfortSensor gTreeRoomComfortSensor(gTreeExtension.Driver(eTreeBranch_rightBranch), 0xb0112233, sResetReason);
+  //gTreeExtension.AddDevice(&gTreeRoomComfortSensor, eTreeBranch_rightBranch);
+  //static LoxBusTreeTouch gLoxBusTreeTouch(gTreeExtension.Driver(eTreeBranch_leftBranch), 0xb010035b, sResetReason);
+  //gTreeExtension.AddDevice(&gLoxBusTreeTouch, eTreeBranch_leftBranch);
   //static LoxBusTreeAlarmSiren gLoxBusTreeAlarmSiren(gLoxCANDriver, 0xb010035c, sResetReason);
 
 #if DEBUG && 0

@@ -15,8 +15,8 @@
 /***
  *  Constructor
  ***/
-LoxLegacyExtension::LoxLegacyExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version)
-  : LoxExtension(driver, serial, device_type, hardware_version, version), aliveCountdown(0), isMuted(false), forceStartMessage(true), firmwareUpdateActive(false) {
+LoxLegacyExtension::LoxLegacyExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version, void *fragPtr, uint16_t fragMaxSize)
+  : LoxExtension(driver, serial, device_type, hardware_version, version), aliveCountdown(0), isMuted(false), forceStartMessage(true), firmwareUpdateActive(false), fragPtr(fragPtr), fragMaxSize(fragMaxSize) {
   SetState(eDeviceState_offline);
   gLED.identify_off();
   gLED.blink_red();
@@ -121,12 +121,13 @@ void LoxLegacyExtension::Timer10ms(void) {
     this->forceStartMessage = false;
     this->isMuted = false;
     sendCommandWithVersion(start_request);
+    sendCommandWithValues(config_checksum, 0, 0, 0); // required from the DMX Extension, otherwise it is considered offline
     resetAliveCountdown = true;
   } else if (this->aliveCountdown <= 0) {
     sendCommandWithVersion(alive);
     resetAliveCountdown = true;
   }
-  if(resetAliveCountdown)
+  if (resetAliveCountdown)
     this->aliveCountdown = 1000 * ((this->serial & 0x3f) + 6 * 60); // avoid that all alive packages from all extensions are sent at the same time
   this->aliveCountdown -= 10;
 }
@@ -205,6 +206,7 @@ void LoxLegacyExtension::PacketMulticastExtension(LoxCanMessage &message) {
  *  Packages to a specific extension based on it's serial number
  ***/
 void LoxLegacyExtension::PacketToExtension(LoxCanMessage &message) {
+  const LoxFragHeader *header = (const LoxFragHeader *)message.can_data;
   switch (message.commandLegacy) {
   case identify: // first direct command from the Miniserver after boot
     this->firmwareUpdateActive = false;
@@ -230,6 +232,53 @@ void LoxLegacyExtension::PacketToExtension(LoxCanMessage &message) {
     break;
   case mute_all:
     this->isMuted = true;
+    break;
+  case fragmented_package:           // package size less then 1530 bytes (255 * 6 byte)
+    if (header->packageIndex == 0) { // header
+      memmove(&this->fragHeader, header, sizeof(this->fragHeader));
+    } else { // data block with 6 bytes of data
+      int currentSize = (header->packageIndex - 1) * 6;
+      if (currentSize < this->fragMaxSize) {
+        int count = this->fragMaxSize - currentSize;
+        if (count > 6)
+          count = 6;
+        memmove((uint8_t *)this->fragPtr + currentSize, message.data + 1, count);
+        currentSize += count;
+        if (currentSize >= this->fragHeader.size) {
+          uint16_t checksum = 0;
+          for (int i = 0; i < this->fragHeader.size; ++i) {
+            checksum += ((uint8_t *)this->fragPtr)[i];
+          }
+          if (checksum == this->fragHeader.checksum) {
+            FragmentedPacketToExtension(LoxMsgLegacyFragmentedCommand_t(this->fragHeader.fragCommand), this->fragPtr, this->fragHeader.size);
+          }
+        }
+      }
+    }
+    break;
+  case fragmented_package_large_data: { // package size less then 64kb, each message contains 7 bytes of data
+    int currentSize = this->fragLargeIndex++ * 7;
+    if (currentSize < this->fragMaxSize) {
+      int count = this->fragMaxSize - currentSize;
+      if (count > 7)
+        count = 7;
+      memmove((uint8_t *)this->fragPtr + currentSize, message.data, count);
+      currentSize += count;
+      if (currentSize >= this->fragHeader.size) {
+        uint16_t checksum = 0;
+        for (int i = 0; i < this->fragHeader.size; ++i) {
+          checksum += ((uint8_t *)this->fragPtr)[i];
+        }
+        if (checksum == this->fragHeader.checksum) {
+          FragmentedPacketToExtension(LoxMsgLegacyFragmentedCommand_t(this->fragHeader.fragCommand), this->fragPtr, this->fragHeader.size);
+        }
+      }
+    }
+    break;
+  }
+  case fragmented_package_large_start:
+    memmove(&this->fragHeader, header, sizeof(this->fragHeader));
+    this->fragLargeIndex = 0;
     break;
   default:
     break;
