@@ -233,7 +233,9 @@ void LoxLegacyExtension::PacketToExtension(LoxCanMessage &message) {
   case mute_all:
     this->isMuted = true;
     break;
-  case fragmented_package:           // package size less then 1530 bytes (255 * 6 byte)
+  case fragmented_package:      // package size less then 1530 bytes (255 * 6 byte)
+    if (this->fragMaxSize == 0) // no fragmented messages expected?
+      break;
     if (header->packageIndex == 0) { // header
       memmove(&this->fragHeader, header, sizeof(this->fragHeader));
     } else { // data block with 6 bytes of data
@@ -257,6 +259,8 @@ void LoxLegacyExtension::PacketToExtension(LoxCanMessage &message) {
     }
     break;
   case fragmented_package_large_data: { // package size less then 64kb, each message contains 7 bytes of data
+    if (this->fragMaxSize == 0)         // no fragmented messages expected?
+      break;
     int currentSize = this->fragLargeIndex++ * 7;
     if (currentSize < this->fragMaxSize) {
       int count = this->fragMaxSize - currentSize;
@@ -277,6 +281,8 @@ void LoxLegacyExtension::PacketToExtension(LoxCanMessage &message) {
     break;
   }
   case fragmented_package_large_start:
+    if (this->fragMaxSize == 0) // no fragmented messages expected?
+      break;
     memmove(&this->fragHeader, header, sizeof(this->fragHeader));
     this->fragLargeIndex = 0;
     break;
