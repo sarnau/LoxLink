@@ -166,6 +166,9 @@ void LoxCANDriver_STM32::Startup(void) {
   HAL_CAN_ActivateNotification(&gCan, CAN_IT_ERROR);           // Error Interrupt
   HAL_CAN_Start(&gCan);
 
+  // do not filter anything, because we might implement more than one extension/device
+  FilterAllowAll(0);
+
   // FYI: At least one filter is required to be able to receive any data.
   LoxCANBaseDriver::Startup();
 }
@@ -192,8 +195,7 @@ void LoxCANDriver_STM32::FilterSetup(uint32_t filterBank, uint32_t filterId, uin
   };
   HAL_CAN_ConfigFilter(&gCan, &filterInit);
 #endif
-  // do not filter anything, because we might implement more than one extension/device
-  FilterAllowAll(0);
+    // an all filter is active anyway (see above). This is necessary for legacy extensions and support for multiple extensions on the same system.
 }
 
 /***
