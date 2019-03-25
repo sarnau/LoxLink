@@ -11,7 +11,7 @@ extern "C" {
 //#define WITH_ICMP
 #define WITH_DHCP
 #define WITH_UDP
-#define WITH_TCP
+//#define WITH_TCP
 //#define WITH_TCP_REXMIT
 
 /***
@@ -24,7 +24,6 @@ extern "C" {
 #endif
 
 #define ARP_CACHE_SIZE 3
-
 #define IP_PACKET_TTL 64
 
 #ifdef WITH_TCP
@@ -63,27 +62,6 @@ typedef struct eth_frame {
   uint16_t type;
   uint8_t data[];
 } eth_frame_t;
-
-/***
- *  ARP
- ***/
-#define ARP_HW_TYPE_ETH htons(0x0001)
-#define ARP_PROTO_TYPE_IP htons(0x0800)
-
-#define ARP_TYPE_REQUEST htons(1)
-#define ARP_TYPE_RESPONSE htons(2)
-
-typedef struct arp_message {
-  uint16_t hw_type;
-  uint16_t proto_type;
-  uint8_t hw_addr_len;
-  uint8_t proto_addr_len;
-  uint16_t type;
-  uint8_t mac_addr_from[6];
-  uint8_t ip_addr_from[4];
-  uint8_t mac_addr_to[6];
-  uint8_t ip_addr_to[4];
-} arp_message_t;
 
 /***
  *  IP
@@ -200,12 +178,15 @@ typedef enum tcp_sending_mode {
  *  LAN
  ***/
 
-extern uint8_t net_buf[];
+extern uint8_t gLan_net_buf[];
+extern uint32_t gLan_ip_addr;
+extern uint32_t gLan_ip_mask;
+extern uint32_t gLan_ip_gateway;
 
 // LAN calls
 void lan_init(void);
 void lan_poll(void);
-uint8_t lan_up(void);
+int lan_up(void);
 
 #ifdef WITH_UDP
 // UDP callback

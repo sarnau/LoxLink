@@ -6,15 +6,36 @@ static uint8_t mac_addr[6];
 
 // IP address/mask/gateway
 #ifndef WITH_DHCP
-static uint32_t ip_addr = IP_ADDR;
-static uint32_t ip_mask = IP_SUBNET_MASK;
-static uint32_t ip_gateway = IP_DEFAULT_GATEWAY;
+uint32_t gLan_ip_addr = IP_ADDR;
+uint32_t gLan_ip_mask = IP_SUBNET_MASK;
+uint32_t gLan_ip_gateway = IP_DEFAULT_GATEWAY;
 #endif
 
-#define ip_broadcast (ip_addr | ~ip_mask)
+#define ip_broadcast (gLan_ip_addr | ~gLan_ip_mask)
 
 // Packet buffer
-uint8_t net_buf[ENC28J60_MAX_FRAMELEN];
+uint8_t gLan_net_buf[ENC28J60_MAX_FRAMELEN];
+
+/***
+ *  ARP
+ ***/
+#define ARP_HW_TYPE_ETH htons(0x0001)
+#define ARP_PROTO_TYPE_IP htons(0x0800)
+
+#define ARP_TYPE_REQUEST htons(1)
+#define ARP_TYPE_RESPONSE htons(2)
+
+typedef struct arp_message {
+  uint16_t hw_type;
+  uint16_t proto_type;
+  uint8_t hw_addr_len;
+  uint8_t proto_addr_len;
+  uint16_t type;
+  uint8_t mac_addr_from[6];
+  uint8_t ip_addr_from[4];
+  uint8_t mac_addr_to[6];
+  uint8_t ip_addr_to[4];
+} arp_message_t;
 
 // ARP cache
 typedef struct arp_cache_entry {
@@ -103,9 +124,9 @@ static uint32_t dhcp_server;
 static uint32_t dhcp_renew_time;
 static uint32_t dhcp_retry_time;
 static uint32_t dhcp_transaction_id;
-static uint32_t ip_addr;
-static uint32_t ip_mask;
-static uint32_t ip_gateway;
+uint32_t gLan_ip_addr;
+uint32_t gLan_ip_mask;
+uint32_t gLan_ip_gateway;
 
 #define DHCP_HOSTNAME_MAX_LEN 24
 static char dhcp_hostname[DHCP_HOSTNAME_MAX_LEN] = "STM32-";
@@ -247,9 +268,9 @@ void dhcp_filter(eth_frame_t *frame, uint16_t len) {
         dhcp_retry_time = HAL_GetTick() / 1000 + lease_time;
 
         // network up
-        ip_addr = dhcp->offered_addr;
-        ip_mask = offered_net_mask;
-        ip_gateway = offered_gateway;
+        gLan_ip_addr = dhcp->offered_addr;
+        gLan_ip_mask = offered_net_mask;
+        gLan_ip_gateway = offered_gateway;
       }
       break;
     }
@@ -257,7 +278,7 @@ void dhcp_filter(eth_frame_t *frame, uint16_t len) {
 }
 
 void dhcp_poll() {
-  eth_frame_t *frame = (eth_frame_t *)net_buf;
+  eth_frame_t *frame = (eth_frame_t *)gLan_net_buf;
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   udp_packet_t *udp = (udp_packet_t *)(ip->data);
   dhcp_message_t *dhcp = (dhcp_message_t *)(udp->data);
@@ -286,9 +307,9 @@ void dhcp_poll() {
     dhcp_transaction_id = HAL_GetTick() + (HAL_GetTick() << 16);
 
     // network down
-    ip_addr = 0;
-    ip_mask = 0;
-    ip_gateway = 0;
+    gLan_ip_addr = 0;
+    gLan_ip_mask = 0;
+    gLan_ip_gateway = 0;
 
     // send DHCP discover
     ip->to_addr = inet_addr(255, 255, 255, 255);
@@ -329,17 +350,14 @@ void dhcp_poll() {
     dhcp->hw_addr_type = DHCP_HW_ADDR_TYPE_ETH;
     dhcp->hw_addr_len = 6;
     dhcp->transaction_id = dhcp_transaction_id;
-    dhcp->client_addr = ip_addr;
+    dhcp->client_addr = gLan_ip_addr;
     memcpy(dhcp->hw_addr, mac_addr, 6);
     dhcp->magic_cookie = DHCP_MAGIC_COOKIE;
 
     op = dhcp->options;
-    dhcp_add_option(op, DHCP_CODE_MESSAGETYPE,
-      uint8_t, DHCP_MESSAGE_REQUEST);
-    dhcp_add_option(op, DHCP_CODE_REQUESTEDADDR,
-      uint32_t, ip_addr);
-    dhcp_add_option(op, DHCP_CODE_DHCPSERVER,
-      uint32_t, dhcp_server);
+    dhcp_add_option(op, DHCP_CODE_MESSAGETYPE, uint8_t, DHCP_MESSAGE_REQUEST);
+    dhcp_add_option(op, DHCP_CODE_REQUESTEDADDR, uint32_t, gLan_ip_addr);
+    dhcp_add_option(op, DHCP_CODE_DHCPSERVER, uint32_t, dhcp_server);
     *(op++) = DHCP_CODE_END;
 
     if (!udp_send(frame, (uint8_t *)op - (uint8_t *)dhcp)) {
@@ -384,7 +402,7 @@ uint8_t tcp_xmit(tcp_state_t *st, eth_frame_t *frame, uint16_t len) {
   if (tcp_send_mode == TCP_SENDING_SEND) {
     // set packet fields
     ip->to_addr = st->remote_addr;
-    ip->from_addr = ip_addr;
+    ip->from_addr = gLan_ip_addr;
     ip->protocol = IP_PROTOCOL_TCP;
     tcp->to_port = st->remote_port;
     tcp->from_port = st->local_port;
@@ -455,7 +473,7 @@ uint8_t tcp_xmit(tcp_state_t *st, eth_frame_t *frame, uint16_t len) {
 // sending SYN to peer
 // return: 0xff - error, other value - connection id (not established)
 uint8_t tcp_open(uint32_t addr, uint16_t port, uint16_t local_port) {
-  eth_frame_t *frame = (eth_frame_t *)net_buf;
+  eth_frame_t *frame = (eth_frame_t *)gLan_net_buf;
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
   tcp_state_t *st = 0, *pst;
@@ -537,7 +555,7 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
   tcp_state_t *st = 0, *pst;
   uint8_t id, tcpflags;
 
-  if (ip->to_addr != ip_addr)
+  if (ip->to_addr != gLan_ip_addr)
     return;
 
   // tcp data length
@@ -765,7 +783,7 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
 // periodic event
 void tcp_poll() {
 #ifdef WITH_TCP_REXMIT
-  eth_frame_t *frame = (eth_frame_t *)net_buf;
+  eth_frame_t *frame = (eth_frame_t *)gLan_net_buf;
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
 #endif
@@ -875,7 +893,7 @@ uint8_t udp_send(eth_frame_t *frame, uint16_t len) {
   len += sizeof(udp_packet_t);
 
   ip->protocol = IP_PROTOCOL_UDP;
-  ip->from_addr = ip_addr;
+  ip->from_addr = gLan_ip_addr;
 
   udp->len = htons(len);
   udp->cksum = 0;
@@ -892,7 +910,7 @@ void udp_reply(eth_frame_t *frame, uint16_t len) {
 
   len += sizeof(udp_packet_t);
 
-  ip->to_addr = ip_addr;
+  ip->to_addr = gLan_ip_addr;
 
   uint16_t temp = udp->from_port;
   udp->from_port = udp->to_port;
@@ -984,10 +1002,10 @@ uint8_t ip_send(eth_frame_t *frame, uint16_t len) {
   } else {
     // apply route
     uint32_t route_ip;
-    if (((ip->to_addr ^ ip_addr) & ip_mask) == 0)
+    if (((ip->to_addr ^ gLan_ip_addr) & gLan_ip_mask) == 0)
       route_ip = ip->to_addr;
     else
-      route_ip = ip_gateway;
+      route_ip = gLan_ip_gateway;
 
     // resolve mac address
     uint8_t *mac_addr_to = arp_resolve(route_ip);
@@ -1009,7 +1027,7 @@ uint8_t ip_send(eth_frame_t *frame, uint16_t len) {
   ip->flags_framgent_offset = 0;
   ip->ttl = IP_PACKET_TTL;
   ip->cksum = 0;
-  ip->from_addr = ip_addr;
+  ip->from_addr = gLan_ip_addr;
   ip->cksum = ip_cksum(0, (void *)ip, sizeof(ip_packet_t));
 
   // send frame
@@ -1030,7 +1048,7 @@ void ip_reply(eth_frame_t *frame, uint16_t len) {
   packet->ttl = IP_PACKET_TTL;
   packet->cksum = 0;
   packet->to_addr = packet->from_addr;
-  packet->from_addr = ip_addr;
+  packet->from_addr = gLan_ip_addr;
   packet->cksum = ip_cksum(0, (void *)packet, sizeof(ip_packet_t));
 
   eth_reply((void *)frame, len);
@@ -1058,7 +1076,7 @@ void ip_filter(eth_frame_t *frame, uint16_t len) {
 
   if ((packet->ver_head_len == 0x45) &&
       (ip_cksum(0, (void *)packet, sizeof(ip_packet_t)) == hcs) &&
-      ((packet->to_addr == ip_addr) || (packet->to_addr == ip_broadcast))) {
+      ((packet->to_addr == gLan_ip_addr) || (packet->to_addr == ip_broadcast))) {
     len = ntohs(packet->total_len) - sizeof(ip_packet_t);
     switch (packet->protocol) {
 #ifdef WITH_ICMP
@@ -1099,7 +1117,7 @@ uint8_t *arp_search_cache(uint32_t node_ip_addr) {
 // returns 0 if still resolving
 // (invalidates net_buffer if not resolved)
 uint8_t *arp_resolve(uint32_t node_ip_addr) {
-  eth_frame_t *frame = (eth_frame_t *)net_buf;
+  eth_frame_t *frame = (eth_frame_t *)gLan_net_buf;
   arp_message_t *msg = (arp_message_t *)(frame->data);
 
   // search arp cache
@@ -1117,10 +1135,10 @@ uint8_t *arp_resolve(uint32_t node_ip_addr) {
   msg->proto_addr_len = 4;
   msg->type = ARP_TYPE_REQUEST;
   memcpy(msg->mac_addr_from, mac_addr, 6);
-  msg->ip_addr_from[3] = ip_addr >> 24;
-  msg->ip_addr_from[2] = ip_addr >> 16;
-  msg->ip_addr_from[1] = ip_addr >> 8;
-  msg->ip_addr_from[0] = ip_addr >> 0;
+  msg->ip_addr_from[3] = gLan_ip_addr >> 24;
+  msg->ip_addr_from[2] = gLan_ip_addr >> 16;
+  msg->ip_addr_from[1] = gLan_ip_addr >> 8;
+  msg->ip_addr_from[0] = gLan_ip_addr >> 0;
   memset(msg->mac_addr_to, 0x00, 6);
   msg->ip_addr_to[3] = node_ip_addr >> 24;
   msg->ip_addr_to[2] = node_ip_addr >> 16;
@@ -1138,7 +1156,7 @@ void arp_filter(eth_frame_t *frame, uint16_t len) {
   if (len >= sizeof(arp_message_t)) {
     if ((msg->hw_type == ARP_HW_TYPE_ETH) &&
         (msg->proto_type == ARP_PROTO_TYPE_IP) &&
-        (ipv4(msg->ip_addr_to) == ip_addr)) {
+        (ipv4(msg->ip_addr_to) == gLan_ip_addr)) {
       switch (msg->type) {
       case ARP_TYPE_REQUEST:
         msg->type = ARP_TYPE_RESPONSE;
@@ -1148,10 +1166,10 @@ void arp_filter(eth_frame_t *frame, uint16_t len) {
         msg->ip_addr_to[2] = msg->ip_addr_from[2];
         msg->ip_addr_to[1] = msg->ip_addr_from[1];
         msg->ip_addr_to[0] = msg->ip_addr_from[0];
-        msg->ip_addr_from[3] = ip_addr >> 24;
-        msg->ip_addr_from[2] = ip_addr >> 16;
-        msg->ip_addr_from[1] = ip_addr >> 8;
-        msg->ip_addr_from[0] = ip_addr >> 0;
+        msg->ip_addr_from[3] = gLan_ip_addr >> 24;
+        msg->ip_addr_from[2] = gLan_ip_addr >> 16;
+        msg->ip_addr_from[1] = gLan_ip_addr >> 8;
+        msg->ip_addr_from[0] = gLan_ip_addr >> 0;
         eth_reply(frame, sizeof(arp_message_t));
         break;
       case ARP_TYPE_RESPONSE:
@@ -1253,8 +1271,8 @@ void lan_init() {
 
 void lan_poll() {
   uint16_t len;
-  while ((len = ENC28J60_receivePacket(net_buf, sizeof(net_buf)))) {
-    eth_frame_t *frame = (eth_frame_t *)net_buf;
+  while ((len = ENC28J60_receivePacket(gLan_net_buf, sizeof(gLan_net_buf)))) {
+    eth_frame_t *frame = (eth_frame_t *)gLan_net_buf;
     eth_filter(frame, len);
   }
 
@@ -1267,6 +1285,6 @@ void lan_poll() {
 #endif
 }
 
-uint8_t lan_up() {
-  return ip_addr != 0;
+int lan_up(void) {
+  return gLan_ip_addr != 0;
 }

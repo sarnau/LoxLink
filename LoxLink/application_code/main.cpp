@@ -24,12 +24,23 @@
 
 #ifdef WITH_UDP
 void udp_packet(eth_frame_t *frame, uint16_t len) {
-  printf("udp_packet %02x:%02x:%02x:%02x:%02x:%02x -> %02x:%02x:%02x:%02x:%02x:%02x 0x%04x (%d)\n", frame->from_addr[0], frame->from_addr[1], frame->from_addr[2], frame->from_addr[3], frame->from_addr[4], frame->from_addr[5], frame->to_addr[0], frame->to_addr[1], frame->to_addr[2], frame->to_addr[3], frame->to_addr[4], frame->to_addr[5],
-    ntohs(frame->type), len);
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
-  printf("ip_packet %d %08x %08x\n", ip->protocol, ntohl(ip->from_addr), ntohl(ip->to_addr));
   udp_packet_t *udp = (udp_packet_t *)(ip->data);
-  printf("udp_packet_t %d->%d len: %d\n", udp->from_port, udp->to_port, udp->len);
+  if (ntohl(ip->to_addr) == ntohl(gLan_ip_addr) and ntohs(udp->to_port) == 8888) {
+    printf("udp_packet %08x:%d -> %08x:%d\n", ntohl(ip->from_addr), ntohs(udp->from_port), ntohl(ip->to_addr), ntohs(udp->to_port));
+    printf("len: %d \"%s\"\n", ntohs(udp->len) - sizeof(udp_packet_t), udp->data);
+
+    // send a reply from port 8888
+    static uint8_t udpBuf[128];
+    eth_frame_t *sframe = (eth_frame_t *)udpBuf;
+    ip_packet_t *sip = (ip_packet_t *)(sframe->data);
+    udp_packet_t *sudp = (udp_packet_t *)(sip->data);
+    strcpy((char *)sudp->data, "TEST");
+    sip->to_addr = ip->from_addr;
+    sudp->to_port = udp->from_port;
+    sudp->from_port = htons(8888);
+    udp_send(sframe, strlen((char *)sudp->data));
+  }
 }
 #endif
 
@@ -59,18 +70,7 @@ void vEthernetTask(void *pvParameters) {
   lan_init();
   while (1) {
     lan_poll();
-
-#ifdef WITH_UDP
-    eth_frame_t *frame = (eth_frame_t *)net_buf;
-    ip_packet_t *ip = (ip_packet_t *)(frame->data);
-    udp_packet_t *udp = (udp_packet_t *)(ip->data);
-    strcpy((char*)udp->data, "TEST");
-    ip->to_addr = inet_addr(192,168,178,60);
-    udp->to_port = htons(10000);
-    udp->from_port = htons(10000);
-    udp_send(frame, 4);
-#endif
-    vTaskDelay(pdMS_TO_TICKS(1000)); // 1s delay
+    vTaskDelay(pdMS_TO_TICKS(1)); // 1ms delay
   }
 }
 
