@@ -22,6 +22,7 @@
 #include "lan.h"
 #include <string.h>
 
+#ifdef WITH_UDP
 void udp_packet(eth_frame_t *frame, uint16_t len) {
   printf("udp_packet %02x:%02x:%02x:%02x:%02x:%02x -> %02x:%02x:%02x:%02x:%02x:%02x 0x%04x (%d)\n", frame->from_addr[0], frame->from_addr[1], frame->from_addr[2], frame->from_addr[3], frame->from_addr[4], frame->from_addr[5], frame->to_addr[0], frame->to_addr[1], frame->to_addr[2], frame->to_addr[3], frame->to_addr[4], frame->to_addr[5],
     ntohs(frame->type), len);
@@ -30,8 +31,9 @@ void udp_packet(eth_frame_t *frame, uint16_t len) {
   udp_packet_t *udp = (udp_packet_t *)(ip->data);
   printf("udp_packet_t %d->%d len: %d\n", udp->from_port, udp->to_port, udp->len);
 }
+#endif
 
-#if WITH_TCP
+#ifdef WITH_TCP
 void tcp_closed(uint8_t id, uint8_t hard) {
   printf("tcp_closed\n");
 }
@@ -58,16 +60,16 @@ void vEthernetTask(void *pvParameters) {
   while (1) {
     lan_poll();
 
-   static uint8_t net_buf[1000];
+#ifdef WITH_UDP
     eth_frame_t *frame = (eth_frame_t *)net_buf;
     ip_packet_t *ip = (ip_packet_t *)(frame->data);
     udp_packet_t *udp = (udp_packet_t *)(ip->data);
-    strcpy((char*)udp->data, "MARKUS");
+    strcpy((char*)udp->data, "TEST");
     ip->to_addr = inet_addr(192,168,178,60);
     udp->to_port = htons(10000);
     udp->from_port = htons(10000);
     udp_send(frame, 6);
-
+#endif
     vTaskDelay(pdMS_TO_TICKS(1000)); // 1s delay
   }
 }
