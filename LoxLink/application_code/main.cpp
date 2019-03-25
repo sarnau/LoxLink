@@ -44,25 +44,6 @@ void udp_packet(eth_frame_t *frame, uint16_t len) {
 }
 #endif
 
-#ifdef WITH_TCP
-void tcp_closed(uint8_t id, uint8_t hard) {
-  printf("tcp_closed\n");
-}
-
-void tcp_read(uint8_t id, eth_frame_t *frame, uint8_t re) {
-  printf("tcp_read\n");
-}
-
-void tcp_write(uint8_t id, eth_frame_t *frame, uint16_t len) {
-  printf("tcp_write\n");
-}
-
-uint8_t tcp_listen(uint8_t id, eth_frame_t *frame) {
-  printf("tcp_listen\n");
-  return false;
-}
-#endif
-
 /***
  *  Trigger the watchdog every second
  ***/

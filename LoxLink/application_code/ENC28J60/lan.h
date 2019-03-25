@@ -10,7 +10,7 @@ extern "C" {
 #define WITH_ICMP // enable support for ping
 #define WITH_DHCP // DHCP IP lookup, instead of a static IP
 #define WITH_UDP // sending/receiving UDP packages
-//#define WITH_TCP // TCP connection support
+#define WITH_TCP // TCP connection support
 //#define WITH_TCP_REXMIT
 
 /***
