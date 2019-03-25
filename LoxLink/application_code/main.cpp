@@ -15,10 +15,71 @@
 #include "LoxBusTreeRoomComfortSensor.hpp"
 #include "LoxBusTreeTouch.hpp"
 #include "LoxCANDriver_STM32.hpp"
-#include "LoxLegacyRelayExtension.hpp"
-#include "LoxLegacyRS232Extension.hpp"
 #include "LoxLegacyDMXExtension.hpp"
+#include "LoxLegacyRS232Extension.hpp"
+#include "LoxLegacyRelayExtension.hpp"
 #include "SEGGER_SYSVIEW.h"
+#include "lan.h"
+#include <string.h>
+
+void udp_packet(eth_frame_t *frame, uint16_t len) {
+  printf("udp_packet %02x:%02x:%02x:%02x:%02x:%02x -> %02x:%02x:%02x:%02x:%02x:%02x 0x%04x (%d)\n", frame->from_addr[0], frame->from_addr[1], frame->from_addr[2], frame->from_addr[3], frame->from_addr[4], frame->from_addr[5], frame->to_addr[0], frame->to_addr[1], frame->to_addr[2], frame->to_addr[3], frame->to_addr[4], frame->to_addr[5],
+    ntohs(frame->type), len);
+  ip_packet_t *ip = (ip_packet_t *)(frame->data);
+  printf("ip_packet %d %08x %08x\n", ip->protocol, ntohl(ip->from_addr), ntohl(ip->to_addr));
+  udp_packet_t *udp = (udp_packet_t *)(ip->data);
+  printf("udp_packet_t %d->%d len: %d\n", udp->from_port, udp->to_port, udp->len);
+}
+
+#if WITH_TCP
+void tcp_closed(uint8_t id, uint8_t hard) {
+  printf("tcp_closed\n");
+}
+
+void tcp_read(uint8_t id, eth_frame_t *frame, uint8_t re) {
+  printf("tcp_read\n");
+}
+
+void tcp_write(uint8_t id, eth_frame_t *frame, uint16_t len) {
+  printf("tcp_write\n");
+}
+
+uint8_t tcp_listen(uint8_t id, eth_frame_t *frame) {
+  printf("tcp_listen\n");
+  return false;
+}
+#endif
+
+/***
+ *  Trigger the watchdog every second
+ ***/
+void vEthernetTask(void *pvParameters) {
+  lan_init();
+  while (1) {
+    lan_poll();
+
+   static uint8_t net_buf[1000];
+    eth_frame_t *frame = (eth_frame_t *)net_buf;
+    ip_packet_t *ip = (ip_packet_t *)(frame->data);
+    udp_packet_t *udp = (udp_packet_t *)(ip->data);
+    strcpy((char*)udp->data, "MARKUS");
+    ip->to_addr = inet_addr(192,168,178,60);
+    udp->to_port = htons(10000);
+    udp->from_port = htons(10000);
+    udp_send(frame, 6);
+
+    vTaskDelay(pdMS_TO_TICKS(1000)); // 1s delay
+  }
+}
+
+/***
+ *
+ ***/
+void Start_Ethernet(void) {
+  static StackType_t sEthernetTaskStack[configMINIMAL_STACK_SIZE];
+  static StaticTask_t sEthernetTask;
+  xTaskCreateStatic(vEthernetTask, "EthernetTask", configMINIMAL_STACK_SIZE, NULL, 2, sEthernetTaskStack, &sEthernetTask);
+}
 
 int main(void) {
   HAL_Init();
@@ -55,13 +116,13 @@ int main(void) {
   gLED.Startup();
   gLoxCANDriver.Startup();
 
+  Start_Ethernet();
   Start_Watchdog();
 
   vTaskStartScheduler();
   NVIC_SystemReset(); // should never reach this point
   return 0;
 }
-
 
 #if defined(USE_SYSVIEW)
 
@@ -84,28 +145,28 @@ extern unsigned int SystemCoreClock;
 **********************************************************************
 */
 // The application name to be displayed in SystemViewer
-#define SYSVIEW_APP_NAME        "LoxLink"
+#define SYSVIEW_APP_NAME "LoxLink"
 
 // The target device name
-#define SYSVIEW_DEVICE_NAME     "Cortex-M3"
+#define SYSVIEW_DEVICE_NAME "Cortex-M3"
 
 // Frequency of the timestamp. Must match SEGGER_SYSVIEW_Conf.h
-#define SYSVIEW_TIMESTAMP_FREQ  (SystemCoreClock)
+#define SYSVIEW_TIMESTAMP_FREQ (SystemCoreClock)
 
 // System Frequency. SystemcoreClock is used in most CMSIS compatible projects.
-#define SYSVIEW_CPU_FREQ        (SystemCoreClock)
+#define SYSVIEW_CPU_FREQ (SystemCoreClock)
 
 // The lowest RAM address used for IDs (pointers)
-#define SYSVIEW_RAM_BASE        (0x20000000)
+#define SYSVIEW_RAM_BASE (0x20000000)
 
 // Define as 1 if the Cortex-M cycle counter is used as SystemView timestamp. Must match SEGGER_SYSVIEW_Conf.h
-#ifndef   USE_CYCCNT_TIMESTAMP
-  #define USE_CYCCNT_TIMESTAMP    1
+#ifndef USE_CYCCNT_TIMESTAMP
+#define USE_CYCCNT_TIMESTAMP 1
 #endif
 
 // Define as 1 if the Cortex-M cycle counter is used and there might be no debugger attached while recording.
-#ifndef   ENABLE_DWT_CYCCNT
-  #define ENABLE_DWT_CYCCNT       (USE_CYCCNT_TIMESTAMP & SEGGER_SYSVIEW_POST_MORTEM_MODE)
+#ifndef ENABLE_DWT_CYCCNT
+#define ENABLE_DWT_CYCCNT (USE_CYCCNT_TIMESTAMP & SEGGER_SYSVIEW_POST_MORTEM_MODE)
 #endif
 
 /*********************************************************************
@@ -114,11 +175,11 @@ extern unsigned int SystemCoreClock;
 *
 **********************************************************************
 */
-#define DEMCR                     (*(volatile unsigned long*) (0xE000EDFCuL))   // Debug Exception and Monitor Control Register
-#define TRACEENA_BIT              (1uL << 24)                                   // Trace enable bit
-#define DWT_CTRL                  (*(volatile unsigned long*) (0xE0001000uL))   // DWT Control Register
-#define NOCYCCNT_BIT              (1uL << 25)                                   // Cycle counter support bit
-#define CYCCNTENA_BIT             (1uL << 0)                                    // Cycle counter enable bit
+#define DEMCR (*(volatile unsigned long *)(0xE000EDFCuL))    // Debug Exception and Monitor Control Register
+#define TRACEENA_BIT (1uL << 24)                             // Trace enable bit
+#define DWT_CTRL (*(volatile unsigned long *)(0xE0001000uL)) // DWT Control Register
+#define NOCYCCNT_BIT (1uL << 25)                             // Cycle counter support bit
+#define CYCCNTENA_BIT (1uL << 0)                             // Cycle counter enable bit
 
 /********************************************************************* 
 *
@@ -128,7 +189,7 @@ extern unsigned int SystemCoreClock;
 *    Sends SystemView description strings.
 */
 static void _cbSendSystemDesc(void) {
-  SEGGER_SYSVIEW_SendSysDesc("N="SYSVIEW_APP_NAME",D="SYSVIEW_DEVICE_NAME);
+  SEGGER_SYSVIEW_SendSysDesc("N=" SYSVIEW_APP_NAME ",D=" SYSVIEW_DEVICE_NAME);
   SEGGER_SYSVIEW_SendSysDesc("I#15=SysTick");
 }
 
@@ -152,14 +213,14 @@ void SEGGER_SYSVIEW_Conf(void) {
   //  The cycle counter must be activated in order
   //  to use time related functions.
   //
-  if ((DWT_CTRL & NOCYCCNT_BIT) == 0) {       // Cycle counter supported?
-    if ((DWT_CTRL & CYCCNTENA_BIT) == 0) {    // Cycle counter not enabled?
-      DWT_CTRL |= CYCCNTENA_BIT;              // Enable Cycle counter
+  if ((DWT_CTRL & NOCYCCNT_BIT) == 0) {    // Cycle counter supported?
+    if ((DWT_CTRL & CYCCNTENA_BIT) == 0) { // Cycle counter not enabled?
+      DWT_CTRL |= CYCCNTENA_BIT;           // Enable Cycle counter
     }
   }
 #endif
-  SEGGER_SYSVIEW_Init(SYSVIEW_TIMESTAMP_FREQ, SYSVIEW_CPU_FREQ, 
-                      0, _cbSendSystemDesc);
+  SEGGER_SYSVIEW_Init(SYSVIEW_TIMESTAMP_FREQ, SYSVIEW_CPU_FREQ,
+    0, _cbSendSystemDesc);
   SEGGER_SYSVIEW_SetRAMBase(SYSVIEW_RAM_BASE);
 }
 
