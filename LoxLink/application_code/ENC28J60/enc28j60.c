@@ -586,20 +586,21 @@ void ENC28J60_sendPacket(const uint8_t *data, uint16_t len) {
 uint16_t ENC28J60_receivePacket(uint8_t *buf, uint16_t buflen) {
   static uint16_t sCurrentRXPointer = ENC28J60_RXSTART;
   uint16_t len = 0;
-  if (ENC28J60_readReg8(EPKTCNT)) {                                     // Ethernet Packet Count != 0, which means that we did receive at least one package
-    ENC28J60_writeReg16(ERDPT, sCurrentRXPointer);                      // set the read pointer to the last position
-    ENC28J60_readBuffer(&sCurrentRXPointer, sizeof(sCurrentRXPointer)); // read the next packet pointer
-    // read the receive status vector
-    uint16_t packageLength;
-    ENC28J60_readBuffer(&packageLength, sizeof(packageLength)); // lower 16 bits contain the package size
-    uint16_t statusFlag;
-    ENC28J60_readBuffer(&statusFlag, sizeof(statusFlag));
-    if (statusFlag & RECV_STAT_RECEIVED_OK) {
-      len = packageLength - 4; // ignore 4 bytes of CRC
+  if (ENC28J60_readReg8(EPKTCNT)) {                // Ethernet Packet Count != 0, which means that we did receive at least one package
+    ENC28J60_writeReg16(ERDPT, sCurrentRXPointer); // set the read pointer to the last position
+    struct { // each package has a 6 byte header
+      uint16_t nextPacketPointer;
+      uint16_t packageLength;
+      uint16_t statusFlags;
+    } packageHeader;
+    ENC28J60_readBuffer(&packageHeader, sizeof(packageHeader));
+    if (packageHeader.statusFlags & RECV_STAT_RECEIVED_OK) {
+      len = packageHeader.packageLength - 4; // ignore 4 bytes of CRC
       if (len > buflen)
         len = buflen;
       ENC28J60_readBuffer(buf, len); // transfer the package into our buffer
     }
+    sCurrentRXPointer = packageHeader.nextPacketPointer;
     ENC28J60_writeReg16(ERXRDPT, sCurrentRXPointer - 1); // advance the read pointer
     ENC28J60_bitfieldSet(ECON2, ECON2_PKTDEC);           // decrement the package counter
   }
