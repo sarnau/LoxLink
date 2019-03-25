@@ -52,6 +52,23 @@ tcp_state_t tcp_pool[TCP_MAX_CONNECTIONS];
 #endif
 
 /***
+ *  ICMP
+ ***/
+#ifdef WITH_ICMP
+#define ICMP_TYPE_ECHO_RQ 8
+#define ICMP_TYPE_ECHO_RPLY 0
+
+typedef struct icmp_echo_packet {
+  uint8_t type;
+  uint8_t code;
+  uint16_t cksum;
+  uint16_t id;
+  uint16_t seq;
+  uint8_t data[];
+} icmp_echo_packet_t;
+#endif
+
+/***
  *  DHCP
  ***/
 #ifdef WITH_DHCP
@@ -134,17 +151,14 @@ static char dhcp_hostname[DHCP_HOSTNAME_MAX_LEN] = "STM32-";
 #endif
 
 // Function prototypes
-void eth_send(eth_frame_t *frame, uint16_t len);
-void eth_reply(eth_frame_t *frame, uint16_t len);
-void eth_resend(eth_frame_t *frame, uint16_t len);
-
-uint8_t *arp_resolve(uint32_t node_ip_addr);
-
-uint8_t ip_send(eth_frame_t *frame, uint16_t len);
-void ip_reply(eth_frame_t *frame, uint16_t len);
-void ip_resend(eth_frame_t *frame, uint16_t len);
-
-uint16_t ip_cksum(uint32_t sum, uint8_t *buf, size_t len);
+static void eth_send(eth_frame_t *frame, uint16_t len);
+static void eth_reply(eth_frame_t *frame, uint16_t len);
+static void eth_resend(eth_frame_t *frame, uint16_t len);
+static uint8_t *arp_resolve(uint32_t node_ip_addr);
+static uint8_t ip_send(eth_frame_t *frame, uint16_t len);
+static void ip_reply(eth_frame_t *frame, uint16_t len);
+static void ip_resend(eth_frame_t *frame, uint16_t len);
+static uint16_t ip_cksum(uint32_t sum, uint8_t *buf, size_t len);
 
 /***
  *  DHCP
