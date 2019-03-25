@@ -89,14 +89,11 @@ static void httpd_header(httpd_state_t *st, char **buf) {
   else
     fill_buf(buf, "HTTP/1.0 404 Not Found\r\n");
 
-  // Content-Type
   if (st->type) {
     fill_buf(buf, "Content-Type: ");
     fill_buf(buf, st->type);
     fill_buf(buf, "\r\n");
   }
-
-  // Content-Length
   if (st->numbytes) {
     char str[16];
     ltoa(st->numbytes, str, 10);
@@ -104,15 +101,9 @@ static void httpd_header(httpd_state_t *st, char **buf) {
     fill_buf(buf, str);
     fill_buf(buf, "\r\n");
   }
-
-  // Server
   fill_buf(buf, "Server: " HTTPD_NAME "\r\n");
-
-  // Connection: close
   fill_buf(buf, "Connection: close\r\n");
-
-  // Header end
-  fill_buf(buf, "\r\n");
+  fill_buf(buf, "\r\n"); // Header end
 }
 
 // accepts incoming connections
