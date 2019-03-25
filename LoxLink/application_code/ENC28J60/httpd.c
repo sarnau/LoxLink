@@ -89,13 +89,11 @@ static void httpd_header(httpd_state_t *st, char **buf) {
   else
     fill_buf(buf, "HTTP/1.0 404 Not Found\r\n");
 
-  const char *const http_linebreak = "\r\n";
-
   // Content-Type
   if (st->type) {
     fill_buf(buf, "Content-Type: ");
     fill_buf(buf, st->type);
-    fill_buf(buf, http_linebreak);
+    fill_buf(buf, "\r\n");
   }
 
   // Content-Length
@@ -104,7 +102,7 @@ static void httpd_header(httpd_state_t *st, char **buf) {
     ltoa(st->numbytes, str, 10);
     fill_buf(buf, "Content-Length: ");
     fill_buf(buf, str);
-    fill_buf(buf, http_linebreak);
+    fill_buf(buf, "\r\n");
   }
 
   // Server
@@ -114,7 +112,7 @@ static void httpd_header(httpd_state_t *st, char **buf) {
   fill_buf(buf, "Connection: close\r\n");
 
   // Header end
-  fill_buf(buf, http_linebreak);
+  fill_buf(buf, "\r\n");
 }
 
 // accepts incoming connections
