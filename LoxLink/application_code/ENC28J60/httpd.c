@@ -186,7 +186,7 @@ void tcp_read(uint8_t id, eth_frame_t *frame, uint8_t re) {
         // data from file
       case HTTPD_DATA_FILE: {
         // align read to sector boundary
-        uint16_t sectorbytes = 512 - ((uint16_t)(st->cursor) & 0x1ff);
+        uint16_t sectorbytes = 512 - (st->cursor & 0x1ff);
         if (blocklen > sectorbytes)
           blocklen = sectorbytes;
 
@@ -195,7 +195,6 @@ void tcp_read(uint8_t id, eth_frame_t *frame, uint8_t re) {
         break;
       }
       }
-
       bufptr += blocklen;
       st->cursor += blocklen;
       st->numbytes -= blocklen;
