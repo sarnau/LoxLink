@@ -1,7 +1,7 @@
 #include "lan.h"
 
 // MAC address
-static const uint8_t mac_addr[6] = MAC_ADDR;
+static uint8_t mac_addr[6];
 
 // IP address/mask/gateway
 #ifndef WITH_DHCP
@@ -1232,6 +1232,17 @@ void lan_init() {
   COMPILE_CHECK(sizeof(dhcp_message_t) == 240);
   COMPILE_CHECK(sizeof(dhcp_option_t) == 2);
 #endif
+
+  // generate a base serial from the STM32 UID
+  uint32_t uid[3];
+  HAL_GetUID(uid);
+  uint32_t val = uid[0] ^ uid[1] ^ uid[2];
+  mac_addr[0] = 0x22;
+  mac_addr[1] = 0x22;
+  mac_addr[2] = val >> 24;
+  mac_addr[3] = val >> 16;
+  mac_addr[4] = val >> 8;
+  mac_addr[5] = val >> 0;
 
   enc28j60_init(mac_addr);
 

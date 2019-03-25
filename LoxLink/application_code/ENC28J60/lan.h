@@ -19,8 +19,6 @@ extern "C" {
 /***
  *  Config
  ***/
-#define MAC_ADDR { 0x22, 0x22, 0x22, 0x22, 0x22, 0x22 }
-
 #ifndef WITH_DHCP
 #define IP_ADDR inet_addr(192, 168, 178, 213)
 #define IP_SUBNET_MASK inet_addr(255, 255, 255, 0)
