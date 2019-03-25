@@ -13,7 +13,7 @@ static void fill_buf(char **buf, const char *str) {
 }
 
 // get mime type from filename extension
-const char *const httpd_get_mime_type(const char *const url) {
+static const char *const httpd_get_mime_type(const char *const url) {
   static const char *mime_type_table[][2] = {
     {"txt", "text/plain"},
     {"htm", "text/html"},
@@ -39,7 +39,7 @@ const char *const httpd_get_mime_type(const char *const url) {
 }
 
 // processing HTTP request
-void httpd_request(uint8_t id, httpd_state_t *st, const char *url) {
+static void httpd_request(uint8_t id, httpd_state_t *st, const char *url) {
   if (!strcmp(url, "/")) // index file requested?
     url = HTTPD_INDEX_FILE;
 
@@ -83,7 +83,7 @@ void httpd_request(uint8_t id, httpd_state_t *st, const char *url) {
 }
 
 // prepare HTTP reply header
-void httpd_header(httpd_state_t *st, char **buf) {
+static void httpd_header(httpd_state_t *st, char **buf) {
   if (st->statuscode == 2)
     fill_buf(buf, "HTTP/1.0 200 OK\r\n");
   else
