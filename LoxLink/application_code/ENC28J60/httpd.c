@@ -51,7 +51,7 @@ void httpd_request(uint8_t id, httpd_state_t *st, const char *url) {
   st->numbytes = 0;                       // no data
 
   if (!memcmp(url, "/cgi-bin", 8)) {
-    uint16_t stat = 0; //cgi_exec(id, url + 8, st->data.ram, &(st->data.callback));
+    size_t stat = 0; //cgi_exec(id, url + 8, st->data.ram, &(st->data.callback));
     if (stat == 1 /*CGI_USE_CALLBACK*/) {
       st->statuscode = 2;
       st->data_mode = HTTPD_DATA_CALLBACK;
@@ -69,10 +69,10 @@ void httpd_request(uint8_t id, httpd_state_t *st, const char *url) {
   }
 
   if (st->statuscode == 4) {                 // send 404 error page
-    st->data_mode = HTTPD_DATA_PROGMEM;      // source: flash
+    st->data_mode = HTTPD_DATA_CPOINTER;     // source: flash
     st->type = httpd_get_mime_type(".html"); // document type
     static const char http_not_found[] = "<h1>404 - Not Found</h1>";
-    st->data.prog = http_not_found;            // document data
+    st->data.cPointer = http_not_found;        // document data
     st->numbytes = sizeof(http_not_found) - 1; // document length
   }
 #ifdef WITH_TCP_REXMIT
@@ -155,7 +155,7 @@ void tcp_read(uint8_t id, eth_frame_t *frame, uint8_t re) {
 #endif
     // Send bulk of packets
     for (int i = HTTPD_PACKET_BULK; i; --i) {
-      uint16_t blocklen = HTTPD_MAX_BLOCK;
+      size_t blocklen = HTTPD_MAX_BLOCK;
       char *bufptr = buf;
 
       // Put HTTP header to buffer
@@ -181,8 +181,8 @@ void tcp_read(uint8_t id, eth_frame_t *frame, uint8_t re) {
         break;
 
       // data from progmem
-      case HTTPD_DATA_PROGMEM:
-        memcpy(bufptr, st->data.prog + st->cursor, blocklen);
+      case HTTPD_DATA_CPOINTER:
+        memcpy(bufptr, st->data.cPointer + st->cursor, blocklen);
         break;
 
         // data from file
@@ -244,8 +244,7 @@ void tcp_write(uint8_t id, eth_frame_t *frame, uint16_t len) {
         st->status = HTTPD_READ_HEADER;
     }
   } else if (st->status == HTTPD_READ_HEADER) { // receiving HTTP header?
-    // skip all fields
-    if (strstr(request, http_header_end))
+    if (strstr(request, http_header_end))       // skip all fields
       st->status = HTTPD_WRITE_DATA;
   }
 }

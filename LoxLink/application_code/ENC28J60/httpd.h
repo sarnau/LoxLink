@@ -21,7 +21,7 @@ typedef enum httpd_state_code {
 typedef enum httpd_data_mode {
   HTTPD_DATA_RAM,
   HTTPD_DATA_CALLBACK,
-  HTTPD_DATA_PROGMEM,
+  HTTPD_DATA_CPOINTER,
   HTTPD_DATA_FILE
 } httpd_data_mode_t;
 
@@ -30,7 +30,7 @@ typedef uint16_t (*httpd_data_callback_t)(uint8_t id, char *buf);
 typedef union httpd_data {
   char ram[32];                   // buffer with small data to send
   httpd_data_callback_t callback; // callback
-  const char *prog;               // pointer to buffer in progmem
+  const char *cPointer;           // pointer to buffer in progmem
                                   //FIL fs;   // file
 } httpd_data_t;
 
@@ -43,14 +43,14 @@ typedef struct httpd_state {
 
   // data
   httpd_data_mode_t data_mode; // data source type
-  uint32_t cursor;             // data cursor
-  uint32_t numbytes;           // data length
+  size_t cursor;               // data cursor
+  size_t numbytes;             // data length
   httpd_data_t data;           // data
 
   // saved state
 #ifdef WITH_TCP_REXMIT
   uint8_t statuscode_saved; // status code
-  uint32_t numbytes_saved;  // content length
-  uint32_t cursor_saved;    // data cursor
+  size_t numbytes_saved;    // content length
+  size_t cursor_saved;      // data cursor
 #endif
 } httpd_state_t;
