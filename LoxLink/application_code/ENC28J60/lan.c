@@ -1,4 +1,5 @@
 #include "lan.h"
+#include <string.h>
 
 // MAC address
 static uint8_t mac_addr[6];
@@ -13,7 +14,7 @@ static uint32_t ip_gateway = IP_DEFAULT_GATEWAY;
 #define ip_broadcast (ip_addr | ~ip_mask)
 
 // Packet buffer
-uint8_t net_buf[ENC28J60_MAXFRAME];
+uint8_t net_buf[ENC28J60_MAX_FRAMELEN];
 
 // ARP cache
 typedef struct arp_cache_entry {
@@ -1173,7 +1174,7 @@ void arp_filter(eth_frame_t *frame, uint16_t len) {
 // send new Ethernet frame to same host
 // (can be called directly after eth_send)
 void eth_resend(eth_frame_t *frame, uint16_t len) {
-  enc28j60_send_packet((void *)frame, len + sizeof(eth_frame_t));
+  ENC28J60_sendPacket((void *)frame, len + sizeof(eth_frame_t));
 }
 
 // send Ethernet frame
@@ -1182,19 +1183,18 @@ void eth_resend(eth_frame_t *frame, uint16_t len) {
 //      - frame.type
 void eth_send(eth_frame_t *frame, uint16_t len) {
   memcpy(frame->from_addr, mac_addr, 6);
-  enc28j60_send_packet((void *)frame, len + sizeof(eth_frame_t));
+  ENC28J60_sendPacket((void *)frame, len + sizeof(eth_frame_t));
 }
 
 // send Ethernet frame back
 void eth_reply(eth_frame_t *frame, uint16_t len) {
   memcpy(frame->to_addr, frame->from_addr, 6);
   memcpy(frame->from_addr, mac_addr, 6);
-  enc28j60_send_packet((void *)frame, len + sizeof(eth_frame_t));
+  ENC28J60_sendPacket((void *)frame, len + sizeof(eth_frame_t));
 }
 
 // process Ethernet frame
 void eth_filter(eth_frame_t *frame, uint16_t len) {
-  debug_print_buffer_eth(frame, len, "R:");
   if (len >= sizeof(eth_frame_t)) {
     switch (frame->type) {
     case ETH_TYPE_ARP:
@@ -1244,7 +1244,7 @@ void lan_init() {
   mac_addr[4] = val >> 8;
   mac_addr[5] = val >> 0;
 
-  enc28j60_init(mac_addr);
+  ENC28J60_init(mac_addr);
 
 #ifdef WITH_DHCP
   dhcp_retry_time = HAL_GetTick() / 1000 + 2;
@@ -1253,7 +1253,7 @@ void lan_init() {
 
 void lan_poll() {
   uint16_t len;
-  while ((len = enc28j60_recv_packet(net_buf, sizeof(net_buf)))) {
+  while ((len = ENC28J60_receivePacket(net_buf, sizeof(net_buf)))) {
     eth_frame_t *frame = (eth_frame_t *)net_buf;
     eth_filter(frame, len);
   }

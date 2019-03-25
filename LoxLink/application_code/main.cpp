@@ -68,7 +68,7 @@ void vEthernetTask(void *pvParameters) {
     ip->to_addr = inet_addr(192,168,178,60);
     udp->to_port = htons(10000);
     udp->from_port = htons(10000);
-    udp_send(frame, 6);
+    udp_send(frame, 4);
 #endif
     vTaskDelay(pdMS_TO_TICKS(1000)); // 1s delay
   }

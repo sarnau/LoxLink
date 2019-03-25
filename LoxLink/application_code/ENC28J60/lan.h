@@ -1,6 +1,4 @@
-#pragma once
 #include "enc28j60.h"
-#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,7 +11,7 @@ extern "C" {
 //#define WITH_ICMP
 #define WITH_DHCP
 #define WITH_UDP
-//#define WITH_TCP
+#define WITH_TCP
 //#define WITH_TCP_REXMIT
 
 /***
@@ -29,7 +27,7 @@ extern "C" {
 
 #define IP_PACKET_TTL 64
 
-#if WITH_TCP
+#ifdef WITH_TCP
 #define TCP_MAX_CONNECTIONS 5
 #define TCP_WINDOW_SIZE 65535
 #define TCP_SYN_MSS 512
