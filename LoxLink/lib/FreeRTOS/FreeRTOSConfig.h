@@ -56,7 +56,7 @@
 #define configTICK_RATE_HZ                           ( ( TickType_t ) 1000 )
 #define configMAX_PRIORITIES                         ( 7 )
 //#if defined(USE_SYSVIEW)
-  #define configMINIMAL_STACK_SIZE                   ( ( uint16_t ) 250 )
+  #define configMINIMAL_STACK_SIZE                   ( ( uint16_t ) 512 )
 //#else
 //  #define configMINIMAL_STACK_SIZE                   ( ( uint16_t ) 90 )
 //#endif
@@ -135,9 +135,7 @@
 
 /* Normal assert() semantics without relying on the provision of an assert.h
  * header file. */
-#define configASSERT( x )                                        \
-    if( ( x ) == 0 ) { taskDISABLE_INTERRUPTS(); for( ; ; ) {; } \
-    }
+#define configASSERT( x ) if( ( x ) == 0 ) { taskDISABLE_INTERRUPTS(); *(volatile int *)0 = 0; }
 
 /* Logging task definitions. */
 #if defined(USE_SYSVIEW)
