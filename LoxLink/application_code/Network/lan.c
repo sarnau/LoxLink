@@ -20,7 +20,7 @@ void lan_init() {
   uint32_t uid[3];
   HAL_GetUID(uid);
   uint32_t val = uid[0] ^ uid[1] ^ uid[2];
-  gLAN_MAC_address[0] = 0x22;
+  gLAN_MAC_address[0] = (0x22 & 0xFE) | 0x02; // clear multicast bit, set locally adminstered bit
   gLAN_MAC_address[1] = 0x22;
   gLAN_MAC_address[2] = val >> 24;
   gLAN_MAC_address[3] = val >> 16;
