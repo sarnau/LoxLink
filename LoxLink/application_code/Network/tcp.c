@@ -79,9 +79,6 @@ static uint8_t tcp_ack_sent;
  *  - tcp.flags
  ***/
 uint8_t tcp_xmit(tcp_state_t *st, eth_frame_t *frame, uint16_t len) {
-  uint8_t status = 1;
-  uint16_t temp, plen = len;
-
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
 
@@ -96,7 +93,7 @@ uint8_t tcp_xmit(tcp_state_t *st, eth_frame_t *frame, uint16_t len) {
 
   if (tcp_send_mode == TCP_SENDING_REPLY) {
     // exchange src/dst ports
-    temp = tcp->from_port;
+    uint16_t temp = tcp->from_port;
     tcp->from_port = tcp->to_port;
     tcp->to_port = temp;
   }
@@ -107,6 +104,7 @@ uint8_t tcp_xmit(tcp_state_t *st, eth_frame_t *frame, uint16_t len) {
     tcp->urgent_ptr = 0;
   }
 
+  uint16_t plen = len;
   if (tcp->flags & TCP_FLAG_SYN) {
     // add MSS option (max. segment size)
     tcp->data_offset = (sizeof(tcp_packet_t) + 4) << 2;
@@ -130,6 +128,7 @@ uint8_t tcp_xmit(tcp_state_t *st, eth_frame_t *frame, uint16_t len) {
     (uint8_t *)tcp - 8, plen + 8);
 
   // send packet
+  uint8_t status = 1;
   switch (tcp_send_mode) {
   case TCP_SENDING_SEND:
     status = ip_send(frame, plen);
@@ -164,14 +163,12 @@ uint8_t tcp_open(uint32_t addr, uint16_t port, uint16_t local_port) {
   eth_frame_t *frame = (eth_frame_t *)gLAN_rx_tx_buffer;
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
-  tcp_state_t *st = 0, *pst;
-  uint8_t id;
-  uint32_t seq_num;
 
   // search for free conection slot
+  uint8_t id;
+  tcp_state_t *st = 0;
   for (id = 0; id < TCP_MAX_CONNECTIONS; ++id) {
-    pst = tcp_pool + id;
-
+    tcp_state_t *pst = &tcp_pool[id];
     if (pst->status == TCP_CLOSED) {
       st = pst;
       break;
@@ -181,7 +178,7 @@ uint8_t tcp_open(uint32_t addr, uint16_t port, uint16_t local_port) {
   // free connection slot found
   if (st) {
     // add new connection
-    seq_num = HAL_GetTick() + (HAL_GetTick() << 16);
+    const uint32_t seq_num = HAL_GetTick() + (HAL_GetTick() << 16);
 
     st->status = TCP_SYN_SENT;
     st->event_time = HAL_GetTick();
@@ -217,18 +214,15 @@ void tcp_send(uint8_t id, eth_frame_t *frame, uint16_t len, uint8_t options) {
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
   tcp_state_t *st = tcp_pool + id;
-  uint8_t flags = TCP_FLAG_ACK;
 
   // check if connection established
   if (st->status != TCP_ESTABLISHED)
     return;
 
-  // send PSH/ACK
-  if (options & TCP_OPTION_PUSH)
+  uint8_t flags = TCP_FLAG_ACK;
+  if (options & TCP_OPTION_PUSH) // send PSH/ACK
     flags |= TCP_FLAG_PSH;
-
-  // send FIN/ACK
-  if (options & TCP_OPTION_CLOSE) {
+  if (options & TCP_OPTION_CLOSE) { // send FIN/ACK
     flags |= TCP_FLAG_FIN;
     st->status = TCP_FIN_WAIT;
   }
@@ -244,8 +238,6 @@ void tcp_send(uint8_t id, eth_frame_t *frame, uint16_t len, uint8_t options) {
 void tcp_filter(eth_frame_t *frame, uint16_t len) {
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
-  tcp_state_t *st = 0, *pst;
-  uint8_t id, tcpflags;
 
   if (ip->to_addr != gLAN_IPv4_address)
     return;
@@ -254,7 +246,7 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
   len -= tcp_head_size(tcp);
 
   // me needs only SYN/FIN/ACK/RST
-  tcpflags = tcp->flags & (TCP_FLAG_SYN | TCP_FLAG_ACK |
+  const uint8_t tcpflags = tcp->flags & (TCP_FLAG_SYN | TCP_FLAG_ACK |
                             TCP_FLAG_RST | TCP_FLAG_FIN);
 
   // sending packets back
@@ -263,9 +255,10 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
 
   // search connection pool for connection
   //      to specific port from specific host/port
+  uint8_t id;
+  tcp_state_t *st = 0;
   for (id = 0; id < TCP_MAX_CONNECTIONS; ++id) {
-    pst = tcp_pool + id;
-
+    tcp_state_t *pst = &tcp_pool[id];
     if ((pst->status != TCP_CLOSED) &&
         (ip->from_addr == pst->remote_addr) &&
         (tcp->from_port == pst->remote_port) &&
@@ -281,8 +274,7 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
     if (tcpflags == TCP_FLAG_SYN) {
       // search for free slot for connection
       for (id = 0; id < TCP_MAX_CONNECTIONS; ++id) {
-        pst = tcp_pool + id;
-
+        tcp_state_t *pst = &tcp_pool[id];
         if (pst->status == TCP_CLOSED) {
           st = pst;
           break;
@@ -311,9 +303,7 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
         tcp_xmit(st, frame, 0);
       }
     }
-  }
-
-  else {
+  } else {
     // connection reset by peer?
     if (tcpflags & TCP_FLAG_RST) {
       if ((st->status == TCP_ESTABLISHED) ||
@@ -348,7 +338,6 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
     st->event_time = HAL_GetTick();
 
     switch (st->status) {
-
     // SYN sent by me (active open, step 1)
     // awaiting SYN/ACK (active open, step 2)
     case TCP_SYN_SENT:
@@ -484,11 +473,8 @@ void tcp_poll(void) {
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
 #endif
 
-  uint8_t id;
-  tcp_state_t *st;
-
-  for (id = 0; id < TCP_MAX_CONNECTIONS; ++id) {
-    st = tcp_pool + id;
+  for (uint8_t id = 0; id < TCP_MAX_CONNECTIONS; ++id) {
+    tcp_state_t *st = &tcp_pool[id];
 
 #ifdef WITH_TCP_REXMIT
     // connection timed out?

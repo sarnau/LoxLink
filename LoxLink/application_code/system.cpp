@@ -6,6 +6,10 @@
 #include "stm32f1xx_ll_rcc.h"
 #include "stm32f1xx_ll_utils.h" // LL_GetFlashSize()
 
+#if __has_extension(blocks)
+void *_NSConcreteGlobalBlock[32];
+#endif
+
 /***
  *
  ***/

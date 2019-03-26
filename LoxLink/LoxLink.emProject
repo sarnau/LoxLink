@@ -78,5 +78,6 @@
     arm_architecture="v7M"
     arm_compiler_variant="clang"
     arm_math_errno="No"
+    c_additional_options="-fblocks"
     linker_printf_width_precision_supported="Yes" />
 </solution>
