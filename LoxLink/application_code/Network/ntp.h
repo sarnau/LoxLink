@@ -5,8 +5,7 @@
 #ifdef WITH_NTP
 #include "ethernet.h"
 
-#define NTP_SERVER  gLan_IPv4_gateway // the default NTP server is our gateway
-#define NTP_LOCAL_PORT htons(14444) // destination port for NTP replies from the gateway
+#define NTP_LOCAL_PORT htons(1337) // destination port for NTP replies from the gateway
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,6 +13,12 @@ extern "C" {
 
 void ntp_filter(eth_frame_t *frame, uint16_t len);
 void ntp_poll(void);
+
+// set the NTP server, this is called automatically by the DHCP client or
+// has to be called manually, if DHCP is disabled. Often the local gateway
+// is also a NTP server.
+// Setting the server will also trigger an NTP request.
+void ntp_set_server(uint32_t ip);
 
 // returns the current UNIX-time, 0 = no time received
 uint32_t ntp_current_time(void);

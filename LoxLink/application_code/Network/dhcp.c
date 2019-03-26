@@ -2,6 +2,7 @@
 #include "lan.h"
 #include "stm32f1xx_hal.h" // HAL_GetUID() and HAL_GetTick()
 #include "udp.h"
+#include "ntp.h"
 #include <string.h>
 
 #ifdef WITH_DHCP
@@ -40,6 +41,7 @@ typedef struct dhcp_message {
 #define DHCP_CODE_SUBNETMASK 1
 #define DHCP_CODE_GATEWAY 3
 #define DHCP_CODE_HOSTNAME 12
+#define DHCP_CODE_NTPSERVER 42
 #define DHCP_CODE_REQUESTEDADDR 50
 #define DHCP_CODE_LEASETIME 51
 #define DHCP_CODE_MESSAGETYPE 53
@@ -126,6 +128,11 @@ void dhcp_filter(eth_frame_t *frame, uint16_t len) {
         case DHCP_CODE_GATEWAY:
           offered_gateway = *(uint32_t *)(option->data);
           break;
+#ifdef WITH_NTP
+        case DHCP_CODE_NTPSERVER:
+          ntp_set_server(*(uint32_t *)(option->data));
+          break;
+#endif
         case DHCP_CODE_DHCPSERVER:
           renew_server = *(uint32_t *)(option->data);
           break;

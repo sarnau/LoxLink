@@ -40,34 +40,6 @@ void udp_packet(eth_frame_t *frame, uint16_t len) {
 }
 #endif
 
-#ifdef WITH_TCP
-// accepts incoming connections
-uint8_t tcp_listen(uint8_t id, eth_frame_t *frame) {
-  ip_packet_t *ip = (ip_packet_t *)(frame->data);
-  tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
-
-  // accept connections to port 80
-  //return tcp->to_port == HTTPD_PORT;
-  return false;
-}
-
-// upstream callback, data has to be sent out
-void tcp_read(uint8_t id, eth_frame_t *frame, uint8_t re) {
-  ip_packet_t *ip = (ip_packet_t *)(frame->data);
-  tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
-}
-
-// downstream callback, data was received
-void tcp_write(uint8_t id, eth_frame_t *frame, uint16_t len) {
-  ip_packet_t *ip = (ip_packet_t *)(frame->data);
-  tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
-}
-
-// connection closing handler
-void tcp_closed(uint8_t id, uint8_t hard) {
-}
-#endif
-
 /***
  *  Trigger the watchdog every second
  ***/
