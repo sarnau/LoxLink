@@ -8,6 +8,7 @@
 #define WITH_DHCP // DHCP IP lookup, instead of a static IP (requires WITH_UDP)
 #define WITH_TCP  // TCP connection support
 //#define WITH_HTTPD  // minimal HTTPD webserver (requires WITH_TCP)
+#define WITH_NTP  // Enable a NTP client (requires WITH_UDP)
 
 #ifndef WITH_DHCP
 #define IP_ADDR inet_addr(192, 168, 178, 213)

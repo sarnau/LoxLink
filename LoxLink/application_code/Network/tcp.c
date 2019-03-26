@@ -6,7 +6,6 @@
 
 #include "stm32f1xx_hal.h"
 
-
 #define TCP_WINDOW_SIZE 65535
 #define TCP_SYN_MSS 512
 #ifdef WITH_TCP_REXMIT
@@ -15,7 +14,6 @@
 #else
 #define TCP_CONN_TIMEOUT 2500
 #endif
-
 
 #define TCP_FLAG_URG 0x20
 #define TCP_FLAG_ACK 0x10
@@ -247,7 +245,7 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
 
   // me needs only SYN/FIN/ACK/RST
   const uint8_t tcpflags = tcp->flags & (TCP_FLAG_SYN | TCP_FLAG_ACK |
-                            TCP_FLAG_RST | TCP_FLAG_FIN);
+                                          TCP_FLAG_RST | TCP_FLAG_FIN);
 
   // sending packets back
   tcp_send_mode = TCP_SENDING_REPLY;
@@ -553,6 +551,54 @@ void tcp_poll(void) {
     }
 #endif
   }
+}
+
+/**
+  * @brief  A connection request was made, this routine decides if this request is accepted
+  * @param  id     a connection id
+  * @param  frame  pointer to the ethernet frame
+  * @retval boolean, if the connection request was accepted
+  */
+__attribute__((weak)) uint8_t tcp_listen(uint8_t id, eth_frame_t *frame) {
+  /* NOTE: This function should not be modified, when the callback is needed,
+           just implement it in your own file.
+   */
+  return 0;
+}
+
+/**
+  * @brief  Send back data to the client, based on an easlier request
+  * @param  id     a connection id
+  * @param  frame  pointer to the ethernet frame
+  * @param  re     rexmit flag
+  */
+__attribute__((weak)) void tcp_read(uint8_t id, eth_frame_t *frame, uint8_t re) {
+  /* NOTE: This function should not be modified, when the callback is needed,
+           just implement it in your own file.
+   */
+}
+
+/**
+  * @brief  The client send a request
+  * @param  id     a connection id
+  * @param  frame  pointer to the ethernet frame
+  * @param  len    size of the data
+  */
+__attribute__((weak)) void tcp_write(uint8_t id, eth_frame_t *frame, uint16_t len) {
+  /* NOTE: This function should not be modified, when the callback is needed,
+           just implement it in your own file.
+   */
+}
+
+/**
+  * @brief  A connection was closed
+  * @param  id     a connection id
+  * @param  hard   true, if an abnormal close occured, like a timeout
+  */
+__attribute__((weak)) void tcp_closed(uint8_t id, uint8_t hard) {
+  /* NOTE: This function should not be modified, when the callback is needed,
+           just implement it in your own file.
+   */
 }
 
 #endif

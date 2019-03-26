@@ -2,6 +2,7 @@
 #include "dhcp.h"
 #include "enc28j60.h"
 #include "tcp.h"
+#include "ntp.h"
 
 #include "stm32f1xx_hal.h" // HAL_GetUID()
 
@@ -42,5 +43,9 @@ void lan_poll() {
 
 #ifdef WITH_TCP
   tcp_poll();
+#endif
+
+#ifdef WITH_NTP
+  ntp_poll();
 #endif
 }

@@ -3,6 +3,7 @@
 
 #include "dhcp.h"
 #include "lan.h"
+#include "ntp.h"
 
 /***
  *  send UDP packet
@@ -37,7 +38,7 @@ void udp_reply(eth_frame_t *frame, uint16_t len) {
   len += sizeof(udp_packet_t);
 
   ip->to_addr = gLAN_IPv4_address; // to will be switched with from in ip_reply()
-  uint16_t temp = udp->from_port; // switch the port numbers for a reply
+  uint16_t temp = udp->from_port;  // switch the port numbers for a reply
   udp->from_port = udp->to_port;
   udp->to_port = temp;
   udp->len = htons(len);
@@ -57,6 +58,11 @@ void udp_filter(eth_frame_t *frame, uint16_t len) {
   if (len >= sizeof(udp_packet_t)) {
     len = ntohs(udp->len) - sizeof(udp_packet_t);
     switch (udp->to_port) {
+#ifdef WITH_NTP
+    case NTP_LOCAL_PORT:
+      ntp_filter(frame, len);
+      break;
+#endif
 #ifdef WITH_DHCP
     case DHCP_CLIENT_PORT:
       dhcp_filter(frame, len);
@@ -67,6 +73,18 @@ void udp_filter(eth_frame_t *frame, uint16_t len) {
       break;
     }
   }
+}
+
+/**
+  * @brief  An unknown UDP packet was received
+  * @param  frame  pointer to the ethernet frame
+  * @param  len    size of the data portion of the frame
+  * @retval None
+  */
+__attribute__((weak)) void udp_packet(eth_frame_t *frame, uint16_t len) {
+  /* NOTE: This function should not be modified, when the callback is needed,
+           just implement it in your own file.
+   */
 }
 
 #endif
