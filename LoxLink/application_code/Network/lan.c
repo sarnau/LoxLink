@@ -1,18 +1,16 @@
 #include "lan.h"
-#include "arp.h"
 #include "dhcp.h"
 #include "enc28j60.h"
-#include "icmp.h"
-#include "stm32f1xx_hal.h" // HAL_GetUID()
 #include "tcp.h"
-#include <string.h>
+
+#include "stm32f1xx_hal.h" // HAL_GetUID()
 
 // MAC address
 uint8_t gLAN_MAC_address[6];
 
 // IP address/mask/gateway
 #ifndef WITH_DHCP
-uint32_t gLAN_IPv4_address = IP_ADDR;
+uint32_t gLAN_IPv4_addr = IP_ADDR;
 uint32_t gLAN_IPv4_subnet_mask = IP_SUBNET_MASK;
 uint32_t gLan_IPv4_gateway = IP_DEFAULT_GATEWAY;
 #endif
