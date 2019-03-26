@@ -3,9 +3,6 @@
 
 #ifdef WITH_ICMP
 
-/***
- *  ICMP
- ***/
 #define ICMP_TYPE_ECHO_RQ 8
 #define ICMP_TYPE_ECHO_RPLY 0
 
@@ -19,10 +16,8 @@ typedef struct icmp_echo_packet {
 } icmp_echo_packet_t;
 
 /***
- *  ICMP
+ *  process ICMP packet
  ***/
-
-// process ICMP packet
 void icmp_filter(eth_frame_t *frame, uint16_t len) {
   COMPILE_CHECK(sizeof(icmp_echo_packet_t) == 8);
   ip_packet_t *packet = (ip_packet_t *)frame->data;

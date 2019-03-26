@@ -28,7 +28,6 @@ typedef struct arp_message {
   uint8_t ip_addr_to[4];
 } arp_message_t;
 
-// ARP cache
 static int arp_cache_wr;
 static struct arp_cache_entry {
   uint32_t ip_addr;
@@ -36,9 +35,8 @@ static struct arp_cache_entry {
 } arp_cache[ARP_CACHE_SIZE];
 
 /***
- *  ARP
+ *  search ARP cache
  ***/
-// search ARP cache
 uint8_t *arp_search_cache(uint32_t node_ip_addr) {
   for (int i = 0; i < ARP_CACHE_SIZE; ++i) {
     if (arp_cache[i].ip_addr == node_ip_addr)
@@ -47,9 +45,11 @@ uint8_t *arp_search_cache(uint32_t node_ip_addr) {
   return 0;
 }
 
-// resolve MAC address
-// returns 0 if still resolving
-// (invalidates net_buffer if not resolved)
+/***
+ *  resolve MAC address
+ *  returns 0 if still resolving
+ *  (invalidates gLan_net_buf if not resolved)
+ ***/
 uint8_t *arp_resolve(uint32_t node_ip_addr) {
   eth_frame_t *frame = (eth_frame_t *)gLan_net_buf;
   arp_message_t *msg = (arp_message_t *)(frame->data);
@@ -78,12 +78,13 @@ uint8_t *arp_resolve(uint32_t node_ip_addr) {
   msg->ip_addr_to[2] = node_ip_addr >> 16;
   msg->ip_addr_to[1] = node_ip_addr >> 8;
   msg->ip_addr_to[0] = node_ip_addr >> 0;
-
   eth_send(frame, sizeof(arp_message_t));
   return 0;
 }
 
-// process arp packet
+/***
+ *  process arp packet
+ ***/
 void arp_filter(eth_frame_t *frame, uint16_t len) {
   arp_message_t *msg = (void *)(frame->data);
   COMPILE_CHECK(sizeof(arp_message_t) == 28);

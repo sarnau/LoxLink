@@ -9,9 +9,6 @@
 extern "C" {
 #endif
 
-/***
- *  IP
- ***/
 #define IP_PROTOCOL_ICMP 1
 #define IP_PROTOCOL_TCP 6
 #define IP_PROTOCOL_UDP 17

@@ -6,9 +6,6 @@
 
 #ifdef WITH_DHCP
 
-/***
- *  DHCP
- ***/
 #define DHCP_SERVER_PORT htons(67)
 #define DHCP_CLIENT_PORT htons(68)
 
@@ -85,9 +82,7 @@ uint32_t gLan_ip_gateway;
 #define DHCP_HOSTNAME_MAX_LEN 24
 static char dhcp_hostname[DHCP_HOSTNAME_MAX_LEN] = "STM32-";
 
-/***
- *  DHCP
- ***/
+
 #define dhcp_add_option(ptr, optcode, type, value) \
   ((dhcp_option_t *)ptr)->code = optcode;          \
   ((dhcp_option_t *)ptr)->len = sizeof(type);      \
@@ -220,21 +215,6 @@ void dhcp_poll(void) {
   udp_packet_t *udp = (udp_packet_t *)(ip->data);
   dhcp_message_t *dhcp = (dhcp_message_t *)(udp->data);
   uint8_t *op;
-
-  // Too slow (
-  /*// Link is down
-        if(!(enc28j60_read_phy(PHSTAT1) & PHSTAT1_LLSTAT))
-        {
-                dhcp_status = DHCP_INIT;
-                dhcp_retry_time = HAL_GetTick() / 1000 + 2;
-
-                // network down
-                ip_addr = 0;
-                ip_mask = 0;
-                ip_gateway = 0;
-
-                return;
-        }*/
 
   // time to initiate DHCP
   //  (startup/lease end)

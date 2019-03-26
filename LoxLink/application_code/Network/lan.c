@@ -17,9 +17,6 @@ uint32_t gLan_ip_mask = IP_SUBNET_MASK;
 uint32_t gLan_ip_gateway = IP_DEFAULT_GATEWAY;
 #endif
 
-/***
- *  LAN
- ***/
 void lan_init() {
   // generate a MAC address from the STM32 UID
   uint32_t uid[3];
@@ -39,7 +36,7 @@ void lan_init() {
 }
 
 void lan_poll() {
-  eth_pool();
+  eth_poll();
 
 #ifdef WITH_DHCP
   dhcp_poll();

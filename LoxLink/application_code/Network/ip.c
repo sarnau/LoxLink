@@ -10,9 +10,8 @@
 #define IP_BROADCAST (gLan_ip_addr | ~gLan_ip_mask)
 
 /***
- *  IP
+ *  calculate IP checksum
  ***/
-// calculate IP checksum
 uint16_t ip_cksum(uint32_t sum, uint8_t *buf, uint16_t len) {
   while (len >= 2) {
     sum += ((uint16_t)*buf << 8) | *(buf + 1);
@@ -26,11 +25,13 @@ uint16_t ip_cksum(uint32_t sum, uint8_t *buf, uint16_t len) {
   return ~htons((uint16_t)sum);
 }
 
-// send IP packet
-// fields must be set:
-//      - ip.dst
-//      - ip.proto
-// len is IP packet payload length
+/***
+ *  send IP packet
+ *  fields must be set:
+ *  - ip.dst
+ *  - ip.proto
+ *  len is IP packet payload length
+ ***/
 uint8_t ip_send(eth_frame_t *frame, uint16_t len) {
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
 
@@ -74,8 +75,10 @@ uint8_t ip_send(eth_frame_t *frame, uint16_t len) {
   return 1;
 }
 
-// send IP packet back
-// len is IP packet payload length
+/***
+ *  send IP packet back
+ *  len is IP packet payload length
+ ***/
 void ip_reply(eth_frame_t *frame, uint16_t len) {
   ip_packet_t *packet = (ip_packet_t *)(frame->data);
 
@@ -93,8 +96,10 @@ void ip_reply(eth_frame_t *frame, uint16_t len) {
   eth_reply((void *)frame, len);
 }
 
-// can be called directly after
-//      ip_send/ip_reply with new data
+/***
+ *  can be called directly after
+ *  ip_send/ip_reply with new data
+ ***/
 void ip_resend(eth_frame_t *frame, uint16_t len) {
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
 
@@ -106,7 +111,9 @@ void ip_resend(eth_frame_t *frame, uint16_t len) {
   eth_resend(frame, len);
 }
 
-// process IP packet
+/***
+ *  process IP packet
+ ***/
 void ip_filter(eth_frame_t *frame, uint16_t len) {
   COMPILE_CHECK(sizeof(ip_packet_t) == 20);
   ip_packet_t *packet = (ip_packet_t *)(frame->data);

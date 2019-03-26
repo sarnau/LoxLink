@@ -20,7 +20,7 @@ typedef struct eth_frame {
   uint8_t data[];
 } eth_frame_t;
 
-void eth_pool(void);
+void eth_poll(void);
 void eth_send(eth_frame_t *frame, uint16_t len);
 void eth_reply(eth_frame_t *frame, uint16_t len);
 void eth_resend(eth_frame_t *frame, uint16_t len);

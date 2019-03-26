@@ -15,9 +15,7 @@
 #define TCP_CONN_TIMEOUT 2500
 #endif
 
-/***
- *  TCP
- ***/
+
 #define TCP_FLAG_URG 0x20
 #define TCP_FLAG_ACK 0x10
 #define TCP_FLAG_PSH 0x08
@@ -74,9 +72,11 @@ static tcp_sending_mode_t tcp_send_mode;
 // "ack sent" flag
 static uint8_t tcp_ack_sent;
 
-// send TCP packet
-// must be set manually:
-//      - tcp.flags
+/***
+ *  send TCP packet
+ *  must be set manually:
+ *  - tcp.flags
+ ***/
 uint8_t tcp_xmit(tcp_state_t *st, eth_frame_t *frame, uint16_t len) {
   uint8_t status = 1;
   uint16_t temp, plen = len;
@@ -155,8 +155,10 @@ uint8_t tcp_xmit(tcp_state_t *st, eth_frame_t *frame, uint16_t len) {
   return status;
 }
 
-// sending SYN to peer
-// return: 0xff - error, other value - connection id (not established)
+/***
+ *  sending SYN to peer
+ *  return: 0xff - error, other value - connection id (not established)
+ ***/
 uint8_t tcp_open(uint32_t addr, uint16_t port, uint16_t local_port) {
   eth_frame_t *frame = (eth_frame_t *)gLan_net_buf;
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
@@ -206,8 +208,10 @@ uint8_t tcp_open(uint32_t addr, uint16_t port, uint16_t local_port) {
   return 0xff;
 }
 
-// send TCP data
-// dont use somewhere except tcp_write callback!
+/***
+ *  send TCP data
+ *  don't use anywhere except tcp_write callback!
+ ***/
 void tcp_send(uint8_t id, eth_frame_t *frame, uint16_t len, uint8_t options) {
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
@@ -233,7 +237,9 @@ void tcp_send(uint8_t id, eth_frame_t *frame, uint16_t len, uint8_t options) {
   tcp_xmit(st, frame, len);
 }
 
-// processing tcp packets
+/***
+ *  processing tcp packets
+ ***/
 void tcp_filter(eth_frame_t *frame, uint16_t len) {
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
@@ -465,7 +471,9 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
   }
 }
 
-// periodic event
+/***
+ *  periodic event
+ ***/
 void tcp_poll(void) {
   COMPILE_CHECK(sizeof(tcp_packet_t) == 20);
 
