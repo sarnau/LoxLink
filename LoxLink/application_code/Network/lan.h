@@ -7,21 +7,11 @@
 extern "C" {
 #endif
 
-extern uint8_t gLan_net_buf[]; // Shared receive/transmit buffer
-extern uint8_t gLan_MAC_address[6];
-extern uint32_t gLan_ip_addr;    // != 0 => own IPv4 address
-extern uint32_t gLan_ip_mask;    // netmask
-extern uint32_t gLan_ip_gateway; // gateway/router
-
-/***
- *  Compile-time check for macros
- ***/
-#define COMPILE_CHECK(x)    \
-  {                         \
-    struct _CC {            \
-      char a[(x) ? 1 : -1]; \
-    };                      \
-  }
+extern uint8_t gLAN_rx_tx_buffer[]; // Shared receive/transmit buffer
+extern uint8_t gLAN_MAC_address[6];
+extern uint32_t gLAN_IPv4_address;    // != 0 => our IPv4 address
+extern uint32_t gLAN_IPv4_subnet_mask;
+extern uint32_t gLan_IPv4_gateway;
 
 /***
  *  Big-Endian conversion
@@ -35,6 +25,9 @@ extern uint32_t gLan_ip_gateway; // gateway/router
 #define inet_addr(a, b, c, d) (((uint32_t)a) | ((uint32_t)b << 8) | ((uint32_t)c << 16) | ((uint32_t)d << 24))
 #define ipv4(a) ((a[3] << 24) | (a[2] << 16) | (a[1] << 8) | (a[0] << 0))
 
+/***
+ *  Available functions
+ ***/
 void lan_init(void); // initialize at boot time, request DHCP, if enabled
 void lan_poll(void); // called in a loop to check for new packages, DHCP leases, etc
 

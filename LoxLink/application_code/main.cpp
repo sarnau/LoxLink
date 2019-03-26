@@ -28,7 +28,7 @@
 void udp_packet(eth_frame_t *frame, uint16_t len) {
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   udp_packet_t *udp = (udp_packet_t *)(ip->data);
-  if (ntohl(ip->to_addr) == ntohl(gLan_ip_addr) and ntohs(udp->to_port) == 8888) {
+  if (ntohl(ip->to_addr) == ntohl(gLAN_IPv4_address) and ntohs(udp->to_port) == 8888) {
     printf("udp_packet %08x:%d -> %08x:%d\n", ntohl(ip->from_addr), ntohs(udp->from_port), ntohl(ip->to_addr), ntohs(udp->to_port));
     printf("len: %d \"%s\"\n", ntohs(udp->len) - sizeof(udp_packet_t), udp->data);
 

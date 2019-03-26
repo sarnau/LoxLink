@@ -6,7 +6,7 @@
 #include <string.h>
 
 // Shared RX/TD packet buffer
-uint8_t gLan_net_buf[ENC28J60_MAX_FRAMELEN];
+uint8_t gLAN_rx_tx_buffer[ENC28J60_MAX_FRAMELEN];
 
 
 // send new Ethernet frame to same host
@@ -22,7 +22,7 @@ void eth_resend(eth_frame_t *frame, uint16_t len) {
  *  - frame.type
  ***/
 void eth_send(eth_frame_t *frame, uint16_t len) {
-  memcpy(frame->from_addr, gLan_MAC_address, 6);
+  memcpy(frame->from_addr, gLAN_MAC_address, 6);
   ENC28J60_sendPacket((void *)frame, len + sizeof(eth_frame_t));
 }
 
@@ -31,7 +31,7 @@ void eth_send(eth_frame_t *frame, uint16_t len) {
  ***/
 void eth_reply(eth_frame_t *frame, uint16_t len) {
   memcpy(frame->to_addr, frame->from_addr, 6);
-  memcpy(frame->from_addr, gLan_MAC_address, 6);
+  memcpy(frame->from_addr, gLAN_MAC_address, 6);
   ENC28J60_sendPacket((void *)frame, len + sizeof(eth_frame_t));
 }
 
@@ -56,8 +56,8 @@ void eth_filter(eth_frame_t *frame, uint16_t len) {
  ***/
 void eth_poll(void) {
   uint16_t len;
-  while ((len = ENC28J60_receivePacket(gLan_net_buf, sizeof(gLan_net_buf)))) {
-    eth_frame_t *frame = (eth_frame_t *)gLan_net_buf;
+  while ((len = ENC28J60_receivePacket(gLAN_rx_tx_buffer, sizeof(gLAN_rx_tx_buffer)))) {
+    eth_frame_t *frame = (eth_frame_t *)gLAN_rx_tx_buffer;
     eth_filter(frame, len);
   }
 }

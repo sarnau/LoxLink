@@ -75,9 +75,9 @@ static uint32_t dhcp_server;
 static uint32_t dhcp_renew_time;
 static uint32_t dhcp_retry_time;
 static uint32_t dhcp_transaction_id;
-uint32_t gLan_ip_addr;
-uint32_t gLan_ip_mask;
-uint32_t gLan_ip_gateway;
+uint32_t gLAN_IPv4_address;
+uint32_t gLAN_IPv4_subnet_mask;
+uint32_t gLan_IPv4_gateway;
 
 #define DHCP_HOSTNAME_MAX_LEN 24
 static char dhcp_hostname[DHCP_HOSTNAME_MAX_LEN] = "STM32-";
@@ -200,9 +200,9 @@ void dhcp_filter(eth_frame_t *frame, uint16_t len) {
         dhcp_retry_time = HAL_GetTick() / 1000 + lease_time;
 
         // network up
-        gLan_ip_addr = dhcp->offered_addr;
-        gLan_ip_mask = offered_net_mask;
-        gLan_ip_gateway = offered_gateway;
+        gLAN_IPv4_address = dhcp->offered_addr;
+        gLAN_IPv4_subnet_mask = offered_net_mask;
+        gLan_IPv4_gateway = offered_gateway;
       }
       break;
     }
@@ -210,7 +210,7 @@ void dhcp_filter(eth_frame_t *frame, uint16_t len) {
 }
 
 void dhcp_poll(void) {
-  eth_frame_t *frame = (eth_frame_t *)gLan_net_buf;
+  eth_frame_t *frame = (eth_frame_t *)gLAN_rx_tx_buffer;
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   udp_packet_t *udp = (udp_packet_t *)(ip->data);
   dhcp_message_t *dhcp = (dhcp_message_t *)(udp->data);
@@ -224,9 +224,9 @@ void dhcp_poll(void) {
     dhcp_transaction_id = HAL_GetTick() + (HAL_GetTick() << 16);
 
     // network down
-    gLan_ip_addr = 0;
-    gLan_ip_mask = 0;
-    gLan_ip_gateway = 0;
+    gLAN_IPv4_address = 0;
+    gLAN_IPv4_subnet_mask = 0;
+    gLan_IPv4_gateway = 0;
 
     // send DHCP discover
     ip->to_addr = inet_addr(255, 255, 255, 255);
@@ -240,7 +240,7 @@ void dhcp_poll(void) {
     dhcp->hw_addr_len = 6;
     dhcp->transaction_id = dhcp_transaction_id;
     dhcp->flags = DHCP_FLAG_BROADCAST;
-    memcpy(dhcp->hw_addr, gLan_MAC_address, 6);
+    memcpy(dhcp->hw_addr, gLAN_MAC_address, 6);
     dhcp->magic_cookie = DHCP_MAGIC_COOKIE;
 
     op = dhcp->options;
@@ -267,13 +267,13 @@ void dhcp_poll(void) {
     dhcp->hw_addr_type = DHCP_HW_ADDR_TYPE_ETH;
     dhcp->hw_addr_len = 6;
     dhcp->transaction_id = dhcp_transaction_id;
-    dhcp->client_addr = gLan_ip_addr;
-    memcpy(dhcp->hw_addr, gLan_MAC_address, 6);
+    dhcp->client_addr = gLAN_IPv4_address;
+    memcpy(dhcp->hw_addr, gLAN_MAC_address, 6);
     dhcp->magic_cookie = DHCP_MAGIC_COOKIE;
 
     op = dhcp->options;
     dhcp_add_option(op, DHCP_CODE_MESSAGETYPE, uint8_t, DHCP_MESSAGE_REQUEST);
-    dhcp_add_option(op, DHCP_CODE_REQUESTEDADDR, uint32_t, gLan_ip_addr);
+    dhcp_add_option(op, DHCP_CODE_REQUESTEDADDR, uint32_t, gLAN_IPv4_address);
     dhcp_add_option(op, DHCP_CODE_DHCPSERVER, uint32_t, dhcp_server);
     *(op++) = DHCP_CODE_END;
 

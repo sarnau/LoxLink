@@ -7,7 +7,7 @@
 #include <string.h>
 
 #define IP_PACKET_TTL (64)
-#define IP_BROADCAST (gLan_ip_addr | ~gLan_ip_mask)
+#define IP_BROADCAST (gLAN_IPv4_address | ~gLAN_IPv4_subnet_mask)
 
 /***
  *  calculate IP checksum
@@ -42,10 +42,10 @@ uint8_t ip_send(eth_frame_t *frame, uint16_t len) {
   } else {
     // apply route
     uint32_t route_ip;
-    if (((ip->to_addr ^ gLan_ip_addr) & gLan_ip_mask) == 0)
+    if (((ip->to_addr ^ gLAN_IPv4_address) & gLAN_IPv4_subnet_mask) == 0)
       route_ip = ip->to_addr;
     else
-      route_ip = gLan_ip_gateway;
+      route_ip = gLan_IPv4_gateway;
 
     // resolve mac address
     uint8_t *mac_addr_to = arp_resolve(route_ip);
@@ -67,7 +67,7 @@ uint8_t ip_send(eth_frame_t *frame, uint16_t len) {
   ip->flags_framgent_offset = 0;
   ip->ttl = IP_PACKET_TTL;
   ip->cksum = 0;
-  ip->from_addr = gLan_ip_addr;
+  ip->from_addr = gLAN_IPv4_address;
   ip->cksum = ip_cksum(0, (void *)ip, sizeof(ip_packet_t));
 
   // send frame
@@ -90,7 +90,7 @@ void ip_reply(eth_frame_t *frame, uint16_t len) {
   packet->ttl = IP_PACKET_TTL;
   packet->cksum = 0;
   packet->to_addr = packet->from_addr;
-  packet->from_addr = gLan_ip_addr;
+  packet->from_addr = gLAN_IPv4_address;
   packet->cksum = ip_cksum(0, (void *)packet, sizeof(ip_packet_t));
 
   eth_reply((void *)frame, len);
@@ -123,7 +123,7 @@ void ip_filter(eth_frame_t *frame, uint16_t len) {
 
   if ((packet->ver_head_len == 0x45) &&
       (ip_cksum(0, (void *)packet, sizeof(ip_packet_t)) == hcs) &&
-      ((packet->to_addr == gLan_ip_addr) || (packet->to_addr == IP_BROADCAST))) {
+      ((packet->to_addr == gLAN_IPv4_address) || (packet->to_addr == IP_BROADCAST))) {
     len = ntohs(packet->total_len) - sizeof(ip_packet_t);
     switch (packet->protocol) {
 #ifdef WITH_ICMP

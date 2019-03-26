@@ -8,13 +8,13 @@
 #include <string.h>
 
 // MAC address
-uint8_t gLan_MAC_address[6];
+uint8_t gLAN_MAC_address[6];
 
 // IP address/mask/gateway
 #ifndef WITH_DHCP
-uint32_t gLan_ip_addr = IP_ADDR;
-uint32_t gLan_ip_mask = IP_SUBNET_MASK;
-uint32_t gLan_ip_gateway = IP_DEFAULT_GATEWAY;
+uint32_t gLAN_IPv4_address = IP_ADDR;
+uint32_t gLAN_IPv4_subnet_mask = IP_SUBNET_MASK;
+uint32_t gLan_IPv4_gateway = IP_DEFAULT_GATEWAY;
 #endif
 
 void lan_init() {
@@ -22,13 +22,13 @@ void lan_init() {
   uint32_t uid[3];
   HAL_GetUID(uid);
   uint32_t val = uid[0] ^ uid[1] ^ uid[2];
-  gLan_MAC_address[0] = 0x22;
-  gLan_MAC_address[1] = 0x22;
-  gLan_MAC_address[2] = val >> 24;
-  gLan_MAC_address[3] = val >> 16;
-  gLan_MAC_address[4] = val >> 8;
-  gLan_MAC_address[5] = val >> 0;
-  ENC28J60_init(gLan_MAC_address);
+  gLAN_MAC_address[0] = 0x22;
+  gLAN_MAC_address[1] = 0x22;
+  gLAN_MAC_address[2] = val >> 24;
+  gLAN_MAC_address[3] = val >> 16;
+  gLAN_MAC_address[4] = val >> 8;
+  gLAN_MAC_address[5] = val >> 0;
+  ENC28J60_init(gLAN_MAC_address);
 
 #ifdef WITH_DHCP
   dhcp_init();

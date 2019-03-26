@@ -15,4 +15,16 @@
 #define IP_DEFAULT_GATEWAY inet_addr(192, 168, 178, 1)
 #endif
 
+
+/***
+ *  Compile-time check for macros
+ ***/
+#define COMPILE_CHECK(x)    \
+  {                         \
+    struct _CC {            \
+      char a[(x) ? 1 : -1]; \
+    };                      \
+  }
+
+
 #endif

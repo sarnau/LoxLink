@@ -87,7 +87,7 @@ uint8_t tcp_xmit(tcp_state_t *st, eth_frame_t *frame, uint16_t len) {
   if (tcp_send_mode == TCP_SENDING_SEND) {
     // set packet fields
     ip->to_addr = st->remote_addr;
-    ip->from_addr = gLan_ip_addr;
+    ip->from_addr = gLAN_IPv4_address;
     ip->protocol = IP_PROTOCOL_TCP;
     tcp->to_port = st->remote_port;
     tcp->from_port = st->local_port;
@@ -160,7 +160,7 @@ uint8_t tcp_xmit(tcp_state_t *st, eth_frame_t *frame, uint16_t len) {
  *  return: 0xff - error, other value - connection id (not established)
  ***/
 uint8_t tcp_open(uint32_t addr, uint16_t port, uint16_t local_port) {
-  eth_frame_t *frame = (eth_frame_t *)gLan_net_buf;
+  eth_frame_t *frame = (eth_frame_t *)gLAN_rx_tx_buffer;
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
   tcp_state_t *st = 0, *pst;
@@ -246,7 +246,7 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
   tcp_state_t *st = 0, *pst;
   uint8_t id, tcpflags;
 
-  if (ip->to_addr != gLan_ip_addr)
+  if (ip->to_addr != gLAN_IPv4_address)
     return;
 
   // tcp data length
@@ -478,7 +478,7 @@ void tcp_poll(void) {
   COMPILE_CHECK(sizeof(tcp_packet_t) == 20);
 
 #ifdef WITH_TCP_REXMIT
-  eth_frame_t *frame = (eth_frame_t *)gLan_net_buf;
+  eth_frame_t *frame = (eth_frame_t *)gLAN_rx_tx_buffer;
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
 #endif
