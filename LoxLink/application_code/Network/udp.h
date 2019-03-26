@@ -10,9 +10,6 @@
 extern "C" {
 #endif
 
-/***
- *  UDP
- ***/
 typedef struct udp_packet {
   uint16_t from_port;
   uint16_t to_port;
