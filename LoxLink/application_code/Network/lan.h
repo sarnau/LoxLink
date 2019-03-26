@@ -13,6 +13,8 @@ extern uint32_t gLAN_IPv4_address;    // != 0 => our IPv4 address
 extern uint32_t gLAN_IPv4_subnet_mask;
 extern uint32_t gLan_IPv4_gateway;
 
+#define gLAN_IPv4_broadcast_address (gLAN_IPv4_address | ~gLAN_IPv4_subnet_mask)
+
 /***
  *  Big-Endian conversion
  ***/

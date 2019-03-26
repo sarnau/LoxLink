@@ -29,7 +29,7 @@ typedef struct ip_packet {
 
 uint8_t ip_send(eth_frame_t *frame, uint16_t len);
 void ip_resend(eth_frame_t *frame, uint16_t len);
-uint16_t ip_cksum(uint32_t sum, uint8_t *buf, uint16_t len);
+uint16_t ip_cksum(uint32_t sum, const void *buf, uint16_t len);
 void ip_reply(eth_frame_t *frame, uint16_t len);
 void ip_filter(eth_frame_t *frame, uint16_t len);
 

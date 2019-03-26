@@ -28,20 +28,13 @@
 void udp_packet(eth_frame_t *frame, uint16_t len) {
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   udp_packet_t *udp = (udp_packet_t *)(ip->data);
-  if (ntohl(ip->to_addr) == ntohl(gLAN_IPv4_address) and ntohs(udp->to_port) == 8888) {
+  if (ntohl(ip->to_addr) != gLAN_IPv4_broadcast_address and ntohs(udp->to_port) == 8888) {
     printf("udp_packet %08x:%d -> %08x:%d\n", ntohl(ip->from_addr), ntohs(udp->from_port), ntohl(ip->to_addr), ntohs(udp->to_port));
     printf("len: %d \"%s\"\n", ntohs(udp->len) - sizeof(udp_packet_t), udp->data);
 
-    // send a reply from port 8888
-    static uint8_t udpBuf[128];
-    eth_frame_t *sframe = (eth_frame_t *)udpBuf;
-    ip_packet_t *sip = (ip_packet_t *)(sframe->data);
-    udp_packet_t *sudp = (udp_packet_t *)(sip->data);
-    strcpy((char *)sudp->data, "TEST");
-    sip->to_addr = ip->from_addr;
-    sudp->to_port = udp->from_port;
-    sudp->from_port = htons(8888);
-    udp_send(sframe, strlen((char *)sudp->data));
+    // send a reply
+    strcpy((char *)udp->data, "TEST");
+    udp_reply(frame, strlen((char *)udp->data));
   }
 }
 #endif

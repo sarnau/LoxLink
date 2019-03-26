@@ -552,7 +552,7 @@ int ENC28J60_isLinkUp() {
   return (ENC28J60_readPhy16(PHSTAT2) & PHSTAT2_LSTAT) != 0; // Link is up and has been up continously since PHSTAT1 was last read
 }
 
-void ENC28J60_sendPacket(const uint8_t *data, uint16_t len) {
+void ENC28J60_sendPacket(const void *data, uint16_t len) {
   while (ENC28J60_readReg8(ECON1) & ECON1_TXRTS) {
     // TXRTS may not clear - ENC28J60 bug. We must reset transmit logic in cause of TX error
     if (ENC28J60_readReg8(EIR) & EIR_TXERIF) {
@@ -584,7 +584,7 @@ void ENC28J60_sendPacket(const uint8_t *data, uint16_t len) {
   ENC28J60_bitfieldClear(ECON1, ECON1_TXRTS);
 }
 
-uint16_t ENC28J60_receivePacket(uint8_t *buf, uint16_t buflen) {
+uint16_t ENC28J60_receivePacket(void *buf, uint16_t buflen) {
   static uint16_t sCurrentRXPointer = ENC28J60_RXSTART;
   uint16_t len = 0;
   if (ENC28J60_readReg8(EPKTCNT)) {                // Ethernet Packet Count != 0, which means that we did receive at least one package

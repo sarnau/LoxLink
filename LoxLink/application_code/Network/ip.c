@@ -7,19 +7,19 @@
 #include <string.h>
 
 #define IP_PACKET_TTL (64)
-#define IP_BROADCAST (gLAN_IPv4_address | ~gLAN_IPv4_subnet_mask)
 
 /***
  *  calculate IP checksum
  ***/
-uint16_t ip_cksum(uint32_t sum, uint8_t *buf, uint16_t len) {
+uint16_t ip_cksum(uint32_t sum, const void *buf, uint16_t len) {
+  const uint8_t *bufByte = buf;
   while (len >= 2) {
-    sum += ((uint16_t)*buf << 8) | *(buf + 1);
-    buf += 2;
+    sum += ((uint16_t)*bufByte << 8) | *(bufByte + 1);
+    bufByte += 2;
     len -= 2;
   }
   if (len)
-    sum += (uint16_t)*buf << 8;
+    sum += (uint16_t)*bufByte << 8;
   while (sum >> 16)
     sum = (sum & 0xffff) + (sum >> 16);
   return ~htons((uint16_t)sum);
@@ -36,7 +36,7 @@ uint8_t ip_send(eth_frame_t *frame, uint16_t len) {
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
 
   // set frame.dst
-  if (ip->to_addr == IP_BROADCAST) {
+  if (ip->to_addr == gLAN_IPv4_broadcast_address) {
     // use broadcast MAC
     memset(frame->to_addr, 0xff, 6);
   } else {
@@ -59,7 +59,6 @@ uint8_t ip_send(eth_frame_t *frame, uint16_t len) {
 
   // fill IP header
   len += sizeof(ip_packet_t);
-
   ip->ver_head_len = 0x45;
   ip->tos = 0;
   ip->total_len = htons(len);
@@ -68,9 +67,8 @@ uint8_t ip_send(eth_frame_t *frame, uint16_t len) {
   ip->ttl = IP_PACKET_TTL;
   ip->cksum = 0;
   ip->from_addr = gLAN_IPv4_address;
-  ip->cksum = ip_cksum(0, (void *)ip, sizeof(ip_packet_t));
+  ip->cksum = ip_cksum(0, ip, sizeof(ip_packet_t));
 
-  // send frame
   eth_send(frame, len);
   return 1;
 }
@@ -89,11 +87,11 @@ void ip_reply(eth_frame_t *frame, uint16_t len) {
   packet->flags_framgent_offset = 0;
   packet->ttl = IP_PACKET_TTL;
   packet->cksum = 0;
-  packet->to_addr = packet->from_addr;
+  packet->to_addr = packet->from_addr; // switch the IPv4 addresses for a reply
   packet->from_addr = gLAN_IPv4_address;
-  packet->cksum = ip_cksum(0, (void *)packet, sizeof(ip_packet_t));
+  packet->cksum = ip_cksum(0, packet, sizeof(ip_packet_t));
 
-  eth_reply((void *)frame, len);
+  eth_reply(frame, len);
 }
 
 /***
@@ -106,8 +104,7 @@ void ip_resend(eth_frame_t *frame, uint16_t len) {
   len += sizeof(ip_packet_t);
   ip->total_len = htons(len);
   ip->cksum = 0;
-  ip->cksum = ip_cksum(0, (void *)ip, sizeof(ip_packet_t));
-
+  ip->cksum = ip_cksum(0, ip, sizeof(ip_packet_t));
   eth_resend(frame, len);
 }
 
@@ -122,8 +119,8 @@ void ip_filter(eth_frame_t *frame, uint16_t len) {
   packet->cksum = 0;
 
   if ((packet->ver_head_len == 0x45) &&
-      (ip_cksum(0, (void *)packet, sizeof(ip_packet_t)) == hcs) &&
-      ((packet->to_addr == gLAN_IPv4_address) || (packet->to_addr == IP_BROADCAST))) {
+      (ip_cksum(0, packet, sizeof(ip_packet_t)) == hcs) &&
+      ((packet->to_addr == gLAN_IPv4_address) || (packet->to_addr == gLAN_IPv4_broadcast_address))) {
     len = ntohs(packet->total_len) - sizeof(ip_packet_t);
     switch (packet->protocol) {
 #ifdef WITH_ICMP

@@ -12,7 +12,7 @@ uint8_t gLAN_rx_tx_buffer[ENC28J60_MAX_FRAMELEN];
 // send new Ethernet frame to same host
 // (can be called directly after eth_send)
 void eth_resend(eth_frame_t *frame, uint16_t len) {
-  ENC28J60_sendPacket((void *)frame, len + sizeof(eth_frame_t));
+  ENC28J60_sendPacket(frame, len + sizeof(eth_frame_t));
 }
 
 /***
@@ -23,7 +23,7 @@ void eth_resend(eth_frame_t *frame, uint16_t len) {
  ***/
 void eth_send(eth_frame_t *frame, uint16_t len) {
   memcpy(frame->from_addr, gLAN_MAC_address, 6);
-  ENC28J60_sendPacket((void *)frame, len + sizeof(eth_frame_t));
+  eth_resend(frame, len);
 }
 
 /***
@@ -31,8 +31,7 @@ void eth_send(eth_frame_t *frame, uint16_t len) {
  ***/
 void eth_reply(eth_frame_t *frame, uint16_t len) {
   memcpy(frame->to_addr, frame->from_addr, 6);
-  memcpy(frame->from_addr, gLAN_MAC_address, 6);
-  ENC28J60_sendPacket((void *)frame, len + sizeof(eth_frame_t));
+  eth_send(frame, len);
 }
 
 /***

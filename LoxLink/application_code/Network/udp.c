@@ -36,8 +36,8 @@ void udp_reply(eth_frame_t *frame, uint16_t len) {
 
   len += sizeof(udp_packet_t);
 
-  ip->to_addr = gLAN_IPv4_address;
-  uint16_t temp = udp->from_port;
+  ip->to_addr = gLAN_IPv4_address; // to will be switched with from in ip_reply()
+  uint16_t temp = udp->from_port; // switch the port numbers for a reply
   udp->from_port = udp->to_port;
   udp->to_port = temp;
   udp->len = htons(len);
