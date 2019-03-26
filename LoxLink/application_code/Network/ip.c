@@ -128,13 +128,11 @@ void ip_filter(eth_frame_t *frame, uint16_t len) {
       icmp_filter(frame, len);
       break;
 #endif
-
 #ifdef WITH_UDP
     case IP_PROTOCOL_UDP:
       udp_filter(frame, len);
       break;
 #endif
-
 #ifdef WITH_TCP
     case IP_PROTOCOL_TCP:
       tcp_filter(frame, len);

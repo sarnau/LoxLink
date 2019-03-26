@@ -86,7 +86,7 @@ uint8_t *arp_resolve(uint32_t node_ip_addr) {
  *  process arp packet
  ***/
 void arp_filter(eth_frame_t *frame, uint16_t len) {
-  arp_message_t *msg = (void *)(frame->data);
+  arp_message_t *msg = (arp_message_t *)(frame->data);
   COMPILE_CHECK(sizeof(arp_message_t) == 28);
 
   if (len >= sizeof(arp_message_t)) {

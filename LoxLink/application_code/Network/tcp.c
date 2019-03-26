@@ -9,10 +9,10 @@
 #define TCP_WINDOW_SIZE 65535
 #define TCP_SYN_MSS 512
 #ifdef WITH_TCP_REXMIT
-#define TCP_REXMIT_TIMEOUT 1000
+#define TCP_REXMIT_TIMEOUT 1000 // 1 second
 #define TCP_REXMIT_LIMIT 5
 #else
-#define TCP_CONN_TIMEOUT 2500
+#define TCP_CONN_TIMEOUT 2500 // 2.5 seconds
 #endif
 
 #define TCP_FLAG_URG 0x20
