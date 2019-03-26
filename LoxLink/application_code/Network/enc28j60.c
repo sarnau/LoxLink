@@ -1,4 +1,5 @@
 #include "enc28j60.h"
+#include "stm32f1xx_hal.h"
 
 /***
  *  STM32 pin configuration for the SPI and the CS gpio
@@ -588,7 +589,7 @@ uint16_t ENC28J60_receivePacket(uint8_t *buf, uint16_t buflen) {
   uint16_t len = 0;
   if (ENC28J60_readReg8(EPKTCNT)) {                // Ethernet Packet Count != 0, which means that we did receive at least one package
     ENC28J60_writeReg16(ERDPT, sCurrentRXPointer); // set the read pointer to the last position
-    struct { // each package has a 6 byte header
+    struct {                                       // each package has a 6 byte header
       uint16_t nextPacketPointer;
       uint16_t packageLength;
       uint16_t statusFlags;

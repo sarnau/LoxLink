@@ -1,4 +1,9 @@
 #include "httpd.h"
+#ifdef WITH_HTTPD
+
+#include "ip.h"
+#include "lan.h"
+#include "tcp.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -246,3 +251,5 @@ void tcp_closed(uint8_t id, uint8_t hard) {
   st->data_mode = HTTPD_DATA_RAM;
   st->status = HTTPD_CLOSED;
 }
+
+#endif

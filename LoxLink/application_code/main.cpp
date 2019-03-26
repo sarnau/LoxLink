@@ -20,6 +20,8 @@
 #include "LoxLegacyRelayExtension.hpp"
 #include "SEGGER_SYSVIEW.h"
 #include "lan.h"
+#include "udp.h"
+#include "ip.h"
 #include <string.h>
 
 #ifdef WITH_UDP

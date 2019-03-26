@@ -1,4 +1,8 @@
-#include "lan.h"
+#ifndef HTTPD_H
+#define HTTPD_H
+
+#include "lan_config.h"
+#ifdef WITH_HTTPD
 //#include "ff/ff.h"
 //#include "cgi.h"
 
@@ -43,8 +47,8 @@ typedef struct httpd_state {
 
   // data
   httpd_data_mode_t data_mode; // data source type
-  size_t cursor;               // data cursor
-  size_t numbytes;             // data length
+  uint32_t cursor;             // data cursor
+  uint32_t numbytes;           // data length
   httpd_data_t data;           // data
 
   // saved state
@@ -54,3 +58,7 @@ typedef struct httpd_state {
   size_t cursor_saved;      // data cursor
 #endif
 } httpd_state_t;
+
+#endif
+
+#endif
