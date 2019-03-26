@@ -46,48 +46,6 @@ typedef struct arp_cache_entry {
 static uint8_t arp_cache_wr;
 static arp_cache_entry_t arp_cache[ARP_CACHE_SIZE];
 
-// TCP connection pool
-#ifdef WITH_TCP
-
-#define TCP_FLAG_URG 0x20
-#define TCP_FLAG_ACK 0x10
-#define TCP_FLAG_PSH 0x08
-#define TCP_FLAG_RST 0x04
-#define TCP_FLAG_SYN 0x02
-#define TCP_FLAG_FIN 0x01
-
-typedef enum tcp_status_code {
-  TCP_CLOSED,
-  TCP_SYN_SENT,
-  TCP_SYN_RECEIVED,
-  TCP_ESTABLISHED,
-  TCP_FIN_WAIT
-} tcp_status_code_t;
-
-typedef struct tcp_state {
-  tcp_status_code_t status;
-  uint32_t event_time;
-  uint32_t seq_num;
-  uint32_t ack_num;
-  uint32_t remote_addr;
-  uint16_t remote_port;
-  uint16_t local_port;
-#ifdef WITH_TCP_REXMIT
-  uint8_t is_closing;
-  uint8_t rexmit_count;
-  uint32_t seq_num_saved;
-#endif
-} tcp_state_t;
-
-typedef enum tcp_sending_mode {
-  TCP_SENDING_SEND,
-  TCP_SENDING_REPLY,
-  TCP_SENDING_RESEND
-} tcp_sending_mode_t;
-
-tcp_state_t tcp_pool[TCP_MAX_CONNECTIONS];
-#endif
-
 /***
  *  ICMP
  ***/
@@ -184,7 +142,51 @@ uint32_t gLan_ip_gateway;
 
 #define DHCP_HOSTNAME_MAX_LEN 24
 static char dhcp_hostname[DHCP_HOSTNAME_MAX_LEN] = "STM32-";
+#endif
 
+/***
+ *  TCP
+ ***/
+#ifdef WITH_TCP
+
+#define TCP_FLAG_URG 0x20
+#define TCP_FLAG_ACK 0x10
+#define TCP_FLAG_PSH 0x08
+#define TCP_FLAG_RST 0x04
+#define TCP_FLAG_SYN 0x02
+#define TCP_FLAG_FIN 0x01
+
+typedef enum tcp_status_code {
+  TCP_CLOSED,
+  TCP_SYN_SENT,
+  TCP_SYN_RECEIVED,
+  TCP_ESTABLISHED,
+  TCP_FIN_WAIT
+} tcp_status_code_t;
+
+typedef struct tcp_state {
+  tcp_status_code_t status;
+  uint32_t event_time;
+  uint32_t seq_num;
+  uint32_t ack_num;
+  uint32_t remote_addr;
+  uint16_t remote_port;
+  uint16_t local_port;
+#ifdef WITH_TCP_REXMIT
+  uint8_t is_closing;
+  uint8_t rexmit_count;
+  uint32_t seq_num_saved;
+#endif
+} tcp_state_t;
+
+typedef enum tcp_sending_mode {
+  TCP_SENDING_SEND,
+  TCP_SENDING_REPLY,
+  TCP_SENDING_RESEND
+} tcp_sending_mode_t;
+
+// TCP connection pool
+tcp_state_t tcp_pool[TCP_MAX_CONNECTIONS];
 #endif
 
 // Function prototypes
@@ -210,7 +212,7 @@ static uint16_t ip_cksum(uint32_t sum, uint8_t *buf, size_t len);
   if (sizeof(type) & 1)                            \
     *(ptr++) = 0;
 
-void dhcp_filter(eth_frame_t *frame, uint16_t len) {
+static void dhcp_filter(eth_frame_t *frame, uint16_t len) {
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   udp_packet_t *udp = (udp_packet_t *)(ip->data);
   dhcp_message_t *dhcp = (dhcp_message_t *)(udp->data);
@@ -435,10 +437,10 @@ void dhcp_poll() {
 #ifdef WITH_TCP
 
 // packet sending mode
-tcp_sending_mode_t tcp_send_mode;
+static tcp_sending_mode_t tcp_send_mode;
 
 // "ack sent" flag
-uint8_t tcp_ack_sent;
+static uint8_t tcp_ack_sent;
 
 // send TCP packet
 // must be set manually:
@@ -1005,7 +1007,7 @@ void udp_filter(eth_frame_t *frame, uint16_t len) {
 #ifdef WITH_ICMP
 
 // process ICMP packet
-void icmp_filter(eth_frame_t *frame, uint16_t len) {
+static void icmp_filter(eth_frame_t *frame, uint16_t len) {
   ip_packet_t *packet = (ip_packet_t *)frame->data;
   icmp_echo_packet_t *icmp = (icmp_echo_packet_t *)packet->data;
 
@@ -1020,10 +1022,9 @@ void icmp_filter(eth_frame_t *frame, uint16_t len) {
 
 #endif
 
-/*
- * IP
- */
-
+/***
+ *  IP
+ ***/
 // calculate IP checksum
 uint16_t ip_cksum(uint32_t sum, uint8_t *buf, size_t len) {
   while (len >= 2) {
