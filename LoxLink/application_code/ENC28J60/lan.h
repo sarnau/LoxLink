@@ -9,8 +9,8 @@ extern "C" {
  ***/
 #define WITH_ICMP // enable support for ping
 #define WITH_DHCP // DHCP IP lookup, instead of a static IP
-#define WITH_UDP // sending/receiving UDP packages
-#define WITH_TCP // TCP connection support
+#define WITH_UDP  // sending/receiving UDP packages
+#define WITH_TCP  // TCP connection support
 //#define WITH_TCP_REXMIT
 
 /***
@@ -100,13 +100,6 @@ typedef struct udp_packet {
  *  TCP
  ***/
 #ifdef WITH_TCP
-#define TCP_FLAG_URG 0x20
-#define TCP_FLAG_ACK 0x10
-#define TCP_FLAG_PSH 0x08
-#define TCP_FLAG_RST 0x04
-#define TCP_FLAG_SYN 0x02
-#define TCP_FLAG_FIN 0x01
-
 typedef struct tcp_packet {
   uint16_t from_port;
   uint16_t to_port;
@@ -123,35 +116,6 @@ typedef struct tcp_packet {
 #define tcp_head_size(tcp) (((tcp)->data_offset & 0xf0) >> 2)
 #define tcp_get_data(tcp) ((uint8_t *)(tcp) + tcp_head_size(tcp))
 
-typedef enum tcp_status_code {
-  TCP_CLOSED,
-  TCP_SYN_SENT,
-  TCP_SYN_RECEIVED,
-  TCP_ESTABLISHED,
-  TCP_FIN_WAIT
-} tcp_status_code_t;
-
-typedef struct tcp_state {
-  tcp_status_code_t status;
-  uint32_t event_time;
-  uint32_t seq_num;
-  uint32_t ack_num;
-  uint32_t remote_addr;
-  uint16_t remote_port;
-  uint16_t local_port;
-#ifdef WITH_TCP_REXMIT
-  uint8_t is_closing;
-  uint8_t rexmit_count;
-  uint32_t seq_num_saved;
-#endif
-} tcp_state_t;
-
-typedef enum tcp_sending_mode {
-  TCP_SENDING_SEND,
-  TCP_SENDING_REPLY,
-  TCP_SENDING_RESEND
-} tcp_sending_mode_t;
-
 #define TCP_OPTION_PUSH 0x01
 #define TCP_OPTION_CLOSE 0x02
 #endif
@@ -159,7 +123,6 @@ typedef enum tcp_sending_mode {
 /***
  *  LAN
  ***/
-
 extern uint8_t gLan_net_buf[];
 extern uint32_t gLan_ip_addr;
 extern uint32_t gLan_ip_mask;

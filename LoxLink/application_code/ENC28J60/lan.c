@@ -2,7 +2,7 @@
 #include <string.h>
 
 // MAC address
-static uint8_t mac_addr[6];
+static uint8_t gLan_MAC[6];
 
 // IP address/mask/gateway
 #ifndef WITH_DHCP
@@ -11,7 +11,7 @@ uint32_t gLan_ip_mask = IP_SUBNET_MASK;
 uint32_t gLan_ip_gateway = IP_DEFAULT_GATEWAY;
 #endif
 
-#define ip_broadcast (gLan_ip_addr | ~gLan_ip_mask)
+#define IP_BROADCAST (gLan_ip_addr | ~gLan_ip_mask)
 
 // Packet buffer
 uint8_t gLan_net_buf[ENC28J60_MAX_FRAMELEN];
@@ -48,6 +48,43 @@ static arp_cache_entry_t arp_cache[ARP_CACHE_SIZE];
 
 // TCP connection pool
 #ifdef WITH_TCP
+
+#define TCP_FLAG_URG 0x20
+#define TCP_FLAG_ACK 0x10
+#define TCP_FLAG_PSH 0x08
+#define TCP_FLAG_RST 0x04
+#define TCP_FLAG_SYN 0x02
+#define TCP_FLAG_FIN 0x01
+
+typedef enum tcp_status_code {
+  TCP_CLOSED,
+  TCP_SYN_SENT,
+  TCP_SYN_RECEIVED,
+  TCP_ESTABLISHED,
+  TCP_FIN_WAIT
+} tcp_status_code_t;
+
+typedef struct tcp_state {
+  tcp_status_code_t status;
+  uint32_t event_time;
+  uint32_t seq_num;
+  uint32_t ack_num;
+  uint32_t remote_addr;
+  uint16_t remote_port;
+  uint16_t local_port;
+#ifdef WITH_TCP_REXMIT
+  uint8_t is_closing;
+  uint8_t rexmit_count;
+  uint32_t seq_num_saved;
+#endif
+} tcp_state_t;
+
+typedef enum tcp_sending_mode {
+  TCP_SENDING_SEND,
+  TCP_SENDING_REPLY,
+  TCP_SENDING_RESEND
+} tcp_sending_mode_t;
+
 tcp_state_t tcp_pool[TCP_MAX_CONNECTIONS];
 #endif
 
@@ -337,7 +374,7 @@ void dhcp_poll() {
     dhcp->hw_addr_len = 6;
     dhcp->transaction_id = dhcp_transaction_id;
     dhcp->flags = DHCP_FLAG_BROADCAST;
-    memcpy(dhcp->hw_addr, mac_addr, 6);
+    memcpy(dhcp->hw_addr, gLan_MAC, 6);
     dhcp->magic_cookie = DHCP_MAGIC_COOKIE;
 
     op = dhcp->options;
@@ -365,7 +402,7 @@ void dhcp_poll() {
     dhcp->hw_addr_len = 6;
     dhcp->transaction_id = dhcp_transaction_id;
     dhcp->client_addr = gLan_ip_addr;
-    memcpy(dhcp->hw_addr, mac_addr, 6);
+    memcpy(dhcp->hw_addr, gLan_MAC, 6);
     dhcp->magic_cookie = DHCP_MAGIC_COOKIE;
 
     op = dhcp->options;
@@ -1010,7 +1047,7 @@ uint8_t ip_send(eth_frame_t *frame, uint16_t len) {
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
 
   // set frame.dst
-  if (ip->to_addr == ip_broadcast) {
+  if (ip->to_addr == IP_BROADCAST) {
     // use broadcast MAC
     memset(frame->to_addr, 0xff, 6);
   } else {
@@ -1090,7 +1127,7 @@ void ip_filter(eth_frame_t *frame, uint16_t len) {
 
   if ((packet->ver_head_len == 0x45) &&
       (ip_cksum(0, (void *)packet, sizeof(ip_packet_t)) == hcs) &&
-      ((packet->to_addr == gLan_ip_addr) || (packet->to_addr == ip_broadcast))) {
+      ((packet->to_addr == gLan_ip_addr) || (packet->to_addr == IP_BROADCAST))) {
     len = ntohs(packet->total_len) - sizeof(ip_packet_t);
     switch (packet->protocol) {
 #ifdef WITH_ICMP
@@ -1148,7 +1185,7 @@ uint8_t *arp_resolve(uint32_t node_ip_addr) {
   msg->hw_addr_len = 6;
   msg->proto_addr_len = 4;
   msg->type = ARP_TYPE_REQUEST;
-  memcpy(msg->mac_addr_from, mac_addr, 6);
+  memcpy(msg->mac_addr_from, gLan_MAC, 6);
   msg->ip_addr_from[3] = gLan_ip_addr >> 24;
   msg->ip_addr_from[2] = gLan_ip_addr >> 16;
   msg->ip_addr_from[1] = gLan_ip_addr >> 8;
@@ -1175,7 +1212,7 @@ void arp_filter(eth_frame_t *frame, uint16_t len) {
       case ARP_TYPE_REQUEST:
         msg->type = ARP_TYPE_RESPONSE;
         memcpy(msg->mac_addr_to, msg->mac_addr_from, 6);
-        memcpy(msg->mac_addr_from, mac_addr, 6);
+        memcpy(msg->mac_addr_from, gLan_MAC, 6);
         msg->ip_addr_to[3] = msg->ip_addr_from[3];
         msg->ip_addr_to[2] = msg->ip_addr_from[2];
         msg->ip_addr_to[1] = msg->ip_addr_from[1];
@@ -1214,14 +1251,14 @@ void eth_resend(eth_frame_t *frame, uint16_t len) {
 //      - frame.dst
 //      - frame.type
 void eth_send(eth_frame_t *frame, uint16_t len) {
-  memcpy(frame->from_addr, mac_addr, 6);
+  memcpy(frame->from_addr, gLan_MAC, 6);
   ENC28J60_sendPacket((void *)frame, len + sizeof(eth_frame_t));
 }
 
 // send Ethernet frame back
 void eth_reply(eth_frame_t *frame, uint16_t len) {
   memcpy(frame->to_addr, frame->from_addr, 6);
-  memcpy(frame->from_addr, mac_addr, 6);
+  memcpy(frame->from_addr, gLan_MAC, 6);
   ENC28J60_sendPacket((void *)frame, len + sizeof(eth_frame_t));
 }
 
@@ -1269,14 +1306,14 @@ void lan_init() {
   uint32_t uid[3];
   HAL_GetUID(uid);
   uint32_t val = uid[0] ^ uid[1] ^ uid[2];
-  mac_addr[0] = 0x22;
-  mac_addr[1] = 0x22;
-  mac_addr[2] = val >> 24;
-  mac_addr[3] = val >> 16;
-  mac_addr[4] = val >> 8;
-  mac_addr[5] = val >> 0;
+  gLan_MAC[0] = 0x22;
+  gLan_MAC[1] = 0x22;
+  gLan_MAC[2] = val >> 24;
+  gLan_MAC[3] = val >> 16;
+  gLan_MAC[4] = val >> 8;
+  gLan_MAC[5] = val >> 0;
 
-  ENC28J60_init(mac_addr);
+  ENC28J60_init(gLan_MAC);
 
 #ifdef WITH_DHCP
   dhcp_retry_time = HAL_GetTick() / 1000 + 2;
