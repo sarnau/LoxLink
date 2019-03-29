@@ -3,6 +3,8 @@
 
 #include "lan_config.h"
 #ifdef WITH_HTTPD
+#include "tcp.h"
+#include <stdlib.h>
 //#include "ff/ff.h"
 //#include "cgi.h"
 

@@ -11,7 +11,7 @@ uint8_t gLAN_MAC_address[6];
 
 // IP address/mask/gateway
 #ifndef WITH_DHCP
-uint32_t gLAN_IPv4_addr = IP_ADDR;
+uint32_t gLAN_IPv4_address = IP_ADDR;
 uint32_t gLAN_IPv4_subnet_mask = IP_SUBNET_MASK;
 uint32_t gLan_IPv4_gateway = IP_DEFAULT_GATEWAY;
 #endif

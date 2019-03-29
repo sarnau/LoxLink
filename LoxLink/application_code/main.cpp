@@ -40,12 +40,71 @@ void udp_packet(eth_frame_t *frame, uint16_t len) {
 }
 #endif
 
+#define HTTP_CLIENT 0
+#if HTTP_CLIENT
+static uint8_t http_id;
+static int http_count;
+static uint32_t timeout;
+
+// upstream callback
+void tcp_read(uint8_t id, eth_frame_t *frame, uint8_t re) {
+  printf("# TCP read(%d, %d)\n", id, re);
+  ip_packet_t *ip = (ip_packet_t *)(frame->data);
+  tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
+  char *buf = (char *)(tcp->data);
+  strcpy(buf, "GET /api/RXm5yNUfXI5sp0Ta8hXz4oUxkBwZaWKAcyHikZ7k/lights/16/status HTTP/1.1\r\n"
+"Host: 192.168.178.33\r\n"
+"Connection: close\r\n"
+"\r\n");
+  tcp_send(id, frame, strlen(buf), 0);
+  ++http_count;
+}
+
+void tcp_closed(uint8_t id, uint8_t hard) {
+  printf("# TCP closed(%d,%d)\n", id, hard);
+  http_id = 0xff;
+  timeout = 0;
+}
+
+// downstream callback
+void tcp_write(uint8_t id, eth_frame_t *frame, uint16_t len) {
+  printf("# TCP write(%d,%d)\n", id, len);
+  ip_packet_t *ip = (ip_packet_t *)(frame->data);
+  tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
+  char *request = (char *)tcp_get_data(tcp);
+  request[len] = 0;
+  printf("%s\n", request);
+}
+#endif
+
 /***
  *  Trigger the watchdog every second
  ***/
 void vEthernetTask(void *pvParameters) {
   lan_init();
+
+#if HTTP_CLIENT
+  uint16_t local_port = 0xC000;
+  http_id = 0xff;
+  uint32_t timer = HAL_GetTick();
+#endif
   while (1) {
+#if HTTP_CLIENT
+    if (http_id == 0xff && (timer + 2000) < HAL_GetTick() && http_count < 5) {
+      timeout = HAL_GetTick();
+      http_id = tcp_open(inet_addr(192, 168, 178, 33), htons(80), htons(local_port));
+      if (http_id != 0xff) {
+        printf("# TCP open %d\n", http_id);
+        local_port++;
+        if (local_port >= 0xe000)
+          local_port = 0xC000;
+      }
+    }
+    // after a tcp_open(), if tcp_read() is not called, we need a timeout
+    if(timeout && (timeout + 2000) < HAL_GetTick()) {
+        tcp_closed(http_id, 1);
+    }
+#endif
     lan_poll();
     vTaskDelay(pdMS_TO_TICKS(1)); // 1ms delay
   }
@@ -81,7 +140,7 @@ int main(void) {
   //static LoxLegacyRS232Extension gLoxLegacyRS232Extension(gLoxCANDriver, serial_base);
   //static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, sResetReason);
   //static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
-  static LoxLegacyDMXExtension gDMXExtension(gLoxCANDriver, serial_base);
+  //static LoxLegacyDMXExtension gDMXExtension(gLoxCANDriver, serial_base);
   //static LoxBusTreeExtension gTreeExtension(gLoxCANDriver, serial_base, sResetReason);
   //static LoxBusTreeRoomComfortSensor gTreeRoomComfortSensor(gTreeExtension.Driver(eTreeBranch_rightBranch), 0xb0112233, sResetReason);
   //gTreeExtension.AddDevice(&gTreeRoomComfortSensor, eTreeBranch_rightBranch);
@@ -89,13 +148,13 @@ int main(void) {
   //gTreeExtension.AddDevice(&gLoxBusTreeTouch, eTreeBranch_leftBranch);
   //static LoxBusTreeAlarmSiren gLoxBusTreeAlarmSiren(gLoxCANDriver, 0xb010035c, sResetReason);
 
-#if DEBUG
+#if DEBUG && 0
   MX_print_cpu_info();
 #endif
   gLED.Startup();
   gLoxCANDriver.Startup();
 
-  Start_Ethernet();
+  //Start_Ethernet();
   Start_Watchdog();
 
   vTaskStartScheduler();

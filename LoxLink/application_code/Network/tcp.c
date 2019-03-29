@@ -7,7 +7,7 @@
 #include "stm32f1xx_hal.h"
 
 #define TCP_WINDOW_SIZE 65535
-#define TCP_SYN_MSS 512
+#define TCP_SYN_MSS 1024
 #ifdef WITH_TCP_REXMIT
 #define TCP_REXMIT_TIMEOUT 1000 // 1 second
 #define TCP_REXMIT_LIMIT 5
@@ -15,12 +15,14 @@
 #define TCP_CONN_TIMEOUT 2500 // 2.5 seconds
 #endif
 
-#define TCP_FLAG_URG 0x20
-#define TCP_FLAG_ACK 0x10
-#define TCP_FLAG_PSH 0x08
-#define TCP_FLAG_RST 0x04
-#define TCP_FLAG_SYN 0x02
-#define TCP_FLAG_FIN 0x01
+typedef enum tcp_flag {
+  TCP_FLAG_URG = 0x20,
+  TCP_FLAG_ACK = 0x10,
+  TCP_FLAG_PSH = 0x08,
+  TCP_FLAG_RST = 0x04,
+  TCP_FLAG_SYN = 0x02,
+  TCP_FLAG_FIN = 0x01,
+} tcp_flag_t;
 
 typedef enum tcp_status_code {
   TCP_CLOSED,
@@ -110,7 +112,7 @@ uint8_t tcp_xmit(tcp_state_t *st, eth_frame_t *frame, uint16_t len) {
     tcp->data[1] = 4; //option len
     tcp->data[2] = TCP_SYN_MSS >> 8;
     tcp->data[3] = TCP_SYN_MSS & 0xff;
-    plen = 4;
+    plen += 4;
   } else {
     tcp->data_offset = sizeof(tcp_packet_t) << 2;
   }
@@ -122,8 +124,7 @@ uint8_t tcp_xmit(tcp_state_t *st, eth_frame_t *frame, uint16_t len) {
   // set checksum
   plen += sizeof(tcp_packet_t);
   tcp->cksum = 0;
-  tcp->cksum = ip_cksum(plen + IP_PROTOCOL_TCP,
-    (uint8_t *)tcp - 8, plen + 8);
+  tcp->cksum = ip_cksum(plen + IP_PROTOCOL_TCP, (uint8_t *)tcp - 8, plen + 8);
 
   // send packet
   uint8_t status = 1;
@@ -200,7 +201,6 @@ uint8_t tcp_open(uint32_t addr, uint16_t port, uint16_t local_port) {
 
     st->status = TCP_CLOSED;
   }
-
   return 0xff;
 }
 
@@ -209,15 +209,17 @@ uint8_t tcp_open(uint32_t addr, uint16_t port, uint16_t local_port) {
  *  don't use anywhere except tcp_write callback!
  ***/
 void tcp_send(uint8_t id, eth_frame_t *frame, uint16_t len, uint8_t options) {
+  if (id >= TCP_MAX_CONNECTIONS)
+    return;
+  tcp_state_t *st = &tcp_pool[id];
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
-  tcp_state_t *st = tcp_pool + id;
 
   // check if connection established
   if (st->status != TCP_ESTABLISHED)
     return;
 
-  uint8_t flags = TCP_FLAG_ACK;
+  tcp_flag_t flags = TCP_FLAG_ACK;
   if (options & TCP_OPTION_PUSH) // send PSH/ACK
     flags |= TCP_FLAG_PSH;
   if (options & TCP_OPTION_CLOSE) { // send FIN/ACK
@@ -244,8 +246,7 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
   len -= tcp_head_size(tcp);
 
   // me needs only SYN/FIN/ACK/RST
-  const uint8_t tcpflags = tcp->flags & (TCP_FLAG_SYN | TCP_FLAG_ACK |
-                                          TCP_FLAG_RST | TCP_FLAG_FIN);
+  const tcp_flag_t tcpflags = tcp->flags & (TCP_FLAG_SYN | TCP_FLAG_ACK | TCP_FLAG_RST | TCP_FLAG_FIN);
 
   // sending packets back
   tcp_send_mode = TCP_SENDING_REPLY;
@@ -270,6 +271,7 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
   if (!st) {
     // received SYN - initiating new connection
     if (tcpflags == TCP_FLAG_SYN) {
+      printf("R: SYN\n");
       // search for free slot for connection
       for (id = 0; id < TCP_MAX_CONNECTIONS; ++id) {
         tcp_state_t *pst = &tcp_pool[id];
@@ -281,6 +283,7 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
 
       // slot found and app accepts connection?
       if (st && tcp_listen(id, frame)) {
+        printf("R: LISTEN\n");
         // add embrionic connection to pool
         st->status = TCP_SYN_RECEIVED;
         st->event_time = HAL_GetTick();
@@ -304,19 +307,31 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
   } else {
     // connection reset by peer?
     if (tcpflags & TCP_FLAG_RST) {
-      if ((st->status == TCP_ESTABLISHED) ||
-          (st->status == TCP_FIN_WAIT)) {
+      printf("R: RST\n");
+      if ((st->status == TCP_ESTABLISHED) || (st->status == TCP_FIN_WAIT)) {
         tcp_closed(id, 1);
       }
       st->status = TCP_CLOSED;
       return;
     }
 
-    // me needs only ack packet
-    if ((ntohl(tcp->seq_num) != st->ack_num) ||
-        (ntohl(tcp->ack_num) != st->seq_num) ||
-        (!(tcpflags & TCP_FLAG_ACK))) {
+    // we need only the ack packet
+    if (!(tcpflags & TCP_FLAG_ACK)) {
+      printf("R: !ACK\n");
       return;
+    }
+    // the ACK number has to be valid as well
+    //    if (ntohl(tcp->ack_num) != st->seq_num)
+    //      return;
+    // a SYN ACK sets the ack
+    if (tcpflags & TCP_FLAG_SYN) {
+      printf("R: ACK SYN\n");
+      st->ack_num = ntohl(tcp->seq_num);
+    } else {
+      printf("R: ACK\n");
+      // otherwise it needs to be valid
+      //      if (ntohl(tcp->seq_num) != st->ack_num)
+      //        return;
     }
 
 #ifdef WITH_TCP_REXMIT
@@ -339,7 +354,7 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
     // SYN sent by me (active open, step 1)
     // awaiting SYN/ACK (active open, step 2)
     case TCP_SYN_SENT:
-
+      printf("TCP_SYN_SENT\n");
       // received packet must be SYN/ACK
       if (tcpflags != (TCP_FLAG_SYN | TCP_FLAG_ACK)) {
         st->status = TCP_CLOSED;
@@ -355,14 +370,13 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
 
       // app can send some data
       tcp_read(id, frame, 0);
-
       break;
 
     // SYN received my me (passive open, step 1)
     // SYN/ACK sent by me (passive open, step 2)
     // awaiting ACK (passive open, step 3)
     case TCP_SYN_RECEIVED:
-
+      printf("TCP_SYN_RECEIVED\n");
       // received packet must be ACK
       if (tcpflags != TCP_FLAG_ACK) {
         st->status = TCP_CLOSED;
@@ -374,16 +388,15 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
 
       // app can send some data
       tcp_read(id, frame, 0);
-
       break;
 
     // connection established
     // awaiting ACK or FIN/ACK
     case TCP_ESTABLISHED:
-
       // received FIN/ACK?
       // (passive close, step 1)
       if (tcpflags == (TCP_FLAG_FIN | TCP_FLAG_ACK)) {
+        printf("TCP_ESTABLISHED TCP_FLAG_FIN | TCP_FLAG_ACK\n");
         // feed data to app
         if (len)
           tcp_write(id, frame, len);
@@ -395,10 +408,8 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
         // connection is now closed
         st->status = TCP_CLOSED;
         tcp_closed(id, 0);
-      }
-
-      // received ACK
-      else if (tcpflags == TCP_FLAG_ACK) {
+      } else if (tcpflags == TCP_FLAG_ACK) { // received ACK
+        printf("TCP_ESTABLISHED TCP_FLAG_ACK %d\n", len);
         // feed data to app
         if (len)
           tcp_write(id, frame, len);
@@ -412,16 +423,15 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
           tcp_xmit(st, frame, 0);
         }
       }
-
       break;
 
     // FIN/ACK sent by me (active close, step 1)
     // awaiting ACK or FIN/ACK
     case TCP_FIN_WAIT:
-
       // received FIN/ACK?
       // (active close, step 2)
       if (tcpflags == (TCP_FLAG_FIN | TCP_FLAG_ACK)) {
+        printf("TCP_FIN_WAIT TCP_FLAG_FIN | TCP_FLAG_ACK\n");
         // feed data to app
         if (len)
           tcp_write(id, frame, len);
@@ -433,11 +443,8 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
         // connection is now closed
         st->status = TCP_CLOSED;
         tcp_closed(id, 0);
-      }
-
-      // received ACK+data?
-      // (buffer flushing by peer)
-      else if ((tcpflags == TCP_FLAG_ACK) && (len)) {
+      } else if ((tcpflags == TCP_FLAG_ACK) && (len)) { // received ACK+data? (buffer flushing by peer)
+        printf("TCP_FIN_WAIT TCP_FLAG_ACK %d\n", len);
         // feed data to app
         tcp_write(id, frame, len);
 
@@ -450,7 +457,6 @@ void tcp_filter(eth_frame_t *frame, uint16_t len) {
         st->is_closing = 1;
 #endif
       }
-
       break;
 
     default:

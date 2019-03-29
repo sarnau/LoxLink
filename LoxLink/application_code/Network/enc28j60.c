@@ -31,9 +31,9 @@
 #define ENC28J60_RXSIZE (0x1A00)  // 6.5kb RX buffer
 #define ENC28J60_TXSIZE (0x0600)  // 1.5kb TX buffer
 
-#define ENC28J60_RXSTART (0) // has to be zero (Rev. B4 Silicon Errata)
+#define ENC28J60_RXBEGIN (0) // has to be zero (Rev. B4 Silicon Errata)
 #define ENC28J60_RXEND (ENC28J60_RXSIZE - 1)
-#define ENC28J60_TXSTART (ENC28J60_BUFSIZE - 1 - ENC28J60_TXSIZE)
+#define ENC28J60_TXBEGIN (ENC28J60_BUFSIZE - 1 - ENC28J60_TXSIZE)
 #define ENC28J60_TXEND (ENC28J60_BUFSIZE - 1)
 
 /***
@@ -406,7 +406,6 @@ static void ENC28J60_bitfieldClear(uint8_t adr, uint8_t mask) {
 }
 
 static void ENC28J60_bitfieldSet(uint8_t adr, uint8_t mask) {
-  ENC28J60_select_bank(adr);
   ENC28J60_writeOp(ENC28J60_BIT_FIELD_SET, adr, mask);
 }
 
@@ -521,8 +520,8 @@ void ENC28J60_init(const uint8_t *macadr) {
   ENC28J60_soft_reset();
 
   // Setup Ethernet RX/TX buffer
-  ENC28J60_writeReg16(ERXST, ENC28J60_RXSTART);
-  ENC28J60_writeReg16(ERXRDPT, ENC28J60_RXSTART);
+  ENC28J60_writeReg16(ERXST, ENC28J60_RXBEGIN);
+  ENC28J60_writeReg16(ERXRDPT, ENC28J60_RXBEGIN);
   ENC28J60_writeReg16(ERXND, ENC28J60_RXEND);
 
   // Setup MAC
@@ -544,6 +543,8 @@ void ENC28J60_init(const uint8_t *macadr) {
   ENC28J60_writePhy16(PHLCON, PHLCON_DEFAULT_VALUE); // LED configuration
 
   // Enable RX packets
+  ENC28J60_select_bank(ECON1);
+  ENC28J60_bitfieldSet(EIE, EIE_INTIE|EIE_PKTIE);
   ENC28J60_bitfieldSet(ECON1, ECON1_RXEN);
 }
 
@@ -561,11 +562,11 @@ void ENC28J60_sendPacket(const void *data, uint16_t len) {
     }
   }
   // write pointer to the beginning of the TX buffer
-  ENC28J60_writeReg16(EWRPT, ENC28J60_TXSTART);
+  ENC28J60_writeReg16(EWRPT, ENC28J60_TXBEGIN);
   ENC28J60_writeOp(ENC28J60_WRITE_BUF_MEM_COMMAND, 0, 0x00); // per-packet control byte (0x00 = use MACON3 settings)
   ENC28J60_writeBuffer(data, len);                           // copy the packet into the TX buffer
-  ENC28J60_writeReg16(ETXST, ENC28J60_TXSTART);              // beginning of the package
-  ENC28J60_writeReg16(ETXND, ENC28J60_TXSTART + len);        // end of the package
+  ENC28J60_writeReg16(ETXST, ENC28J60_TXBEGIN);              // beginning of the package
+  ENC28J60_writeReg16(ETXND, ENC28J60_TXBEGIN + len);        // end of the package
   ENC28J60_bitfieldSet(ECON1, ECON1_TXRTS);                  // trigger the transmission
 
   // wait until transmission has finished; referring to the data sheet and
@@ -585,7 +586,16 @@ void ENC28J60_sendPacket(const void *data, uint16_t len) {
 }
 
 uint16_t ENC28J60_receivePacket(void *buf, uint16_t buflen) {
-  static uint16_t sCurrentRXPointer = ENC28J60_RXSTART;
+  static uint16_t sCurrentRXPointer = ENC28J60_RXBEGIN;
+  static int sRequestSet = 0;
+  if (sRequestSet) {
+    if (sCurrentRXPointer == 0) {
+      ENC28J60_writeReg16(ERXRDPT, ENC28J60_RXEND); // advance the read pointer
+    } else {
+      ENC28J60_writeReg16(ERXRDPT, sCurrentRXPointer - 1); // advance the read pointer
+    }
+    sRequestSet = 0;
+  }
   uint16_t len = 0;
   if (ENC28J60_readReg8(EPKTCNT)) {                // Ethernet Packet Count != 0, which means that we did receive at least one package
     ENC28J60_writeReg16(ERDPT, sCurrentRXPointer); // set the read pointer to the last position
@@ -593,17 +603,17 @@ uint16_t ENC28J60_receivePacket(void *buf, uint16_t buflen) {
       uint16_t nextPacketPointer;
       uint16_t packageLength;
       uint16_t statusFlags;
-    } packageHeader;
-    ENC28J60_readBuffer(&packageHeader, sizeof(packageHeader));
-    if (packageHeader.statusFlags & RECV_STAT_RECEIVED_OK) {
-      len = packageHeader.packageLength - 4; // ignore 4 bytes of CRC
+    } header;
+    ENC28J60_readBuffer(&header, sizeof(header));
+    sCurrentRXPointer = header.nextPacketPointer;
+    if (header.statusFlags & RECV_STAT_RECEIVED_OK) {
+      len = header.packageLength - 4; // ignore 4 bytes of CRC
       if (len > buflen)
         len = buflen;
       ENC28J60_readBuffer(buf, len); // transfer the package into our buffer
     }
-    sCurrentRXPointer = packageHeader.nextPacketPointer;
-    ENC28J60_writeReg16(ERXRDPT, sCurrentRXPointer - 1); // advance the read pointer
-    ENC28J60_bitfieldSet(ECON2, ECON2_PKTDEC);           // decrement the package counter
+    sRequestSet = 1;
+    ENC28J60_bitfieldSet(ECON2, ECON2_PKTDEC); // decrement the package counter
   }
   return len;
 }

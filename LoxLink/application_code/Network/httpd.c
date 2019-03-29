@@ -122,7 +122,7 @@ uint8_t tcp_listen(uint8_t id, eth_frame_t *frame) {
 
 // upstream callback
 void tcp_read(uint8_t id, eth_frame_t *frame, uint8_t re) {
-  httpd_state_t *st = httpd_pool + id;
+  httpd_state_t *st = &httpd_pool[id];
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
   char *buf = (char *)(tcp->data);
@@ -138,8 +138,9 @@ void tcp_read(uint8_t id, eth_frame_t *frame, uint8_t re) {
       st->cursor = st->cursor_saved;
       st->numbytes = st->numbytes_saved;
 
-      if (st->data_mode == HTTPD_DATA_FILE)
-        f_lseek(&(st->data.fs), st->cursor);
+      if (st->data_mode == HTTPD_DATA_FILE) {
+//        f_lseek(&(st->data.fs), st->cursor);
+      }
     } else {
       // save state
       st->statuscode_saved = st->statuscode;
@@ -213,7 +214,7 @@ void tcp_read(uint8_t id, eth_frame_t *frame, uint8_t re) {
 // downstream callback
 void tcp_write(uint8_t id, eth_frame_t *frame, uint16_t len) {
   const char *const http_header_end = "\r\n\r\n";
-  httpd_state_t *st = httpd_pool + id;
+  httpd_state_t *st = &httpd_pool[id];
   ip_packet_t *ip = (ip_packet_t *)(frame->data);
   tcp_packet_t *tcp = (tcp_packet_t *)(ip->data);
   char *request = (char *)tcp_get_data(tcp);
