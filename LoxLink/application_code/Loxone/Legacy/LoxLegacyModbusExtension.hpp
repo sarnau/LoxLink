@@ -1,33 +1,33 @@
 //
-//  LoxLegacyRS232Extension.hpp
+//  LoxLegacyModbusExtension.hpp
 //
 //  Created by Markus Fritze on 03.03.19.
 //  Copyright (c) 2019 Markus Fritze. All rights reserved.
 //
 
-#ifndef LoxLegacyRS232Extension_hpp
-#define LoxLegacyRS232Extension_hpp
+#ifndef LoxLegacyModbusExtension_hpp
+#define LoxLegacyModbusExtension_hpp
 
 #include "FreeRTOS.h"
 #include "LoxLegacyExtension.hpp"
-#if EXTENSION_RS232
+#if EXTENSION_MODUS
 #include "queue.h"
 
-#define RS232_RX_BUFFERSIZE 512
-#define RS232_TX_BUFFERSIZE 512
+#define Modbus_RX_BUFFERSIZE 512
+#define Modbus_TX_BUFFERSIZE 512
 
 // The different state, in which the extension can be
 typedef enum {
-  eRS232ChecksumMode_none = 0,
-  eRS232ChecksumMode_XOR = 1,
-  eRS232ChecksumMode_Sum = 2,
-  eRS232ChecksumMode_CRC = 3,
-  eRS232ChecksumMode_ModbusCRC = 4,
-  eRS232ChecksumMode_Fronius = 5,
-} eRS232ChecksumMode;
+  eModbusChecksumMode_none = 0,
+  eModbusChecksumMode_XOR = 1,
+  eModbusChecksumMode_Sum = 2,
+  eModbusChecksumMode_CRC = 3,
+  eModbusChecksumMode_ModbusCRC = 4,
+  eModbusChecksumMode_Fronius = 5,
+} eModbusChecksumMode;
 
 
-class LoxLegacyRS232Extension : public LoxLegacyExtension {
+class LoxLegacyModbusExtension : public LoxLegacyExtension {
   uint8_t sendCount;
   uint8_t sendFill;
   uint8_t sendCRC;
@@ -39,20 +39,21 @@ class LoxLegacyRS232Extension : public LoxLegacyExtension {
   uint8_t nak_byte;
   bool hasEndCharacter;
   uint8_t endCharacter;
-  eRS232ChecksumMode checksumMode;
+  eModbusChecksumMode checksumMode;
 
   void forwardBuffer(const uint8_t *buffer, size_t byteCount);
   void sendBuffer(const uint8_t *buffer, size_t byteCount);
-  static void vRS232RXTask(void *pvParameters);
-  static void vRS232TXTask(void *pvParameters);
+  static void vModbusRXTask(void *pvParameters);
+  static void vModbusTXTask(void *pvParameters);
 
   virtual void PacketToExtension(LoxCanMessage &message);
 
 public:
-  LoxLegacyRS232Extension(LoxCANBaseDriver &driver, uint32_t serial);
+  LoxLegacyModbusExtension(LoxCANBaseDriver &driver, uint32_t serial);
 
   virtual void Startup(void);
 };
+
 #endif
 
-#endif /* LoxLegacyRS232Extension_hpp */
+#endif /* LoxLegacyModbusExtension_hpp */

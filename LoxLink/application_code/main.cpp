@@ -17,6 +17,7 @@
 #include "LoxCANDriver_STM32.hpp"
 #include "LoxLegacyDMXExtension.hpp"
 #include "LoxLegacyRS232Extension.hpp"
+#include "LoxLegacyModbusExtension.hpp"
 #include "LoxLegacyRelayExtension.hpp"
 #include "SEGGER_SYSVIEW.h"
 #include "ip.h"
@@ -137,7 +138,12 @@ int main(void) {
 #endif
 
   static LoxCANDriver_STM32 gLoxCANDriver(tLoxCANDriverType_LoxoneLink);
+#if EXTENSION_RS232 
   //static LoxLegacyRS232Extension gLoxLegacyRS232Extension(gLoxCANDriver, serial_base);
+#endif
+#if EXTENSION_MODUS
+  static LoxLegacyModbusExtension gLoxLegacyModbusExtension(gLoxCANDriver, serial_base);
+#endif
   //static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, sResetReason);
   //static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
   //static LoxLegacyDMXExtension gDMXExtension(gLoxCANDriver, serial_base);

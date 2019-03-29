@@ -10,6 +10,9 @@
 
 #include "LoxExtension.hpp"
 
+#define EXTENSION_RS232 0
+#define EXTENSION_MODUS 1
+
 /////////////////////////////////////////////////////////////////
 // Legacy protocol
 typedef enum { // some of these commands have different meanings, depending on the extension
@@ -18,7 +21,7 @@ typedef enum { // some of these commands have different meanings, depending on t
   FragCmd_C485_package_received = 0x02,
   FragCmd_page_CRC_external = 0x04,
   FragCmd_retry_page_external = 0x05,
-  FragCmd_cfg_data = 0x06,
+  FragCmd_Modbus_config = 0x06,
   FragCmd_dali_search_data = 0x07,
   FragCmd_dali_search_data_lastpackage = 0x08,
   FragCmd_WebServiceRequest = 0x09,

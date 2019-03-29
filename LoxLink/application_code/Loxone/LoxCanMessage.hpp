@@ -250,7 +250,7 @@ typedef enum {                   // some of these commands have different meanin
   //    Enocean_61 = 0x61,
   Modbus_485_WriteMultipleRegisters4 = 0x62,
   //    Enocean_62 = 0x62,
-  Modbus_485_WriteMultipleCoils = 0x63,
+  // Wrong/Unused by extension: Modbus_485_WriteMultipleCoils = 0x63,
   OneWire_polling_cycle = 0x63,
   set_monitor = 0x64,
   dmx_search = 0x64,
