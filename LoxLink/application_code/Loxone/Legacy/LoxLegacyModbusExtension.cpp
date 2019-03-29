@@ -6,7 +6,7 @@
 //
 
 #include "LoxLegacyModbusExtension.hpp"
-#if EXTENSION_MODUS
+#if EXTENSION_MODBUS
 #include "global_functions.hpp"
 #include "stm32f1xx_hal_conf.h"
 #include "stm32f1xx_hal_dma.h"
@@ -28,6 +28,14 @@ static StreamBufferHandle_t gUART_RX_Stream;
  ***/
 LoxLegacyModbusExtension::LoxLegacyModbusExtension(LoxCANBaseDriver &driver, uint32_t serial)
   : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_ModbusExtension << 24), eDeviceType_t_ModbusExtension, 0, 9000822) {
+  assert(sizeof(sModbusConfig) == 0x810);
+}
+
+/***
+ *  New configuration was loaded
+ ***/
+void LoxLegacyModbusExtension::config_load(void)
+{
 }
 
 /***
@@ -35,18 +43,18 @@ LoxLegacyModbusExtension::LoxLegacyModbusExtension(LoxCANBaseDriver &driver, uin
  ***/
 void LoxLegacyModbusExtension::forwardBuffer(const uint8_t *buffer, size_t byteCount) {
   // ACK/NAK only works if a checksum mode is active
-  if (this->checksumMode != eModbusChecksumMode_none and (this->hasAck or this->hasNak)) {
-    bool checksumValid = false;
-    uint16_t checksum = crc16_Modus(buffer, byteCount - 2);
-    checksumValid = buffer[byteCount - 2] == (checksum & 0xFF) and buffer[byteCount - 1] == (checksum >> 8);
-    if (checksumValid) {
-      if (this->hasAck)
-        sendBuffer(&this->ack_byte, 1);
-    } else {
-      if (this->hasNak)
-        sendBuffer(&this->nak_byte, 1);
-    }
-  }
+//  if (this->checksumMode != eModbusChecksumMode_none and (this->hasAck or this->hasNak)) {
+//    bool checksumValid = false;
+//    uint16_t checksum = crc16_Modus(buffer, byteCount - 2);
+//    checksumValid = buffer[byteCount - 2] == (checksum & 0xFF) and buffer[byteCount - 1] == (checksum >> 8);
+//    if (checksumValid) {
+//      if (this->hasAck)
+//        sendBuffer(&this->ack_byte, 1);
+//    } else {
+//      if (this->hasNak)
+//        sendBuffer(&this->nak_byte, 1);
+//    }
+//  }
 #if DEBUG && 1
   debug_print_buffer(buffer, byteCount, "Modbus MS:");
 #endif
@@ -79,29 +87,29 @@ void LoxLegacyModbusExtension::vModbusRXTask(void *pvParameters) {
     debug_print_buffer(buffer, byteCount, "Modbus RX:");
 #endif
     if (byteCount > 0) {
-      if (not _this->hasEndCharacter or bufferFill == Modbus_RX_BUFFERSIZE) {
-        // if we don't wait for an end-character or the buffer is full anyway
-        // just sent the data
-        _this->forwardBuffer(buffer, bufferFill);
-        bufferFill = 0;
-      } else {
-        for (size_t pos = 0; pos < bufferFill; ++pos) {
-          if (buffer[pos] == _this->endCharacter) {
-            size_t count = pos + 1; // number of bytes including the end character
-                                    // WARNING Loxone Modbus extension forwards `count`, not `count - 1`,
-                                    // which means it never works with a checksum active, because the
-                                    // endCharacter is stored in the last byte, which is where the following
-                                    // code expects the checksum to be. Without the checksum, ACK/NAK will
-                                    // obviously not work. So, for Loxone it will always send NAK (and
-                                    // sometimes, 1/256%, ACK). Feels like a Loxone bug.
-            _this->forwardBuffer(buffer, count);
-            // move the remaining bytes down
-            bufferFill -= count;
-            memmove(buffer, buffer + count, bufferFill);
-            break;
-          }
-        }
-      }
+      //      if (not _this->hasEndCharacter or bufferFill == Modbus_RX_BUFFERSIZE) {
+      //        // if we don't wait for an end-character or the buffer is full anyway
+      //        // just sent the data
+      //        _this->forwardBuffer(buffer, bufferFill);
+      //        bufferFill = 0;
+      //      } else {
+      //        for (size_t pos = 0; pos < bufferFill; ++pos) {
+      //          if (buffer[pos] == _this->endCharacter) {
+      //            size_t count = pos + 1; // number of bytes including the end character
+      //                                    // WARNING Loxone Modbus extension forwards `count`, not `count - 1`,
+      //                                    // which means it never works with a checksum active, because the
+      //                                    // endCharacter is stored in the last byte, which is where the following
+      //                                    // code expects the checksum to be. Without the checksum, ACK/NAK will
+      //                                    // obviously not work. So, for Loxone it will always send NAK (and
+      //                                    // sometimes, 1/256%, ACK). Feels like a Loxone bug.
+      //            _this->forwardBuffer(buffer, count);
+      //            // move the remaining bytes down
+      //            bufferFill -= count;
+      //            memmove(buffer, buffer + count, bufferFill);
+      //            break;
+      //          }
+      //        }
+      //      }
     }
   }
 }
@@ -231,6 +239,20 @@ void LoxLegacyModbusExtension::PacketToExtension(LoxCanMessage &message) {
   }
 }
 
+void LoxLegacyModbusExtension::FragmentedPacketToExtension(LoxMsgLegacyFragmentedCommand_t fragCommand, const void *fragData, int size) {
+  switch (fragCommand) {
+  case FragCmd_Modbus_config: {
+    const sModbusConfig *config = (const sModbusConfig *)fragData;
+    if(size == sizeof(sModbusConfig) and config->version == 1) { // valid config?
+        memmove(&this->config, config, sizeof(sModbusConfig));
+        config_load();
+    }
+    break;
+  }
+  default:
+    break;
+  }
+}
 /**
 * @brief UART MSP Initialization
 * This function configures the hardware resources used in this example

@@ -141,7 +141,7 @@ int main(void) {
 #if EXTENSION_RS232 
   //static LoxLegacyRS232Extension gLoxLegacyRS232Extension(gLoxCANDriver, serial_base);
 #endif
-#if EXTENSION_MODUS
+#if EXTENSION_MODBUS
   static LoxLegacyModbusExtension gLoxLegacyModbusExtension(gLoxCANDriver, serial_base);
 #endif
   //static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, sResetReason);
