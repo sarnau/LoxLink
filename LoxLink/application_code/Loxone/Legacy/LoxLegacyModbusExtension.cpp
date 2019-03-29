@@ -27,7 +27,7 @@ static StreamBufferHandle_t gUART_RX_Stream;
  *  Constructor
  ***/
 LoxLegacyModbusExtension::LoxLegacyModbusExtension(LoxCANBaseDriver &driver, uint32_t serial)
-  : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_ModbusExtension << 24), eDeviceType_t_ModbusExtension, 0, 9000822) {
+  : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_ModbusExtension << 24), eDeviceType_t_ModbusExtension, 0, 10020326) {
   assert(sizeof(sModbusConfig) == 0x810);
 }
 
