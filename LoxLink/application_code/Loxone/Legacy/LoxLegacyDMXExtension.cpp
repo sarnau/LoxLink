@@ -155,3 +155,8 @@ void LoxLegacyDMXExtension::FragmentedPacketToExtension(LoxMsgLegacyFragmentedCo
     break;
   }
 }
+
+void LoxLegacyDMXExtension::StartRequest()
+{
+    sendCommandWithValues(config_checksum, 0, 0, 0); // required, otherwise it is considered offline
+}

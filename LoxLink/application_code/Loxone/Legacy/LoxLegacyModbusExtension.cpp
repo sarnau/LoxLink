@@ -27,38 +27,69 @@ static StreamBufferHandle_t gUART_RX_Stream;
  *  Constructor
  ***/
 LoxLegacyModbusExtension::LoxLegacyModbusExtension(LoxCANBaseDriver &driver, uint32_t serial)
-  : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_ModbusExtension << 24), eDeviceType_t_ModbusExtension, 0, 10020326) {
+  : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_ModbusExtension << 24), eDeviceType_t_ModbusExtension, 0, 10020326, &config, sizeof(config)) {
   assert(sizeof(sModbusConfig) == 0x810);
 }
 
 /***
  *  New configuration was loaded
  ***/
-void LoxLegacyModbusExtension::config_load(void)
-{
-}
-
-/***
- *  Forward a received buffer to the CAN bus to the Miniserver
- ***/
-void LoxLegacyModbusExtension::forwardBuffer(const uint8_t *buffer, size_t byteCount) {
-  // ACK/NAK only works if a checksum mode is active
-//  if (this->checksumMode != eModbusChecksumMode_none and (this->hasAck or this->hasNak)) {
-//    bool checksumValid = false;
-//    uint16_t checksum = crc16_Modus(buffer, byteCount - 2);
-//    checksumValid = buffer[byteCount - 2] == (checksum & 0xFF) and buffer[byteCount - 1] == (checksum >> 8);
-//    if (checksumValid) {
-//      if (this->hasAck)
-//        sendBuffer(&this->ack_byte, 1);
-//    } else {
-//      if (this->hasNak)
-//        sendBuffer(&this->nak_byte, 1);
-//    }
-//  }
-#if DEBUG && 1
-  debug_print_buffer(buffer, byteCount, "Modbus MS:");
-#endif
-  send_fragmented_data(FragCmd_C232_bytes_received, buffer, byteCount);
+void LoxLegacyModbusExtension::config_load(void) {
+  printf("config RS485 baudrate : %ld baud\n", this->config.baudrate);
+  printf("config RS485 word length : %ld bits\n", this->config.wordLength);
+  printf("config RS485 parity : %ld\n", this->config.parity);
+  printf("config RS485 twoStopBits : %ld\n", this->config.twoStopBits);
+  printf("config protocol : %ld\n", this->config.protocol);
+  if (this->config.manualTimingFlag) {
+    printf("config timingPause : %ld\n", this->config.timingPause);
+    printf("config timingTimeout : %ld\n", this->config.timingTimeout);
+  }
+  for (int i = 0; i < this->config.entryCount; ++i) {
+    const sModbusDeviceConfig *d = &this->config.devices[i];
+    printf("config device #%d: ", i);
+    switch (d->functionCode) {
+    case 1:
+      printf("Read coil status");
+      break;
+    case 2:
+      printf("Read input status");
+      break;
+    case 3:
+      printf("Read holding register");
+      break;
+    case 4:
+      printf("Read input register");
+      break;
+      // these are allowed for actors, but not used in the config
+      //        case 5: printf("Write single coil"); break;
+      //        case 6: printf("Write single register"); break;
+      //        case 15: printf("Force multiple coils"); break;
+      //        case 16: printf("Preset multiple registers"); break;
+    default: // should not happen with Loxone Config
+      printf("functionCode(%d)", d->functionCode);
+      break;
+    }
+    printf(" addr:0x%02x ", d->address);
+    printf(" reg:0x%02x options:", d->regNumber);
+    uint16_t flags = d->pollingCycle >> 16;
+    if (flags & 0x4000)
+      printf("reg order HL,");
+    else
+      printf("reg order LH,");
+    if (flags & 0x8000)
+      printf("Little Endian,");
+    else
+      printf("Big Endian,");
+    if (flags & 0x2000)
+      printf("2 regs for 32-bit");
+    uint32_t cycle = d->pollingCycle & 0xFFFF;
+    if (cycle && flags & 0x1000) { // in seconds
+      cycle = (cycle & 0xFFF) * 1000;
+    } else { // in ms
+      cycle = cycle * 100;
+    }
+    printf(" %.1fms\n", cycle * 0.001);
+  }
 }
 
 /***
@@ -86,31 +117,6 @@ void LoxLegacyModbusExtension::vModbusRXTask(void *pvParameters) {
 #if DEBUG && 1
     debug_print_buffer(buffer, byteCount, "Modbus RX:");
 #endif
-    if (byteCount > 0) {
-      //      if (not _this->hasEndCharacter or bufferFill == Modbus_RX_BUFFERSIZE) {
-      //        // if we don't wait for an end-character or the buffer is full anyway
-      //        // just sent the data
-      //        _this->forwardBuffer(buffer, bufferFill);
-      //        bufferFill = 0;
-      //      } else {
-      //        for (size_t pos = 0; pos < bufferFill; ++pos) {
-      //          if (buffer[pos] == _this->endCharacter) {
-      //            size_t count = pos + 1; // number of bytes including the end character
-      //                                    // WARNING Loxone Modbus extension forwards `count`, not `count - 1`,
-      //                                    // which means it never works with a checksum active, because the
-      //                                    // endCharacter is stored in the last byte, which is where the following
-      //                                    // code expects the checksum to be. Without the checksum, ACK/NAK will
-      //                                    // obviously not work. So, for Loxone it will always send NAK (and
-      //                                    // sometimes, 1/256%, ACK). Feels like a Loxone bug.
-      //            _this->forwardBuffer(buffer, count);
-      //            // move the remaining bytes down
-      //            bufferFill -= count;
-      //            memmove(buffer, buffer + count, bufferFill);
-      //            break;
-      //          }
-      //        }
-      //      }
-    }
   }
 }
 
@@ -175,64 +181,64 @@ void LoxLegacyModbusExtension::Startup(void) {
 
 void LoxLegacyModbusExtension::PacketToExtension(LoxCanMessage &message) {
   switch (message.commandLegacy) {
-#if 0
-  case Modbus_config_hardware: {
-    int bits = (message.data[0] & 3) + 5; // 5..8
-    int parity = (message.data[0] >> 2) & 0xf;
-    int stopBits = (message.data[0] & 0x40) ? 2 : 1;
-    this->hasEndCharacter = (message.data[0] & 0x80) == 0x80;
-    this->endCharacter = message.data[1];
-#if DEBUG
-    const char *pstr = "?";
-    switch (parity) {
-    case 0:
-      pstr = "N";
-      break;
-    case 1:
-      pstr = "E";
-      break;
-    case 2:
-      pstr = "O";
-      break;
-    case 3:
-      pstr = "0";
-      break;
-    case 4: // seems to be broken in Loxone Config 10, because it always sends 3, instead of 4.
-      pstr = "1";
-      break;
-    }
-    printf("# Modbus config hardware %d%s%d, %d baud, endChar:%d:0x%02x, unknown:0x%02x\n", bits, pstr, stopBits, message.value32, this->hasEndCharacter, this->endCharacter, message.data[2]);
-#endif
-    if (HAL_UART_DeInit(&gUART1) != HAL_OK) {
-#if DEBUG
-      printf("### Modbus HAL_UART_DeInit ERROR\n");
-#endif
-    }
-    gUART1.Instance = USART1;
-    gUART1.Init.BaudRate = message.value32;
-    gUART1.Init.WordLength = (bits == 8) ? UART_WORDLENGTH_8B : UART_WORDLENGTH_9B;
-    gUART1.Init.StopBits = stopBits == 1 ? UART_STOPBITS_1 : UART_STOPBITS_2;
-    gUART1.Init.Parity = parity == 0 ? UART_PARITY_NONE : ((parity == 1) ? UART_PARITY_EVEN : UART_PARITY_ODD);
-    gUART1.Init.Mode = UART_MODE_TX_RX;
-    gUART1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    gUART1.Init.OverSampling = UART_OVERSAMPLING_16;
-    if (HAL_UART_Init(&gUART1) != HAL_OK) {
-#if DEBUG
-      printf("### Modbus HAL_UART_Init ERROR\n");
-#endif
-    }
-    HAL_UART_Receive_IT(&gUART1, &gChar, 1);
-    break;
-  }
-#endif
   case Modbus_485_WriteSingleCoil:
   case Modbus_485_WriteSingleRegister:
   case Modbus_485_WriteMultipleRegisters:
   case Modbus_485_WriteMultipleRegisters2:
   case Modbus_485_WriteSingleRegister4:
-  case Modbus_485_WriteMultipleRegisters4:
-    printf("Modbus write reg cmd:%02x", message.commandLegacy);
+  case Modbus_485_WriteMultipleRegisters4: {
+    static uint8_t modbusBuffer[16];
+    int byteCount = 2;
+    int offset = 2;
+    int regCount = 1;
+    modbusBuffer[offset++] = message.data[0]; // Modbus address
+    switch (message.commandLegacy) {
+    case Modbus_485_WriteSingleCoil:
+      modbusBuffer[offset++] = tModbusCode_WriteSingleCoil;
+      break;
+    case Modbus_485_WriteSingleRegister:
+      modbusBuffer[offset++] = tModbusCode_WriteSingleRegister;
+      break;
+    case Modbus_485_WriteMultipleRegisters:
+      modbusBuffer[offset++] = tModbusCode_WriteMultipleRegisters;
+      regCount = 2;
+      break;
+    case Modbus_485_WriteMultipleRegisters2:
+      modbusBuffer[offset++] = tModbusCode_WriteMultipleRegisters;
+      byteCount = 4;
+      break;
+    case Modbus_485_WriteSingleRegister4:
+      modbusBuffer[offset++] = tModbusCode_WriteSingleRegister;
+      byteCount = 4;
+      break;
+    case Modbus_485_WriteMultipleRegisters4:
+      modbusBuffer[offset++] = tModbusCode_WriteMultipleRegisters;
+      break;
+    default: // should never happen
+      break;
+    }
+    uint16_t reg = *(uint16_t *)&message.data[1]; // Modbus IO-address
+    modbusBuffer[offset++] = reg >> 8;
+    modbusBuffer[offset++] = reg & 0xFF;
+    switch (message.commandLegacy) {
+    case Modbus_485_WriteMultipleRegisters:
+    case Modbus_485_WriteMultipleRegisters2:
+    case Modbus_485_WriteMultipleRegisters4:
+      modbusBuffer[offset++] = regCount >> 8; // number of registers
+      modbusBuffer[offset++] = regCount & 0xFF;
+      modbusBuffer[offset++] = byteCount; // number of transferred bytes
+      break;
+    default:
+      break;
+    }
+    memcpy(modbusBuffer + offset, &message.data[3], byteCount);
+    offset += byteCount;
+    uint16_t crc = crc16_Modus(modbusBuffer, offset);
+    modbusBuffer[offset++] = crc & 0xFF;
+    modbusBuffer[offset++] = crc >> 8;
+    debug_print_buffer(modbusBuffer, offset, "Modbus write:");
     break;
+  }
   default:
     LoxLegacyExtension::PacketToExtension(message);
     break;
@@ -243,9 +249,8 @@ void LoxLegacyModbusExtension::FragmentedPacketToExtension(LoxMsgLegacyFragmente
   switch (fragCommand) {
   case FragCmd_Modbus_config: {
     const sModbusConfig *config = (const sModbusConfig *)fragData;
-    if(size == sizeof(sModbusConfig) and config->version == 1) { // valid config?
-        memmove(&this->config, config, sizeof(sModbusConfig));
-        config_load();
+    if (size <= sizeof(sModbusConfig) and config->version == 1) { // valid config?
+      config_load();
     }
     break;
   }
@@ -253,6 +258,14 @@ void LoxLegacyModbusExtension::FragmentedPacketToExtension(LoxMsgLegacyFragmente
     break;
   }
 }
+
+/***
+ *  After a start request some extensions have to send additional messages
+ ***/
+void LoxLegacyModbusExtension::StartRequest() {
+  sendCommandWithValues(config_check_CRC, 0, 1 /* config version */, 0); // required, otherwise it is considered offline
+}
+
 /**
 * @brief UART MSP Initialization
 * This function configures the hardware resources used in this example

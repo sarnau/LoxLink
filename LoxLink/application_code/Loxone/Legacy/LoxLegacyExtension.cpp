@@ -121,7 +121,7 @@ void LoxLegacyExtension::Timer10ms(void) {
     this->forceStartMessage = false;
     this->isMuted = false;
     sendCommandWithVersion(start_request);
-    sendCommandWithValues(config_checksum, 0, 0, 0); // required from the DMX Extension, otherwise it is considered offline
+    StartRequest();
     resetAliveCountdown = true;
   } else if (this->aliveCountdown <= 0) {
     sendCommandWithVersion(alive);

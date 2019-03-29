@@ -72,6 +72,7 @@ protected:
   virtual void PacketFromExtension(LoxCanMessage &message);
   virtual void PacketFirmwareUpdate(LoxCanMessage &message);
   virtual void FragmentedPacketToExtension(LoxMsgLegacyFragmentedCommand_t fragCommand, const void *fragData, int size) {};
+  virtual void StartRequest() {};
 
 public:
   LoxLegacyExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version, void *fragPtr = 0, uint16_t fragMaxSize = 0);

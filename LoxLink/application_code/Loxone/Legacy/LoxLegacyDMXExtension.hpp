@@ -14,6 +14,7 @@ class LoxLegacyDMXExtension : public LoxLegacyExtension {
   uint8_t fragData[36]; // fragmented package
   virtual void PacketToExtension(LoxCanMessage &message);
   virtual void FragmentedPacketToExtension(LoxMsgLegacyFragmentedCommand_t fragCommand, const void *fragData, int size);
+  virtual void StartRequest();
 
   void search_reply(uint16_t channel, uint16_t manufacturerID, uint32_t deviceID, bool isLast);
   const char *const DMX_DeviceTypeString(uint8_t type) const;
