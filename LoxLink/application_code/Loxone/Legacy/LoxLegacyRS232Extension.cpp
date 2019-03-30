@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static UART_HandleTypeDef gUART1;
+static UART_HandleTypeDef huart1;
 static uint8_t gChar;
 static uint8_t gUART_RX_Buffer[RS232_RX_BUFFERSIZE];
 static StreamBufferHandle_t gUART_RX_Stream;
@@ -150,7 +150,7 @@ void LoxLegacyRS232Extension::vRS232TXTask(void *pvParameters) {
   while (1) {
     uint8_t byte;
     while (xQueueReceive(&_this->txQueue, &byte, 0)) {
-      HAL_StatusTypeDef status = HAL_UART_Transmit(&gUART1, &byte, sizeof(byte), 50);
+      HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, &byte, sizeof(byte), 50);
       if (status != HAL_OK) {
 #if DEBUG
         printf("### RS232 TX error %d\n", status);
@@ -181,24 +181,24 @@ void LoxLegacyRS232Extension::Startup(void) {
   static StaticTask_t sRS232TXTask;
   xTaskCreateStatic(LoxLegacyRS232Extension::vRS232TXTask, "RS232TXTask", configMINIMAL_STACK_SIZE, this, 2, sRS232TXTaskStack, &sRS232TXTask);
 
-  gUART1.Instance = USART1;
-  gUART1.Init.BaudRate = 9600;
-  gUART1.Init.WordLength = UART_WORDLENGTH_8B;
-  gUART1.Init.StopBits = UART_STOPBITS_1;
-  gUART1.Init.Parity = UART_PARITY_NONE;
-  gUART1.Init.Mode = UART_MODE_TX_RX;
-  gUART1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  gUART1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&gUART1) != HAL_OK) {
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 9600;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK) {
 #if DEBUG
     printf("### RS232 ERROR\n");
 #endif
   }
 
   // RXNE Interrupt Enable
-  SET_BIT(gUART1.Instance->CR1, USART_CR1_RXNEIE);
+  SET_BIT(huart1.Instance->CR1, USART_CR1_RXNEIE);
 
-  HAL_UART_Receive_IT(&gUART1, &gChar, 1);
+  HAL_UART_Receive_IT(&huart1, &gChar, 1);
 }
 
 void LoxLegacyRS232Extension::PacketToExtension(LoxCanMessage &message) {
@@ -230,25 +230,25 @@ void LoxLegacyRS232Extension::PacketToExtension(LoxCanMessage &message) {
     }
     printf("# RS232 config hardware %d%s%d, %d baud, endChar:%d:0x%02x, unknown:0x%02x\n", bits, pstr, stopBits, message.value32, this->hasEndCharacter, this->endCharacter, message.data[2]);
 #endif
-    if (HAL_UART_DeInit(&gUART1) != HAL_OK) {
+    if (HAL_UART_DeInit(&huart1) != HAL_OK) {
 #if DEBUG
       printf("### RS232 HAL_UART_DeInit ERROR\n");
 #endif
     }
-    gUART1.Instance = USART1;
-    gUART1.Init.BaudRate = message.value32;
-    gUART1.Init.WordLength = (bits == 8) ? UART_WORDLENGTH_8B : UART_WORDLENGTH_9B;
-    gUART1.Init.StopBits = stopBits == 1 ? UART_STOPBITS_1 : UART_STOPBITS_2;
-    gUART1.Init.Parity = parity == 0 ? UART_PARITY_NONE : ((parity == 1) ? UART_PARITY_EVEN : UART_PARITY_ODD);
-    gUART1.Init.Mode = UART_MODE_TX_RX;
-    gUART1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    gUART1.Init.OverSampling = UART_OVERSAMPLING_16;
-    if (HAL_UART_Init(&gUART1) != HAL_OK) {
+    huart1.Instance = USART1;
+    huart1.Init.BaudRate = message.value32;
+    huart1.Init.WordLength = (bits == 8) ? UART_WORDLENGTH_8B : UART_WORDLENGTH_9B;
+    huart1.Init.StopBits = stopBits == 1 ? UART_STOPBITS_1 : UART_STOPBITS_2;
+    huart1.Init.Parity = parity == 0 ? UART_PARITY_NONE : ((parity == 1) ? UART_PARITY_EVEN : UART_PARITY_ODD);
+    huart1.Init.Mode = UART_MODE_TX_RX;
+    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+    if (HAL_UART_Init(&huart1) != HAL_OK) {
 #if DEBUG
       printf("### RS232 HAL_UART_Init ERROR\n");
 #endif
     }
-    HAL_UART_Receive_IT(&gUART1, &gChar, 1);
+    HAL_UART_Receive_IT(&huart1, &gChar, 1);
     break;
   }
   case RS232_send_bytes: {
@@ -383,7 +383,7 @@ extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     printf("RS232 RX Stream error");
 #endif
   }
-  HAL_UART_Receive_IT(&gUART1, &gChar, 1);
+  HAL_UART_Receive_IT(huart, &gChar, 1);
 
   // If xHigherPriorityTaskWoken was set to pdTRUE inside
   // xStreamBufferSendFromISR() then a task that has a priority above the
@@ -399,6 +399,6 @@ extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 }
 
 extern "C" void USART1_IRQHandler(void) {
-  HAL_UART_IRQHandler(&gUART1);
+  HAL_UART_IRQHandler(&huart1);
 }
 #endif

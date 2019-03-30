@@ -69,6 +69,7 @@ class LoxLegacyModbusExtension : public LoxLegacyExtension {
   StaticQueue_t txQueue;
   sModbusConfig config;
 
+  void set_tx_mode(bool txMode);
   void config_load(void);
   void forwardBuffer(const uint8_t *buffer, size_t byteCount);
   void sendBuffer(const uint8_t *buffer, size_t byteCount);

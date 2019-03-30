@@ -18,7 +18,16 @@
 #include <stdio.h>
 #include <string.h>
 
-static UART_HandleTypeDef gUART1;
+#define RS485_TX_PIN_Pin GPIO_PIN_10
+#define RS485_TX_PIN_GPIO_Port GPIOB
+#define RS485_RX_PIN_Pin GPIO_PIN_11
+#define RS485_RX_PIN_GPIO_Port GPIOB
+#define RS485_RX_ENABLE_Pin GPIO_PIN_4
+#define RS485_RX_ENABLE_GPIO_Port GPIOC
+#define RS485_TX_ENABLE_Pin GPIO_PIN_5
+#define RS485_TX_ENABLE_GPIO_Port GPIOC
+
+static UART_HandleTypeDef huart3;
 static uint8_t gChar;
 static uint8_t gUART_RX_Buffer[Modbus_RX_BUFFERSIZE];
 static StreamBufferHandle_t gUART_RX_Stream;
@@ -29,6 +38,20 @@ static StreamBufferHandle_t gUART_RX_Stream;
 LoxLegacyModbusExtension::LoxLegacyModbusExtension(LoxCANBaseDriver &driver, uint32_t serial)
   : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_ModbusExtension << 24), eDeviceType_t_ModbusExtension, 0, 10020326, &config, sizeof(config)) {
   assert(sizeof(sModbusConfig) == 0x810);
+}
+
+/***
+ *  RS485 requires to switch between TX/RX mode. Default is RX.
+ ***/
+void LoxLegacyModbusExtension::set_tx_mode(bool txMode) {
+  // The board strangely has independed pins to control RX/TX enable, but they are mutally exclusive
+  if (txMode) {
+    HAL_GPIO_WritePin(RS485_RX_ENABLE_GPIO_Port, RS485_RX_ENABLE_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(RS485_TX_ENABLE_GPIO_Port, RS485_TX_ENABLE_Pin, GPIO_PIN_SET);
+  } else {
+    HAL_GPIO_WritePin(RS485_RX_ENABLE_GPIO_Port, RS485_RX_ENABLE_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(RS485_TX_ENABLE_GPIO_Port, RS485_TX_ENABLE_Pin, GPIO_PIN_RESET);
+  }
 }
 
 /***
@@ -128,7 +151,7 @@ void LoxLegacyModbusExtension::vModbusTXTask(void *pvParameters) {
   while (1) {
     uint8_t byte;
     while (xQueueReceive(&_this->txQueue, &byte, 0)) {
-      HAL_StatusTypeDef status = HAL_UART_Transmit(&gUART1, &byte, sizeof(byte), 50);
+      HAL_StatusTypeDef status = HAL_UART_Transmit(&huart3, &byte, sizeof(byte), 50);
       if (status != HAL_OK) {
 #if DEBUG
         printf("### Modbus TX error %d\n", status);
@@ -159,24 +182,24 @@ void LoxLegacyModbusExtension::Startup(void) {
   static StaticTask_t sModbusTXTask;
   xTaskCreateStatic(LoxLegacyModbusExtension::vModbusTXTask, "ModbusTXTask", configMINIMAL_STACK_SIZE, this, 2, sModbusTXTaskStack, &sModbusTXTask);
 
-  gUART1.Instance = USART1;
-  gUART1.Init.BaudRate = 9600;
-  gUART1.Init.WordLength = UART_WORDLENGTH_8B;
-  gUART1.Init.StopBits = UART_STOPBITS_1;
-  gUART1.Init.Parity = UART_PARITY_NONE;
-  gUART1.Init.Mode = UART_MODE_TX_RX;
-  gUART1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  gUART1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&gUART1) != HAL_OK) {
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 9600;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart3) != HAL_OK) {
 #if DEBUG
     printf("### Modbus ERROR\n");
 #endif
   }
 
   // RXNE Interrupt Enable
-  SET_BIT(gUART1.Instance->CR1, USART_CR1_RXNEIE);
+  SET_BIT(huart3.Instance->CR1, USART_CR1_RXNEIE);
 
-  HAL_UART_Receive_IT(&gUART1, &gChar, 1);
+  HAL_UART_Receive_IT(&huart3, &gChar, 1);
 }
 
 void LoxLegacyModbusExtension::PacketToExtension(LoxCanMessage &message) {
@@ -274,28 +297,47 @@ void LoxLegacyModbusExtension::StartRequest() {
 */
 extern "C" void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if (huart->Instance == USART1) {
+  if (huart->Instance == USART3) {
     /* Peripheral clock enable */
-    __HAL_RCC_USART1_CLK_ENABLE();
+    __HAL_RCC_USART3_CLK_ENABLE();
 
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    /**USART1 GPIO Configuration    
-    PA9     ------> USART1_TX
-    PA10     ------> USART1_RX 
+    /* GPIO Ports Clock Enable */
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(RS485_RX_ENABLE_GPIO_Port, RS485_RX_ENABLE_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(RS485_TX_ENABLE_GPIO_Port, RS485_TX_ENABLE_Pin, GPIO_PIN_RESET);
+
+    /*Configure GPIO pins : PCPin PCPin */
+    GPIO_InitStruct.Pin = RS485_RX_ENABLE_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(RS485_RX_ENABLE_GPIO_Port, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = RS485_TX_ENABLE_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(RS485_TX_ENABLE_GPIO_Port, &GPIO_InitStruct);
+
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    /**USART3 GPIO Configuration    
+    PB10     ------> USART3_TX
+    PB11     ------> USART3_RX 
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_9;
+    GPIO_InitStruct.Pin = RS485_TX_PIN_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    HAL_GPIO_Init(RS485_TX_PIN_GPIO_Port, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_10;
+    GPIO_InitStruct.Pin = RS485_RX_PIN_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    HAL_GPIO_Init(RS485_RX_PIN_GPIO_Port, &GPIO_InitStruct);
 
-    /* USART1 interrupt Init */
-    HAL_NVIC_SetPriority(USART1_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(USART1_IRQn);
+    /* USART3 interrupt Init */
+    HAL_NVIC_SetPriority(USART3_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(USART3_IRQn);
   }
 }
 
@@ -306,18 +348,19 @@ extern "C" void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 * @retval None
 */
 extern "C" void HAL_UART_MspDeInit(UART_HandleTypeDef *huart) {
-  if (huart->Instance == USART1) {
+  if (huart->Instance == USART3) {
     /* Peripheral clock disable */
-    __HAL_RCC_USART1_CLK_DISABLE();
+    __HAL_RCC_USART3_CLK_DISABLE();
 
-    /**USART1 GPIO Configuration    
-    PA9     ------> USART1_TX
-    PA10     ------> USART1_RX 
+    /**USART3 GPIO Configuration    
+    PB10     ------> USART3_TX
+    PB11     ------> USART3_RX 
     */
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_9 | GPIO_PIN_10);
+    HAL_GPIO_DeInit(RS485_TX_PIN_GPIO_Port, RS485_TX_PIN_Pin);
+    HAL_GPIO_DeInit(RS485_RX_PIN_GPIO_Port, RS485_RX_PIN_Pin);
 
-    /* USART1 interrupt DeInit */
-    HAL_NVIC_DisableIRQ(USART1_IRQn);
+    /* USART3 interrupt Deinit */
+    HAL_NVIC_DisableIRQ(USART3_IRQn);
   }
 }
 
@@ -336,7 +379,7 @@ extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     printf("Modbus RX Stream error");
 #endif
   }
-  HAL_UART_Receive_IT(&gUART1, &gChar, 1);
+  HAL_UART_Receive_IT(huart, &gChar, 1);
 
   // If xHigherPriorityTaskWoken was set to pdTRUE inside
   // xStreamBufferSendFromISR() then a task that has a priority above the
@@ -351,8 +394,8 @@ extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   }
 }
 
-extern "C" void USART1_IRQHandler(void) {
-  HAL_UART_IRQHandler(&gUART1);
+extern "C" void USART3_IRQHandler(void) {
+  HAL_UART_IRQHandler(&huart3);
 }
 
 #endif
