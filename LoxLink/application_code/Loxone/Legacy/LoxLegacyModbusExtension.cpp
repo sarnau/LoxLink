@@ -45,13 +45,11 @@ LoxLegacyModbusExtension::LoxLegacyModbusExtension(LoxCANBaseDriver &driver, uin
  ***/
 void LoxLegacyModbusExtension::set_tx_mode(bool txMode) {
   // The board strangely has independed pins to control RX/TX enable, but they are mutally exclusive
-  if (txMode) {
-    HAL_GPIO_WritePin(RS485_RX_ENABLE_GPIO_Port, RS485_RX_ENABLE_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(RS485_TX_ENABLE_GPIO_Port, RS485_TX_ENABLE_Pin, GPIO_PIN_SET);
-  } else {
-    HAL_GPIO_WritePin(RS485_RX_ENABLE_GPIO_Port, RS485_RX_ENABLE_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(RS485_TX_ENABLE_GPIO_Port, RS485_TX_ENABLE_Pin, GPIO_PIN_RESET);
-  }
+  // Also: RX is negated in the MAX3485, so both pins always have to have the same state, which leads
+  // to the valid question: why does the board have two pins for it anyway?
+  GPIO_PinState pinState = txMode ? GPIO_PIN_SET : GPIO_PIN_RESET;
+  HAL_GPIO_WritePin(RS485_RX_ENABLE_GPIO_Port, RS485_RX_ENABLE_Pin, pinState);
+  HAL_GPIO_WritePin(RS485_TX_ENABLE_GPIO_Port, RS485_TX_ENABLE_Pin, pinState);
 }
 
 /***
@@ -305,7 +303,7 @@ extern "C" void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
     __HAL_RCC_GPIOC_CLK_ENABLE();
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(RS485_RX_ENABLE_GPIO_Port, RS485_RX_ENABLE_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(RS485_RX_ENABLE_GPIO_Port, RS485_RX_ENABLE_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(RS485_TX_ENABLE_GPIO_Port, RS485_TX_ENABLE_Pin, GPIO_PIN_RESET);
 
     /*Configure GPIO pins : PCPin PCPin */
