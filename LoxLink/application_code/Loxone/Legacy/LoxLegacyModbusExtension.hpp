@@ -13,8 +13,8 @@
 #if EXTENSION_MODBUS
 #include "queue.h"
 
-#define Modbus_RX_BUFFERSIZE 128
-#define Modbus_TX_BUFFERSIZE 2048
+#define Modbus_RX_BUFFERSIZE 64
+#define Modbus_TX_BUFFERSIZE 1024
 
 // Modbus commands
 typedef enum {
