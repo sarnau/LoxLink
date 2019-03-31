@@ -76,6 +76,27 @@ void LoxLegacyModbusExtension::rs485_setup(void) {
  *  New configuration was loaded
  ***/
 void LoxLegacyModbusExtension::config_load(void) {
+  printf("RS485 config : %ld ", this->config.baudrate);
+  printf("%ld", this->config.wordLength);
+  switch (this->config.parity) {
+  case 0:
+    printf("N");
+    break;
+  case 1:
+    printf("E");
+    break;
+  case 2:
+    printf("O");
+    break;
+  case 3:
+    printf("0");
+    break;
+  case 4:
+    printf("1");
+    break;
+  }
+  printf("%ld\n", this->config.twoStopBits + 1);
+
   if (this->config.manualTimingFlag) {
     this->timePause = this->config.timingPause;
     this->timeTimeout = this->config.timingTimeout;
@@ -149,22 +170,10 @@ void LoxLegacyModbusExtension::config_load(void) {
 }
 
 /***
- *  Send a buffer to the Modbus
- ***/
-void LoxLegacyModbusExtension::sendCommand(const uint8_t *buffer, size_t byteCount) {
-  if (byteCount > 0xFF)
-    byteCount = 0xFF;
-  uint8_t size = byteCount;
-  xQueueSendToBack(&this->txQueue, &size, 0);
-  for (int i = 0; i < byteCount; ++i) {
-    xQueueSendToBack(&this->txQueue, &buffer[i], 0);
-  }
-}
-
-/***
  *  Transmit buffer via RS485 and wait for reply
  ***/
 bool LoxLegacyModbusExtension::_transmitBuffer(int devIndex, const uint8_t *txBuffer, size_t txBufferCount) {
+  debug_print_buffer((void *)txBuffer, txBufferCount, "### TX DATA:");
   this->set_tx_mode(true);
   for (int i = 0; i < txBufferCount; ++i) {
     uint8_t byte = txBuffer[i];
@@ -175,12 +184,14 @@ bool LoxLegacyModbusExtension::_transmitBuffer(int devIndex, const uint8_t *txBu
 #endif
     }
   }
+  gModbus_RX_Buffer_count = 0; // reset the RX buffer for our transmission
   this->set_tx_mode(false);
   for (uint32_t i = 0; i < this->timeTimeout; i += 100) {
     vTaskDelay(pdMS_TO_TICKS(100));
     if (gModbus_RX_Buffer_count)
       break;
   }
+  debug_print_buffer((void *)gModbus_RX_Buffer, gModbus_RX_Buffer_count, "### RX DATA:");
   if (!gModbus_RX_Buffer_count) {
     printf("tModbusError_NoResponse\n");
     return false;
@@ -203,7 +214,7 @@ bool LoxLegacyModbusExtension::_transmitBuffer(int devIndex, const uint8_t *txBu
     printf("tModbusError_InvalidResponse\n");
     return false;
   }
-  debug_print_buffer((void *)gModbus_RX_Buffer, gModbus_RX_Buffer_count, "### RX DATA:");
+  debug_print_buffer((void *)gModbus_RX_Buffer, gModbus_RX_Buffer_count, "### CMD:");
   int count = gModbus_RX_Buffer_count - 5;
   uint32_t value = *(uint32_t *)&gModbus_RX_Buffer[3];
   const sModbusDeviceConfig *dc = &this->config.devices[devIndex];
@@ -256,7 +267,6 @@ bool LoxLegacyModbusExtension::_transmitBuffer(int devIndex, const uint8_t *txBu
 }
 
 bool LoxLegacyModbusExtension::transmitBuffer(int devIndex, const uint8_t *txBuffer, size_t txBufferCount) {
-  gModbus_RX_Buffer_count = 0; // reset the RX buffer for our transmission
   bool result = _transmitBuffer(devIndex, txBuffer, txBufferCount);
   vTaskDelay(pdMS_TO_TICKS(this->timePause)); // a little pause after a transmission
   gModbus_RX_Buffer_count = 0;                // reset the RX buffer for our transmission
@@ -268,7 +278,9 @@ bool LoxLegacyModbusExtension::transmitBuffer(int devIndex, const uint8_t *txBuf
  ***/
 void LoxLegacyModbusExtension::vModbusTXTask(void *pvParameters) {
   LoxLegacyModbusExtension *_this = (LoxLegacyModbusExtension *)pvParameters;
+  static uint8_t txBuffer[32]; // static to avoid stack usage
   while (1) {
+    // poll devices
     for (int devIndex = 0; devIndex < _this->config.entryCount; ++devIndex) {
       const sModbusDeviceConfig *dc = &_this->config.devices[devIndex];
       if (HAL_GetTick() >= _this->deviceTimeout[devIndex]) {
@@ -276,11 +288,10 @@ void LoxLegacyModbusExtension::vModbusTXTask(void *pvParameters) {
         uint32_t ticks = (pollingCycle & 0xFFF) * 100; // default unit: ticks in 100ms
         if (pollingCycle & tModbusFlags_1000ms)        // value too large for it? Then the ticks are in seconds
           ticks *= 10;
-        //        if (ticks < 5000)
-        //          ticks = 5000; // Loxone throttles the requests to 5s
+        //if (ticks < 5000)
+        //  ticks = 5000; // Loxone throttles the requests to 5s
         _this->deviceTimeout[devIndex] = HAL_GetTick() + pdMS_TO_TICKS(ticks);
         size_t txBufferCount = 0;
-        static uint8_t txBuffer[16];
         txBuffer[txBufferCount++] = dc->address; // Modbus address
         txBuffer[txBufferCount++] = dc->functionCode & 0x1F;
         txBuffer[txBufferCount++] = dc->regNumber >> 8;
@@ -306,7 +317,7 @@ void LoxLegacyModbusExtension::vModbusTXTask(void *pvParameters) {
         }
       }
     }
-    static uint8_t txBuffer[16]; // static to avoid stack usage
+    // forward a Modbus command coming from the Miniserver
     uint8_t txBufferCount;
     while (xQueueReceive(&_this->txQueue, &txBufferCount, 10)) {
       for (int i = 0; i < txBufferCount; ++i) {
@@ -401,12 +412,17 @@ void LoxLegacyModbusExtension::PacketToExtension(LoxCanMessage &message) {
     default:
       break;
     }
-    memcpy(txBuffer + txBufferCount, &message.data[3], byteCount);
+    memcpy(&txBuffer[txBufferCount], &message.data[3], byteCount);
     txBufferCount += byteCount;
     uint16_t crc = crc16_Modus(txBuffer, txBufferCount);
     txBuffer[txBufferCount++] = crc & 0xFF;
     txBuffer[txBufferCount++] = crc >> 8;
-    sendCommand(txBuffer, txBufferCount);
+    // send Modbus command comming from the Miniserver
+    uint8_t size = txBufferCount;
+    xQueueSendToBack(&this->txQueue, &size, 0);
+    for (int i = 0; i < txBufferCount; ++i) {
+      xQueueSendToBack(&this->txQueue, &txBuffer[i], 0);
+    }
     break;
   }
   default:
@@ -415,6 +431,9 @@ void LoxLegacyModbusExtension::PacketToExtension(LoxCanMessage &message) {
   }
 }
 
+/***
+ *  Only configuration package is send via fragmented packets
+ ***/
 void LoxLegacyModbusExtension::FragmentedPacketToExtension(LoxMsgLegacyFragmentedCommand_t fragCommand, const void *fragData, int size) {
   switch (fragCommand) {
   case FragCmd_Modbus_config: {
@@ -518,6 +537,7 @@ extern "C" void HAL_UART_MspDeInit(UART_HandleTypeDef *huart) {
   * @retval None
   */
 extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+  printf("{%02x}", gModbusChar);
   if (gModbus_RX_Buffer_count < sizeof(gModbus_RX_Buffer)) {
     gModbus_RX_Buffer[gModbus_RX_Buffer_count++] = gModbusChar;
   }

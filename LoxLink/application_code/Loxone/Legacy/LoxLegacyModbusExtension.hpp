@@ -98,7 +98,6 @@ class LoxLegacyModbusExtension : public LoxLegacyExtension {
   void rs485_setup(void);
   bool _transmitBuffer(int devIndex, const uint8_t *buffer, size_t byteCount);
   bool transmitBuffer(int devIndex, const uint8_t *buffer, size_t byteCount);
-  void sendCommand(const uint8_t *buffer, size_t byteCount);
   static void vModbusRXTask(void *pvParameters);
   static void vModbusTXTask(void *pvParameters);
 
