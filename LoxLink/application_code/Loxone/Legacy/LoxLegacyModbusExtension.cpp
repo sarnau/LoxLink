@@ -214,7 +214,11 @@ bool LoxLegacyModbusExtension::_transmitBuffer(const uint8_t *txBuffer, size_t t
     }
   }
   this->set_tx_mode(false);
-  vTaskDelay(pdMS_TO_TICKS(250/*this->timeTimeout*/));
+  for (uint32_t i = 0; i < this->timeTimeout; i += 100) {
+    vTaskDelay(pdMS_TO_TICKS(100));
+    if(gModbus_RX_Buffer_count)
+        break;
+  }
   if (!gModbus_RX_Buffer_count) {
     printf("tModbusError_NoResponse\n");
     return false;
