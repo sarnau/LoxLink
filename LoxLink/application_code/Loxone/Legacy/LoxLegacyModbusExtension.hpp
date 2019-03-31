@@ -80,10 +80,14 @@ typedef struct {            // default values:
 class LoxLegacyModbusExtension : public LoxLegacyExtension {
   StaticQueue_t txQueue;
   sModbusConfig config;
+  uint32_t timePause;
+  uint32_t timeTimeout;
 
   void set_tx_mode(bool txMode);
   void config_load(void);
-  void transmitBuffer(const uint8_t *buffer, size_t byteCount);
+  void rs485_setup(void);
+  bool _transmitBuffer(const uint8_t *buffer, size_t byteCount);
+  bool transmitBuffer(const uint8_t *buffer, size_t byteCount);
   void sendCommand(const uint8_t *buffer, size_t byteCount);
   static void vModbusRXTask(void *pvParameters);
   static void vModbusTXTask(void *pvParameters);
