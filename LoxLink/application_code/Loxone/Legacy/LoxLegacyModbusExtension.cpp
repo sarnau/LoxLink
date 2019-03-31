@@ -151,25 +151,24 @@ void LoxLegacyModbusExtension::config_load(void) {
 
   const uint16_t reg = 0x00; // Modbus IO-address
   const int regCount = 1;
-  this->txBufferCount = 0;
-  this->txBuffer[this->txBufferCount++] = 0x01; // Modbus address
-  this->txBuffer[this->txBufferCount++] = tModbusCode_ReadInputRegister;
-  this->txBuffer[this->txBufferCount++] = reg >> 8;
-  this->txBuffer[this->txBufferCount++] = reg & 0xFF;
-  this->txBuffer[this->txBufferCount++] = regCount >> 8; // number of registers
-  this->txBuffer[this->txBufferCount++] = regCount & 0xFF;
-  uint16_t crc = crc16_Modus(this->txBuffer, this->txBufferCount);
-  this->txBuffer[this->txBufferCount++] = crc & 0xFF;
-  this->txBuffer[this->txBufferCount++] = crc >> 8;
-  transmitCommand();
+  size_t txBufferCount = 0;
+  static uint8_t txBuffer[16];
+  txBuffer[txBufferCount++] = 0x01; // Modbus address
+  txBuffer[txBufferCount++] = tModbusCode_ReadInputRegister;
+  txBuffer[txBufferCount++] = reg >> 8;
+  txBuffer[txBufferCount++] = reg & 0xFF;
+  txBuffer[txBufferCount++] = regCount >> 8; // number of registers
+  txBuffer[txBufferCount++] = regCount & 0xFF;
+  uint16_t crc = crc16_Modus(txBuffer, txBufferCount);
+  txBuffer[txBufferCount++] = crc & 0xFF;
+  txBuffer[txBufferCount++] = crc >> 8;
+  sendCommand(txBuffer, txBufferCount);
 }
 
 /***
  *  Send a buffer to the Modbus
  ***/
-void LoxLegacyModbusExtension::transmitCommand(void) {
-  const uint8_t *buffer = this->txBuffer;
-  size_t byteCount = this->txBufferCount;
+void LoxLegacyModbusExtension::sendCommand(const uint8_t *buffer, size_t byteCount) {
   if (byteCount > 0xFF)
     byteCount = 0xFF;
   uint8_t size = byteCount;
@@ -179,38 +178,47 @@ void LoxLegacyModbusExtension::transmitCommand(void) {
   }
 }
 
+void LoxLegacyModbusExtension::transmitBuffer(const uint8_t *buffer, size_t byteCount) {
+#if DEBUG
+  printf("### Modbus TX:%d bytes:", byteCount);
+#endif
+  this->set_tx_mode(true);
+  for (int i = 0; i < byteCount; ++i) {
+    uint8_t byte = buffer[i];
+#if DEBUG
+    printf("%02x ", byte);
+#endif
+    HAL_StatusTypeDef status = HAL_UART_Transmit(&huart3, &byte, sizeof(byte), 50);
+    if (status != HAL_OK) {
+#if DEBUG
+      printf("### Modbus TX error %d\n", status);
+#endif
+    }
+  }
+#if DEBUG
+  printf("\n");
+#endif
+  vTaskDelay(pdMS_TO_TICKS(10));
+  this->set_tx_mode(false);
+}
+
 /***
  *  Modbus TX Task
  ***/
 void LoxLegacyModbusExtension::vModbusTXTask(void *pvParameters) {
   LoxLegacyModbusExtension *_this = (LoxLegacyModbusExtension *)pvParameters;
   while (1) {
-    uint8_t len;
-    while (xQueueReceive(&_this->txQueue, &len, 10)) {
-#if DEBUG
-      printf("### Modbus TX:%d bytes:", len);
-#endif
-      _this->set_tx_mode(true);
-      gModbus_RX_Buffer_count = 0; // reset the RX buffer for our transmission
-      for (int i = 0; i < len; ++i) {
+    static uint8_t txBuffer[16]; // static to avoid stack usage
+    uint8_t txBufferCount;
+    while (xQueueReceive(&_this->txQueue, &txBufferCount, 10)) {
+      for (int i = 0; i < txBufferCount; ++i) {
         uint8_t byte;
         while (!xQueueReceive(&_this->txQueue, &byte, 1)) {
         }
-#if DEBUG
-        printf("%02x ", byte);
-#endif
-        HAL_StatusTypeDef status = HAL_UART_Transmit(&huart3, &byte, sizeof(byte), 50);
-        if (status != HAL_OK) {
-#if DEBUG
-          printf("### Modbus TX error %d\n", status);
-#endif
-        }
+        txBuffer[i] = byte;
       }
-#if DEBUG
-      printf("\n");
-#endif
-      vTaskDelay(pdMS_TO_TICKS(10));
-      _this->set_tx_mode(false);
+      gModbus_RX_Buffer_count = 0; // reset the RX buffer for our transmission
+      _this->transmitBuffer(txBuffer, txBufferCount);
       vTaskDelay(pdMS_TO_TICKS(250));
       if (!gModbus_RX_Buffer_count) {
         printf("tModbusError_NoResponse\n");
@@ -225,15 +233,15 @@ void LoxLegacyModbusExtension::vModbusTXTask(void *pvParameters) {
         printf("tModbusError_CRC_Error\n");
         break;
       }
-//      if (gModbus_RX_Buffer[0] != _this->txBuffer[0] or gModbus_RX_Buffer[1] != _this->txBuffer[1]) {
-//        if (_this->txBuffer[1] == gModbus_RX_Buffer[0]) {
-//            // 
-//        } else {
-//            // 
-//        }
-//        printf("tModbusError_InvalidResponse\n");
-//        break;
-//      }
+      if (gModbus_RX_Buffer[0] != txBuffer[0] or gModbus_RX_Buffer[1] != txBuffer[1]) {
+        if (txBuffer[1] == gModbus_RX_Buffer[0]) {
+          //
+        } else {
+          //
+        }
+        printf("tModbusError_InvalidResponse\n");
+        break;
+      }
       debug_print_buffer((void *)gModbus_RX_Buffer, gModbus_RX_Buffer_count, "### RX DATA:");
     }
   }
@@ -283,53 +291,54 @@ void LoxLegacyModbusExtension::PacketToExtension(LoxCanMessage &message) {
   case Modbus_485_WriteMultipleRegisters4: {
     int byteCount = 2;
     int regCount = 1;
-    this->txBufferCount = 0;
-    this->txBuffer[this->txBufferCount++] = message.data[0]; // Modbus address
+    size_t txBufferCount = 0;
+    static uint8_t txBuffer[16];
+    txBuffer[txBufferCount++] = message.data[0]; // Modbus address
     switch (message.commandLegacy) {
     case Modbus_485_WriteSingleCoil:
-      this->txBuffer[this->txBufferCount++] = tModbusCode_WriteSingleCoil;
+      txBuffer[txBufferCount++] = tModbusCode_WriteSingleCoil;
       break;
     case Modbus_485_WriteSingleRegister:
-      this->txBuffer[this->txBufferCount++] = tModbusCode_WriteSingleRegister;
+      txBuffer[txBufferCount++] = tModbusCode_WriteSingleRegister;
       break;
     case Modbus_485_WriteMultipleRegisters:
-      this->txBuffer[this->txBufferCount++] = tModbusCode_WriteMultipleRegisters;
+      txBuffer[txBufferCount++] = tModbusCode_WriteMultipleRegisters;
       regCount = 2;
       break;
     case Modbus_485_WriteMultipleRegisters2:
-      this->txBuffer[this->txBufferCount++] = tModbusCode_WriteMultipleRegisters;
+      txBuffer[txBufferCount++] = tModbusCode_WriteMultipleRegisters;
       byteCount = 4;
       break;
     case Modbus_485_WriteSingleRegister4:
-      this->txBuffer[this->txBufferCount++] = tModbusCode_WriteSingleRegister;
+      txBuffer[txBufferCount++] = tModbusCode_WriteSingleRegister;
       byteCount = 4;
       break;
     case Modbus_485_WriteMultipleRegisters4:
-      this->txBuffer[this->txBufferCount++] = tModbusCode_WriteMultipleRegisters;
+      txBuffer[txBufferCount++] = tModbusCode_WriteMultipleRegisters;
       break;
     default: // should never happen
       break;
     }
     uint16_t reg = *(uint16_t *)&message.data[1]; // Modbus IO-address
-    this->txBuffer[this->txBufferCount++] = reg >> 8;
-    this->txBuffer[this->txBufferCount++] = reg & 0xFF;
+    txBuffer[txBufferCount++] = reg >> 8;
+    txBuffer[txBufferCount++] = reg & 0xFF;
     switch (message.commandLegacy) {
     case Modbus_485_WriteMultipleRegisters:
     case Modbus_485_WriteMultipleRegisters2:
     case Modbus_485_WriteMultipleRegisters4:
-      this->txBuffer[this->txBufferCount++] = regCount >> 8; // number of registers
-      this->txBuffer[this->txBufferCount++] = regCount & 0xFF;
-      this->txBuffer[this->txBufferCount++] = byteCount; // number of transferred bytes
+      txBuffer[txBufferCount++] = regCount >> 8; // number of registers
+      txBuffer[txBufferCount++] = regCount & 0xFF;
+      txBuffer[txBufferCount++] = byteCount; // number of transferred bytes
       break;
     default:
       break;
     }
-    memcpy(this->txBuffer + this->txBufferCount, &message.data[3], byteCount);
-    this->txBufferCount += byteCount;
-    uint16_t crc = crc16_Modus(this->txBuffer, this->txBufferCount);
-    this->txBuffer[this->txBufferCount++] = crc & 0xFF;
-    this->txBuffer[this->txBufferCount++] = crc >> 8;
-    //transmitCommand(this->txBuffer, this->txBufferCount);
+    memcpy(txBuffer + txBufferCount, &message.data[3], byteCount);
+    txBufferCount += byteCount;
+    uint16_t crc = crc16_Modus(txBuffer, txBufferCount);
+    txBuffer[txBufferCount++] = crc & 0xFF;
+    txBuffer[txBufferCount++] = crc >> 8;
+    //sendCommand(txBuffer, txBufferCount);
     break;
   }
   default:
