@@ -76,30 +76,7 @@ void LoxLegacyModbusExtension::rs485_setup(void) {
  *  New configuration was loaded
  ***/
 void LoxLegacyModbusExtension::config_load(void) {
-  printf("RS485 config : %ld baud, ", this->config.baudrate);
-  printf("%d", this->config.wordLength);
-  switch (this->config.parity) {
-  case 0:
-    printf("N");
-    break;
-  case 1:
-    printf("E");
-    break;
-  case 2:
-    printf("O");
-    break;
-  case 3:
-    printf("0");
-    break;
-  case 4:
-    printf("1");
-    break;
-  }
-  printf("%d\n", this->config.twoStopBits + 1);
-  printf("config protocol : %ld\n", this->config.protocol);
   if (this->config.manualTimingFlag) {
-    printf("config timingPause : %ld\n", this->config.timingPause);
-    printf("config timingTimeout : %ld\n", this->config.timingTimeout);
     this->timePause = this->config.timingPause;
     this->timeTimeout = this->config.timingTimeout;
   } else {
@@ -156,8 +133,8 @@ void LoxLegacyModbusExtension::config_load(void) {
       printf("Big Endian,");
     if (flags & 0x2000)
       printf("2 regs for 32-bit");
-    uint32_t cycle = d->pollingCycle & 0xFFFF;
-    if (cycle && flags & 0x1000) { // in seconds
+    uint32_t cycle = d->pollingCycle & 0xFFF;
+    if (cycle && flags & tModbusFlags_1000ms) { // in seconds
       cycle = (cycle & 0xFFF) * 1000;
     } else { // in ms
       cycle = cycle * 100;
@@ -165,25 +142,10 @@ void LoxLegacyModbusExtension::config_load(void) {
     printf(" %.1fs\n", cycle * 0.001);
   }
 
+  memset(this->deviceTimeout, 0, sizeof(this->deviceTimeout));
+
   HAL_UART_DeInit(&huart3);
   rs485_setup();
-
-#if DEBUG
-  const uint16_t reg = 0x00; // Modbus IO-address
-  const int regCount = 1;
-  size_t txBufferCount = 0;
-  static uint8_t txBuffer[16];
-  txBuffer[txBufferCount++] = 0x01; // Modbus address
-  txBuffer[txBufferCount++] = tModbusCode_ReadInputRegister;
-  txBuffer[txBufferCount++] = reg >> 8;
-  txBuffer[txBufferCount++] = reg & 0xFF;
-  txBuffer[txBufferCount++] = regCount >> 8; // number of registers
-  txBuffer[txBufferCount++] = regCount & 0xFF;
-  uint16_t crc = crc16_Modus(txBuffer, txBufferCount);
-  txBuffer[txBufferCount++] = crc & 0xFF;
-  txBuffer[txBufferCount++] = crc >> 8;
-  sendCommand(txBuffer, txBufferCount);
-#endif
 }
 
 /***
@@ -202,7 +164,7 @@ void LoxLegacyModbusExtension::sendCommand(const uint8_t *buffer, size_t byteCou
 /***
  *  Transmit buffer via RS485 and wait for reply
  ***/
-bool LoxLegacyModbusExtension::_transmitBuffer(const uint8_t *txBuffer, size_t txBufferCount) {
+bool LoxLegacyModbusExtension::_transmitBuffer(int devIndex, const uint8_t *txBuffer, size_t txBufferCount) {
   this->set_tx_mode(true);
   for (int i = 0; i < txBufferCount; ++i) {
     uint8_t byte = txBuffer[i];
@@ -216,8 +178,8 @@ bool LoxLegacyModbusExtension::_transmitBuffer(const uint8_t *txBuffer, size_t t
   this->set_tx_mode(false);
   for (uint32_t i = 0; i < this->timeTimeout; i += 100) {
     vTaskDelay(pdMS_TO_TICKS(100));
-    if(gModbus_RX_Buffer_count)
-        break;
+    if (gModbus_RX_Buffer_count)
+      break;
   }
   if (!gModbus_RX_Buffer_count) {
     printf("tModbusError_NoResponse\n");
@@ -242,12 +204,60 @@ bool LoxLegacyModbusExtension::_transmitBuffer(const uint8_t *txBuffer, size_t t
     return false;
   }
   debug_print_buffer((void *)gModbus_RX_Buffer, gModbus_RX_Buffer_count, "### RX DATA:");
+  int count = gModbus_RX_Buffer_count - 5;
+  uint32_t value = *(uint32_t *)&gModbus_RX_Buffer[3];
+  const sModbusDeviceConfig *dc = &this->config.devices[devIndex];
+  switch (gModbus_RX_Buffer[1]) {
+  case tModbusCode_ReadCoils:
+  case tModbusCode_ReadDiscreteInputs:
+    if (count < 1) {
+      value = gModbus_RX_Buffer[3];
+      sendCommandWithValues(Modbus_485_SensorValue, devIndex, 0, value);
+    } else {
+      sendCommandWithValues(debug, gModbus_RX_Buffer[1], tModbusError_InvalidReceiveLength, value);
+    }
+    break;
+  case tModbusCode_ReadHoldingRegisters:
+  case tModbusCode_ReadInputRegister:
+    if (dc->pollingCycle & tModbusFlags_combineTwoRegs) { // two 16-bit registers = 32-bit value
+      if (count <= 4) {
+        if (dc->pollingCycle & tModbusFlags_regOrderHighLow)
+          value = (value >> 16) | (value << 16);
+        if (dc->pollingCycle & tModbusFlags_littleEndian)
+          value = ((value >> 8) & 0x00FF00FF) | ((value << 8) & 0xFF00FF00);
+        sendCommandWithValues(Modbus_485_SensorValue, devIndex, 0, value);
+      } else {
+        sendCommandWithValues(debug, gModbus_RX_Buffer[1], tModbusError_InvalidReceiveLength, value);
+      }
+    } else {
+      if (count <= 2) {
+        if (dc->pollingCycle & tModbusFlags_littleEndian)
+          value = ((value >> 8) & 0x00FF) | ((value << 8) & 0xFF00);
+        sendCommandWithValues(Modbus_485_SensorValue, devIndex, 0, value);
+      } else {
+        sendCommandWithValues(debug, gModbus_RX_Buffer[1], tModbusError_InvalidReceiveLength, value);
+      }
+    }
+    break;
+  case tModbusCode_WriteSingleCoil:
+  case tModbusCode_WriteSingleRegister:
+  case tModbusCode_WriteMultipleCoils:
+  case tModbusCode_WriteMultipleRegisters:
+    sendCommandWithValues(debug, gModbus_RX_Buffer[0], tModbusError_ActorResponse, *(uint32_t *)&gModbus_RX_Buffer[2]);
+    break;
+  case tModbusCode_ReadExceptionStatus:
+    sendCommandWithValues(Modbus_485_SensorValue, devIndex, 0, gModbus_RX_Buffer[2]);
+    break;
+  default:
+    sendCommandWithValues(debug, gModbus_RX_Buffer[1], tModbusError_UnexpectedError, value);
+    break;
+  }
   return true;
 }
 
-bool LoxLegacyModbusExtension::transmitBuffer(const uint8_t *txBuffer, size_t txBufferCount) {
+bool LoxLegacyModbusExtension::transmitBuffer(int devIndex, const uint8_t *txBuffer, size_t txBufferCount) {
   gModbus_RX_Buffer_count = 0; // reset the RX buffer for our transmission
-  bool result = _transmitBuffer(txBuffer, txBufferCount);
+  bool result = _transmitBuffer(devIndex, txBuffer, txBufferCount);
   vTaskDelay(pdMS_TO_TICKS(this->timePause)); // a little pause after a transmission
   gModbus_RX_Buffer_count = 0;                // reset the RX buffer for our transmission
   return result;
@@ -259,6 +269,43 @@ bool LoxLegacyModbusExtension::transmitBuffer(const uint8_t *txBuffer, size_t tx
 void LoxLegacyModbusExtension::vModbusTXTask(void *pvParameters) {
   LoxLegacyModbusExtension *_this = (LoxLegacyModbusExtension *)pvParameters;
   while (1) {
+    for (int devIndex = 0; devIndex < _this->config.entryCount; ++devIndex) {
+      const sModbusDeviceConfig *dc = &_this->config.devices[devIndex];
+      if (HAL_GetTick() >= _this->deviceTimeout[devIndex]) {
+        uint32_t pollingCycle = dc->pollingCycle;
+        uint32_t ticks = (pollingCycle & 0xFFF) * 100; // default unit: ticks in 100ms
+        if (pollingCycle & tModbusFlags_1000ms)        // value too large for it? Then the ticks are in seconds
+          ticks *= 10;
+        //        if (ticks < 5000)
+        //          ticks = 5000; // Loxone throttles the requests to 5s
+        _this->deviceTimeout[devIndex] = HAL_GetTick() + pdMS_TO_TICKS(ticks);
+        size_t txBufferCount = 0;
+        static uint8_t txBuffer[16];
+        txBuffer[txBufferCount++] = dc->address; // Modbus address
+        txBuffer[txBufferCount++] = dc->functionCode & 0x1F;
+        txBuffer[txBufferCount++] = dc->regNumber >> 8;
+        txBuffer[txBufferCount++] = dc->regNumber & 0xFF;
+        switch (dc->functionCode & 0x1F) {
+        case tModbusCode_ReadCoils:
+        case tModbusCode_ReadDiscreteInputs:
+          txBuffer[txBufferCount++] = 0;
+          txBuffer[txBufferCount++] = 1;
+          break;
+        case tModbusCode_ReadHoldingRegisters:
+        case tModbusCode_ReadInputRegister:
+          txBuffer[txBufferCount++] = 0;
+          txBuffer[txBufferCount++] = (pollingCycle & tModbusFlags_combineTwoRegs) ? 2 : 1; // combine two registers?
+          break;
+        }
+        uint16_t crc = crc16_Modus(txBuffer, txBufferCount);
+        txBuffer[txBufferCount++] = crc & 0xFF;
+        txBuffer[txBufferCount++] = crc >> 8;
+        if (!_this->transmitBuffer(devIndex, txBuffer, txBufferCount)) {
+          // give it a second try, if the first transmission failed
+          _this->transmitBuffer(devIndex, txBuffer, txBufferCount);
+        }
+      }
+    }
     static uint8_t txBuffer[16]; // static to avoid stack usage
     uint8_t txBufferCount;
     while (xQueueReceive(&_this->txQueue, &txBufferCount, 10)) {
@@ -268,9 +315,9 @@ void LoxLegacyModbusExtension::vModbusTXTask(void *pvParameters) {
         }
         txBuffer[i] = byte;
       }
-      if (!_this->transmitBuffer(txBuffer, txBufferCount)) {
+      if (!_this->transmitBuffer(0, txBuffer, txBufferCount)) {
         // give it a second try, if the first transmission failed
-        _this->transmitBuffer(txBuffer, txBufferCount);
+        _this->transmitBuffer(0, txBuffer, txBufferCount);
       }
     }
   }
@@ -299,6 +346,9 @@ void LoxLegacyModbusExtension::Startup(void) {
   rs485_setup();
 }
 
+/***
+ *  CAN packet received
+ ***/
 void LoxLegacyModbusExtension::PacketToExtension(LoxCanMessage &message) {
   switch (message.commandLegacy) {
   case Modbus_485_WriteSingleCoil:
@@ -356,7 +406,7 @@ void LoxLegacyModbusExtension::PacketToExtension(LoxCanMessage &message) {
     uint16_t crc = crc16_Modus(txBuffer, txBufferCount);
     txBuffer[txBufferCount++] = crc & 0xFF;
     txBuffer[txBufferCount++] = crc >> 8;
-    //sendCommand(txBuffer, txBufferCount);
+    sendCommand(txBuffer, txBufferCount);
     break;
   }
   default:

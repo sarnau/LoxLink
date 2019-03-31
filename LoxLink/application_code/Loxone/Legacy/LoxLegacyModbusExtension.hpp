@@ -49,6 +49,15 @@ typedef enum {
   tModbusError_TxQueueOverrun = 6,
 } tModbusError;
 
+// Possible error states, returned to the Miniserver
+typedef enum {
+  // The values 0x000-0xFFF are the polling cycle, which is in 100ms ticks
+  tModbusFlags_1000ms = 0x1000, // multiply the polling cycle by 10
+  tModbusFlags_combineTwoRegs = 0x2000,
+  tModbusFlags_regOrderHighLow = 0x4000,
+  tModbusFlags_littleEndian = 0x8000,
+} tModbusFlags;
+
 /***
  *  Modbus configuration data
  ***/
@@ -80,14 +89,15 @@ typedef struct {            // default values:
 class LoxLegacyModbusExtension : public LoxLegacyExtension {
   StaticQueue_t txQueue;
   sModbusConfig config;
+  int32_t deviceTimeout[254];
   uint32_t timePause;
   uint32_t timeTimeout;
 
   void set_tx_mode(bool txMode);
   void config_load(void);
   void rs485_setup(void);
-  bool _transmitBuffer(const uint8_t *buffer, size_t byteCount);
-  bool transmitBuffer(const uint8_t *buffer, size_t byteCount);
+  bool _transmitBuffer(int devIndex, const uint8_t *buffer, size_t byteCount);
+  bool transmitBuffer(int devIndex, const uint8_t *buffer, size_t byteCount);
   void sendCommand(const uint8_t *buffer, size_t byteCount);
   static void vModbusRXTask(void *pvParameters);
   static void vModbusTXTask(void *pvParameters);
