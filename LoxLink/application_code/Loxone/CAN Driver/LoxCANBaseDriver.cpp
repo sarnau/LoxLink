@@ -86,7 +86,7 @@ void LoxCANBaseDriver::Delay(int msDelay) const {
  ***/
 void LoxCANBaseDriver::ReceiveMessage(LoxCanMessage &message) {
   ++this->statistics.Rcv;
-#if DEBUG
+#if DEBUG && 0
   printf("CANR:");
   message.print(*this);
 #endif

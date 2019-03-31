@@ -13,9 +13,10 @@
 #if EXTENSION_MODBUS
 #include "queue.h"
 
-#define Modbus_RX_BUFFERSIZE 512
-#define Modbus_TX_BUFFERSIZE 512
+#define Modbus_RX_BUFFERSIZE 128
+#define Modbus_TX_BUFFERSIZE 2048
 
+// Modbus commands
 typedef enum {
   tModbusCode_ReadCoils = 1,
   tModbusCode_ReadDiscreteInputs = 2,
@@ -37,6 +38,20 @@ typedef enum {
   tModbusCode_ReadDeviceIdentification = 43,
 } tModbusCode;
 
+// Possible error states, returned to the Miniserver
+typedef enum {
+  tModbusError_ActorResponse = 0,
+  tModbusError_NoResponse = 1,
+  tModbusError_CRC_Error = 2,
+  tModbusError_InvalidResponse = 3,
+  tModbusError_InvalidReceiveLength = 4,
+  tModbusError_UnexpectedError = 5,
+  tModbusError_TxQueueOverrun = 6,
+} tModbusError;
+
+/***
+ *  Modbus configuration data
+ ***/
 typedef struct {
   uint8_t address;
   uint8_t functionCode;
@@ -51,28 +66,27 @@ typedef struct {            // default values:
   uint8_t unused;
   uint32_t baudrate;      // 19200 baud
   uint8_t wordLength;     // 8 bits
-  uint8_t parity;         // 0 (none)
-  uint8_t twoStopBits;    // 1
-  uint8_t protocol;       // 3
+  uint8_t parity;         // 0 (none), 1 (even), 2 (odd), 3 (always 0, always 1 - both are no legal vor Modbus anyway)
+  uint8_t twoStopBits;    // 0 (1 stop-bit), 1 (2 stop-bits)
+  uint8_t protocol;       // 3 (RTU? Always 3)
   uint32_t timingPause;   // 10
   uint32_t timingTimeout; // 1000
-  uint32_t entryCount;    // 0
+  uint32_t entryCount;    // 0 number of entries in the device table
   sModbusDeviceConfig devices[254];
   uint32_t filler; // first value after the CRC32 checksum
 } sModbusConfig;
 
+
 class LoxLegacyModbusExtension : public LoxLegacyExtension {
-  uint8_t sendCount;
-  uint8_t sendFill;
-  uint8_t sendCRC;
-  uint8_t sendData[256]; // max. size of one send buffer as received via several messages from the Miniserver
   StaticQueue_t txQueue;
+  uint8_t txBuffer[16];
+  size_t txBufferCount;
   sModbusConfig config;
 
   void set_tx_mode(bool txMode);
   void config_load(void);
   void forwardBuffer(const uint8_t *buffer, size_t byteCount);
-  void sendBuffer(const uint8_t *buffer, size_t byteCount);
+  void transmitCommand(void);
   static void vModbusRXTask(void *pvParameters);
   static void vModbusTXTask(void *pvParameters);
 

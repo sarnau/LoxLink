@@ -28,9 +28,9 @@
 #define RS485_TX_ENABLE_GPIO_Port GPIOC
 
 static UART_HandleTypeDef huart3;
-static uint8_t gChar;
-static uint8_t gUART_RX_Buffer[Modbus_RX_BUFFERSIZE];
-static StreamBufferHandle_t gUART_RX_Stream;
+static uint8_t gModbusChar;
+static volatile uint8_t gModbus_RX_Buffer[Modbus_RX_BUFFERSIZE];
+static volatile int gModbus_RX_Buffer_count;
 
 /***
  *  Constructor
@@ -58,8 +58,25 @@ void LoxLegacyModbusExtension::set_tx_mode(bool txMode) {
 void LoxLegacyModbusExtension::config_load(void) {
   printf("config RS485 baudrate : %ld baud\n", this->config.baudrate);
   printf("config RS485 word length : %ld bits\n", this->config.wordLength);
-  printf("config RS485 parity : %ld\n", this->config.parity);
-  printf("config RS485 twoStopBits : %ld\n", this->config.twoStopBits);
+  printf("config RS485 parity : ");
+  switch (this->config.parity) {
+  case 0:
+    printf("N");
+    break;
+  case 1:
+    printf("E");
+    break;
+  case 2:
+    printf("O");
+    break;
+  case 3:
+    printf("0");
+    break;
+  case 4:
+    printf("1");
+    break;
+  }
+  printf("config RS485 twoStopBits : %ld\n", this->config.twoStopBits + 1);
   printf("config protocol : %ld\n", this->config.protocol);
   if (this->config.manualTimingFlag) {
     printf("config timingPause : %ld\n", this->config.timingPause);
@@ -90,8 +107,9 @@ void LoxLegacyModbusExtension::config_load(void) {
       printf("functionCode(%d)", d->functionCode);
       break;
     }
-    printf(" addr:0x%02x ", d->address);
-    printf(" reg:0x%02x options:", d->regNumber);
+    printf(" slave address:0x%02x ", d->address);
+    printf(" register:0x%02x", d->regNumber);
+    printf(" options:");
     uint16_t flags = d->pollingCycle >> 16;
     if (flags & 0x4000)
       printf("reg order HL,");
@@ -109,35 +127,55 @@ void LoxLegacyModbusExtension::config_load(void) {
     } else { // in ms
       cycle = cycle * 100;
     }
-    printf(" %.1fms\n", cycle * 0.001);
+    printf(" %.1fs\n", cycle * 0.001);
   }
+
+  HAL_UART_DeInit(&huart3);
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = this->config.baudrate;
+  huart3.Init.WordLength = (this->config.wordLength == 8) ? UART_WORDLENGTH_8B : UART_WORDLENGTH_9B;
+  huart3.Init.StopBits = this->config.twoStopBits == 0 ? UART_STOPBITS_1 : UART_STOPBITS_2;
+  huart3.Init.Parity = this->config.parity == 0 ? UART_PARITY_NONE : ((this->config.parity == 1) ? UART_PARITY_EVEN : UART_PARITY_ODD);
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart3) != HAL_OK) {
+#if DEBUG
+    printf("### RS232 HAL_UART_Init ERROR\n");
+#endif
+  }
+  // RXNE Interrupt Enable
+  SET_BIT(huart3.Instance->CR1, USART_CR1_RXNEIE);
+
+  HAL_UART_Receive_IT(&huart3, &gModbusChar, 1);
+
+  const uint16_t reg = 0x00; // Modbus IO-address
+  const int regCount = 1;
+  this->txBufferCount = 0;
+  this->txBuffer[this->txBufferCount++] = 0x01; // Modbus address
+  this->txBuffer[this->txBufferCount++] = tModbusCode_ReadInputRegister;
+  this->txBuffer[this->txBufferCount++] = reg >> 8;
+  this->txBuffer[this->txBufferCount++] = reg & 0xFF;
+  this->txBuffer[this->txBufferCount++] = regCount >> 8; // number of registers
+  this->txBuffer[this->txBufferCount++] = regCount & 0xFF;
+  uint16_t crc = crc16_Modus(this->txBuffer, this->txBufferCount);
+  this->txBuffer[this->txBufferCount++] = crc & 0xFF;
+  this->txBuffer[this->txBufferCount++] = crc >> 8;
+  transmitCommand();
 }
 
 /***
  *  Send a buffer to the Modbus
  ***/
-void LoxLegacyModbusExtension::sendBuffer(const uint8_t *buffer, size_t byteCount) {
-#if DEBUG && 1
-  debug_print_buffer(buffer, byteCount, "Modbus TX:");
-#endif
+void LoxLegacyModbusExtension::transmitCommand(void) {
+  const uint8_t *buffer = this->txBuffer;
+  size_t byteCount = this->txBufferCount;
+  if (byteCount > 0xFF)
+    byteCount = 0xFF;
+  uint8_t size = byteCount;
+  xQueueSendToBack(&this->txQueue, &size, 0);
   for (int i = 0; i < byteCount; ++i) {
     xQueueSendToBack(&this->txQueue, &buffer[i], 0);
-  }
-}
-
-/***
- *  Modbus RX Task
- ***/
-void LoxLegacyModbusExtension::vModbusRXTask(void *pvParameters) {
-  LoxLegacyModbusExtension *_this = (LoxLegacyModbusExtension *)pvParameters;
-  static uint8_t buffer[Modbus_RX_BUFFERSIZE];
-  size_t bufferFill = 0;
-  while (1) {
-    size_t byteCount = xStreamBufferReceive(gUART_RX_Stream, buffer + bufferFill, Modbus_RX_BUFFERSIZE - bufferFill, 10);
-    bufferFill += byteCount;
-#if DEBUG && 1
-    debug_print_buffer(buffer, byteCount, "Modbus RX:");
-#endif
   }
 }
 
@@ -147,14 +185,56 @@ void LoxLegacyModbusExtension::vModbusRXTask(void *pvParameters) {
 void LoxLegacyModbusExtension::vModbusTXTask(void *pvParameters) {
   LoxLegacyModbusExtension *_this = (LoxLegacyModbusExtension *)pvParameters;
   while (1) {
-    uint8_t byte;
-    while (xQueueReceive(&_this->txQueue, &byte, 0)) {
-      HAL_StatusTypeDef status = HAL_UART_Transmit(&huart3, &byte, sizeof(byte), 50);
-      if (status != HAL_OK) {
+    uint8_t len;
+    while (xQueueReceive(&_this->txQueue, &len, 10)) {
 #if DEBUG
-        printf("### Modbus TX error %d\n", status);
+      printf("### Modbus TX:%d bytes:", len);
 #endif
+      _this->set_tx_mode(true);
+      gModbus_RX_Buffer_count = 0; // reset the RX buffer for our transmission
+      for (int i = 0; i < len; ++i) {
+        uint8_t byte;
+        while (!xQueueReceive(&_this->txQueue, &byte, 1)) {
+        }
+#if DEBUG
+        printf("%02x ", byte);
+#endif
+        HAL_StatusTypeDef status = HAL_UART_Transmit(&huart3, &byte, sizeof(byte), 50);
+        if (status != HAL_OK) {
+#if DEBUG
+          printf("### Modbus TX error %d\n", status);
+#endif
+        }
       }
+#if DEBUG
+      printf("\n");
+#endif
+      vTaskDelay(pdMS_TO_TICKS(10));
+      _this->set_tx_mode(false);
+      vTaskDelay(pdMS_TO_TICKS(250));
+      if (!gModbus_RX_Buffer_count) {
+        printf("tModbusError_NoResponse\n");
+        break;
+      }
+      if (gModbus_RX_Buffer_count <= 4) {
+        printf("tModbusError_InvalidReceiveLength\n");
+        break;
+      }
+      uint16_t crc = crc16_Modus((void *)gModbus_RX_Buffer, gModbus_RX_Buffer_count - 2);
+      if (gModbus_RX_Buffer[gModbus_RX_Buffer_count - 2] != (crc & 0xFF) or gModbus_RX_Buffer[gModbus_RX_Buffer_count - 1] != (crc >> 8)) {
+        printf("tModbusError_CRC_Error\n");
+        break;
+      }
+//      if (gModbus_RX_Buffer[0] != _this->txBuffer[0] or gModbus_RX_Buffer[1] != _this->txBuffer[1]) {
+//        if (_this->txBuffer[1] == gModbus_RX_Buffer[0]) {
+//            // 
+//        } else {
+//            // 
+//        }
+//        printf("tModbusError_InvalidResponse\n");
+//        break;
+//      }
+      debug_print_buffer((void *)gModbus_RX_Buffer, gModbus_RX_Buffer_count, "### RX DATA:");
     }
   }
 }
@@ -166,15 +246,8 @@ void LoxLegacyModbusExtension::Startup(void) {
   __HAL_RCC_USART3_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  static StaticStreamBuffer_t gUART_RX_Buffer_Stuct;
-  gUART_RX_Stream = xStreamBufferCreateStatic(Modbus_RX_BUFFERSIZE, 1, gUART_RX_Buffer, &gUART_RX_Buffer_Stuct);
-
   static uint8_t sModbusTXBuffer[Modbus_TX_BUFFERSIZE];
-  xQueueCreateStatic(Modbus_TX_BUFFERSIZE, 1, (uint8_t *)sModbusTXBuffer, &this->txQueue);
-
-  static StackType_t sModbusRXTaskStack[configMINIMAL_STACK_SIZE];
-  static StaticTask_t sModbusRXTask;
-  xTaskCreateStatic(LoxLegacyModbusExtension::vModbusRXTask, "ModbusRXTask", configMINIMAL_STACK_SIZE, this, 2, sModbusRXTaskStack, &sModbusRXTask);
+  xQueueCreateStatic(Modbus_TX_BUFFERSIZE, 1, sModbusTXBuffer, &this->txQueue);
 
   static StackType_t sModbusTXTaskStack[configMINIMAL_STACK_SIZE];
   static StaticTask_t sModbusTXTask;
@@ -197,7 +270,7 @@ void LoxLegacyModbusExtension::Startup(void) {
   // RXNE Interrupt Enable
   SET_BIT(huart3.Instance->CR1, USART_CR1_RXNEIE);
 
-  HAL_UART_Receive_IT(&huart3, &gChar, 1);
+  HAL_UART_Receive_IT(&huart3, &gModbusChar, 1);
 }
 
 void LoxLegacyModbusExtension::PacketToExtension(LoxCanMessage &message) {
@@ -208,56 +281,55 @@ void LoxLegacyModbusExtension::PacketToExtension(LoxCanMessage &message) {
   case Modbus_485_WriteMultipleRegisters2:
   case Modbus_485_WriteSingleRegister4:
   case Modbus_485_WriteMultipleRegisters4: {
-    static uint8_t modbusBuffer[16];
     int byteCount = 2;
-    int offset = 2;
     int regCount = 1;
-    modbusBuffer[offset++] = message.data[0]; // Modbus address
+    this->txBufferCount = 0;
+    this->txBuffer[this->txBufferCount++] = message.data[0]; // Modbus address
     switch (message.commandLegacy) {
     case Modbus_485_WriteSingleCoil:
-      modbusBuffer[offset++] = tModbusCode_WriteSingleCoil;
+      this->txBuffer[this->txBufferCount++] = tModbusCode_WriteSingleCoil;
       break;
     case Modbus_485_WriteSingleRegister:
-      modbusBuffer[offset++] = tModbusCode_WriteSingleRegister;
+      this->txBuffer[this->txBufferCount++] = tModbusCode_WriteSingleRegister;
       break;
     case Modbus_485_WriteMultipleRegisters:
-      modbusBuffer[offset++] = tModbusCode_WriteMultipleRegisters;
+      this->txBuffer[this->txBufferCount++] = tModbusCode_WriteMultipleRegisters;
       regCount = 2;
       break;
     case Modbus_485_WriteMultipleRegisters2:
-      modbusBuffer[offset++] = tModbusCode_WriteMultipleRegisters;
+      this->txBuffer[this->txBufferCount++] = tModbusCode_WriteMultipleRegisters;
       byteCount = 4;
       break;
     case Modbus_485_WriteSingleRegister4:
-      modbusBuffer[offset++] = tModbusCode_WriteSingleRegister;
+      this->txBuffer[this->txBufferCount++] = tModbusCode_WriteSingleRegister;
       byteCount = 4;
       break;
     case Modbus_485_WriteMultipleRegisters4:
-      modbusBuffer[offset++] = tModbusCode_WriteMultipleRegisters;
+      this->txBuffer[this->txBufferCount++] = tModbusCode_WriteMultipleRegisters;
       break;
     default: // should never happen
       break;
     }
     uint16_t reg = *(uint16_t *)&message.data[1]; // Modbus IO-address
-    modbusBuffer[offset++] = reg >> 8;
-    modbusBuffer[offset++] = reg & 0xFF;
+    this->txBuffer[this->txBufferCount++] = reg >> 8;
+    this->txBuffer[this->txBufferCount++] = reg & 0xFF;
     switch (message.commandLegacy) {
     case Modbus_485_WriteMultipleRegisters:
     case Modbus_485_WriteMultipleRegisters2:
     case Modbus_485_WriteMultipleRegisters4:
-      modbusBuffer[offset++] = regCount >> 8; // number of registers
-      modbusBuffer[offset++] = regCount & 0xFF;
-      modbusBuffer[offset++] = byteCount; // number of transferred bytes
+      this->txBuffer[this->txBufferCount++] = regCount >> 8; // number of registers
+      this->txBuffer[this->txBufferCount++] = regCount & 0xFF;
+      this->txBuffer[this->txBufferCount++] = byteCount; // number of transferred bytes
       break;
     default:
       break;
     }
-    memcpy(modbusBuffer + offset, &message.data[3], byteCount);
-    offset += byteCount;
-    uint16_t crc = crc16_Modus(modbusBuffer, offset);
-    modbusBuffer[offset++] = crc & 0xFF;
-    modbusBuffer[offset++] = crc >> 8;
-    debug_print_buffer(modbusBuffer, offset, "Modbus write:");
+    memcpy(this->txBuffer + this->txBufferCount, &message.data[3], byteCount);
+    this->txBufferCount += byteCount;
+    uint16_t crc = crc16_Modus(this->txBuffer, this->txBufferCount);
+    this->txBuffer[this->txBufferCount++] = crc & 0xFF;
+    this->txBuffer[this->txBufferCount++] = crc >> 8;
+    //transmitCommand(this->txBuffer, this->txBufferCount);
     break;
   }
   default:
@@ -300,6 +372,7 @@ extern "C" void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
     __HAL_RCC_USART3_CLK_ENABLE();
 
     /* GPIO Ports Clock Enable */
+    __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOC_CLK_ENABLE();
 
     /*Configure GPIO pin Output Level */
@@ -318,7 +391,6 @@ extern "C" void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(RS485_TX_ENABLE_GPIO_Port, &GPIO_InitStruct);
 
-    __HAL_RCC_GPIOB_CLK_ENABLE();
     /**USART3 GPIO Configuration    
     PB10     ------> USART3_TX
     PB11     ------> USART3_RX 
@@ -334,7 +406,7 @@ extern "C" void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
     HAL_GPIO_Init(RS485_RX_PIN_GPIO_Port, &GPIO_InitStruct);
 
     /* USART3 interrupt Init */
-    HAL_NVIC_SetPriority(USART3_IRQn, 0, 0);
+    HAL_NVIC_SetPriority(USART3_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(USART3_IRQn);
   }
 }
@@ -369,27 +441,11 @@ extern "C" void HAL_UART_MspDeInit(UART_HandleTypeDef *huart) {
   * @retval None
   */
 extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-  // Attempt to send the string to the stream buffer.
-  BaseType_t xHigherPriorityTaskWoken = pdFALSE; // Initialised to pdFALSE.
-  size_t xBytesSent = xStreamBufferSendFromISR(gUART_RX_Stream, &gChar, 1, &xHigherPriorityTaskWoken);
-  if (xBytesSent != 1) {
-#if DEBUG
-    printf("Modbus RX Stream error");
-#endif
+  printf("{%02x}", gModbusChar);
+  if (gModbus_RX_Buffer_count < sizeof(gModbus_RX_Buffer)) {
+    gModbus_RX_Buffer[gModbus_RX_Buffer_count++] = gModbusChar;
   }
-  HAL_UART_Receive_IT(huart, &gChar, 1);
-
-  // If xHigherPriorityTaskWoken was set to pdTRUE inside
-  // xStreamBufferSendFromISR() then a task that has a priority above the
-  // priority of the currently executing task was unblocked and a context
-  // switch should be performed to ensure the ISR returns to the unblocked
-  // task.  In most FreeRTOS ports this is done by simply passing
-  // xHigherPriorityTaskWoken into taskYIELD_FROM_ISR(), which will test the
-  // variables value, and perform the context switch if necessary.  Check the
-  // documentation for the port in use for port specific instructions.
-  if (xHigherPriorityTaskWoken) {
-    taskYIELD();
-  }
+  HAL_UART_Receive_IT(huart, &gModbusChar, 1);
 }
 
 extern "C" void USART3_IRQHandler(void) {
