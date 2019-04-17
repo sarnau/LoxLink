@@ -11,7 +11,7 @@
 #include "LoxExtension.hpp"
 
 #define EXTENSION_RS232 0
-#define EXTENSION_MODBUS 1
+#define EXTENSION_MODBUS 0
 
 /////////////////////////////////////////////////////////////////
 // Legacy protocol
