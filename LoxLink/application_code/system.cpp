@@ -133,7 +133,7 @@ void MX_print_cpu_info(void) {
   uint32_t uid[3];
   HAL_GetUID(uid);
   printf("Unique device ID:%08x.%08x.%08x\n", uid[0], uid[1], uid[2]);
-  printf("SysClock:%dMHz HCLK:%dMHz PCLK1:%dMHz PCLK2:%dMHz FLASH:%dkb\n", HAL_RCC_GetSysClockFreq() / 1000000, HAL_RCC_GetHCLKFreq() / 1000000, HAL_RCC_GetPCLK1Freq() / 1000000, HAL_RCC_GetPCLK2Freq() / 1000000);
+  printf("SysClock:%dMHz HCLK:%dMHz PCLK1:%dMHz PCLK2:%dMHz\n", HAL_RCC_GetSysClockFreq() / 1000000, HAL_RCC_GetHCLKFreq() / 1000000, HAL_RCC_GetPCLK1Freq() / 1000000, HAL_RCC_GetPCLK2Freq() / 1000000);
   printf("ADC_TEMPSENSOR: %.2fC\n", MX_read_temperature());
 }
 #endif

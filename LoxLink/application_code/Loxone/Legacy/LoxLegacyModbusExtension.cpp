@@ -43,40 +43,20 @@ void LoxLegacyModbusExtension::set_tx_mode(bool txMode) {
   // The board strangely has independed pins to control RX/TX enable, but they are mutally exclusive
   // Also: RX is negated in the MAX3485, so both pins always have to have the same state, which leads
   // to the valid question: why does the board have two pins for it anyway?
-  GPIO_PinState pinState = txMode ? GPIO_PIN_SET : GPIO_PIN_RESET;
-  HAL_GPIO_WritePin(RS485_RX_ENABLE_GPIO_Port, RS485_RX_ENABLE_Pin, pinState);
-  HAL_GPIO_WritePin(RS485_TX_ENABLE_GPIO_Port, RS485_TX_ENABLE_Pin, pinState);
+  if (txMode) {
+    HAL_GPIO_WritePin(RS485_RX_ENABLE_GPIO_Port, RS485_RX_ENABLE_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(RS485_TX_ENABLE_GPIO_Port, RS485_TX_ENABLE_Pin, GPIO_PIN_SET);
+  } else {
+    HAL_GPIO_WritePin(RS485_TX_ENABLE_GPIO_Port, RS485_TX_ENABLE_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(RS485_RX_ENABLE_GPIO_Port, RS485_RX_ENABLE_Pin, GPIO_PIN_RESET);
+  }
 }
 
 /***
  *
  ***/
 void LoxLegacyModbusExtension::rs485_setup(void) {
-  // configure the UART
-  huart3.Instance = USART3;
-  huart3.Init.BaudRate = this->config.baudrate;
-  huart3.Init.WordLength = (this->config.wordLength == 8) ? UART_WORDLENGTH_8B : UART_WORDLENGTH_9B;
-  huart3.Init.StopBits = this->config.twoStopBits == 0 ? UART_STOPBITS_1 : UART_STOPBITS_2;
-  huart3.Init.Parity = this->config.parity == 0 ? UART_PARITY_NONE : ((this->config.parity == 1) ? UART_PARITY_EVEN : UART_PARITY_ODD);
-  huart3.Init.Mode = UART_MODE_TX_RX;
-  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart3) != HAL_OK) {
-#if DEBUG
-    printf("### RS232 HAL_UART_Init ERROR\n");
-#endif
-  }
-  // RXNE Interrupt Enable
-  SET_BIT(huart3.Instance->CR1, USART_CR1_RXNEIE);
-
-  HAL_UART_Receive_IT(&huart3, &gModbusChar, 1);
-}
-
-/***
- *  New configuration was loaded
- ***/
-void LoxLegacyModbusExtension::config_load(void) {
-  printf("RS485 config : %ld ", this->config.baudrate);
+  printf("RS485 setup : %ld ", this->config.baudrate);
   printf("%ld", this->config.wordLength);
   switch (this->config.parity) {
   case 0:
@@ -96,7 +76,37 @@ void LoxLegacyModbusExtension::config_load(void) {
     break;
   }
   printf("%ld\n", this->config.twoStopBits + 1);
+  this->characterTime_us = 1000000 * (1 + this->config.wordLength + (this->config.parity != 0) + (this->config.twoStopBits ? 2 : 1)) / this->config.baudrate;
 
+  // configure the UART
+  HAL_StatusTypeDef status;
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = this->config.baudrate;
+  huart3.Init.WordLength = (this->config.wordLength == 8) ? UART_WORDLENGTH_8B : UART_WORDLENGTH_9B;
+  huart3.Init.StopBits = this->config.twoStopBits == 0 ? UART_STOPBITS_1 : UART_STOPBITS_2;
+  huart3.Init.Parity = this->config.parity == 0 ? UART_PARITY_NONE : ((this->config.parity == 1) ? UART_PARITY_EVEN : UART_PARITY_ODD);
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  status = HAL_UART_Init(&huart3);
+  if (status != HAL_OK) {
+#if DEBUG
+    printf("### MODBUS HAL_UART_Init ERROR #%d\n", status);
+#endif
+  }
+  // RXNE Interrupt Enable
+  SET_BIT(huart3.Instance->CR1, USART_CR1_RXNEIE);
+
+  status = HAL_UART_Receive_IT(&huart3, &gModbusChar, 1);
+  if(status != HAL_OK) {
+    printf("HAL_UART_Receive_IT error #%d\n", status);
+  }
+}
+
+/***
+ *  New configuration was loaded
+ ***/
+void LoxLegacyModbusExtension::config_load(void) {
   if (this->config.manualTimingFlag) {
     this->timePause = this->config.timingPause;
     this->timeTimeout = this->config.timingTimeout;
@@ -131,11 +141,6 @@ void LoxLegacyModbusExtension::config_load(void) {
     case 4:
       printf("Read input register");
       break;
-      // these are allowed for actors, but not used in the config
-      //        case 5: printf("Write single coil"); break;
-      //        case 6: printf("Write single register"); break;
-      //        case 15: printf("Force multiple coils"); break;
-      //        case 16: printf("Preset multiple registers"); break;
     default: // should not happen with Loxone Config
       printf("functionCode(%d)", d->functionCode);
       break;
@@ -144,15 +149,15 @@ void LoxLegacyModbusExtension::config_load(void) {
     printf(" register:0x%02x", d->regNumber);
     printf(" options:");
     uint16_t flags = d->pollingCycle >> 16;
-    if (flags & 0x4000)
+    if (flags & tModbusFlags_regOrderHighLow)
       printf("reg order HL,");
     else
       printf("reg order LH,");
-    if (flags & 0x8000)
+    if (flags & tModbusFlags_littleEndian)
       printf("Little Endian,");
     else
       printf("Big Endian,");
-    if (flags & 0x2000)
+    if (flags & tModbusFlags_combineTwoRegs)
       printf("2 regs for 32-bit");
     uint32_t cycle = d->pollingCycle & 0xFFF;
     if (cycle && flags & tModbusFlags_1000ms) { // in seconds
@@ -174,17 +179,15 @@ void LoxLegacyModbusExtension::config_load(void) {
  ***/
 bool LoxLegacyModbusExtension::_transmitBuffer(int devIndex, const uint8_t *txBuffer, size_t txBufferCount) {
   debug_print_buffer((void *)txBuffer, txBufferCount, "### TX DATA:");
-  this->set_tx_mode(true);
-  for (int i = 0; i < txBufferCount; ++i) {
-    uint8_t byte = txBuffer[i];
-    HAL_StatusTypeDef status = HAL_UART_Transmit(&huart3, &byte, sizeof(byte), 50);
-    if (status != HAL_OK) {
-#if DEBUG
-      printf("### Modbus TX error %d\n", status);
-#endif
-    }
-  }
   gModbus_RX_Buffer_count = 0; // reset the RX buffer for our transmission
+  this->set_tx_mode(true);
+  HAL_StatusTypeDef status = HAL_UART_Transmit(&huart3, (uint8_t *)txBuffer, txBufferCount, 2 * txBufferCount * this->characterTime_us / 1000); // timeout is twice the time it takes to transmit
+  if (status != HAL_OK) {
+#if DEBUG
+    printf("### HAL_UART_Transmit error #%d\n", status);
+#endif
+  }
+  vTaskDelay(pdMS_TO_TICKS(1));
   this->set_tx_mode(false);
   for (uint32_t i = 0; i < this->timeTimeout; i += 100) {
     vTaskDelay(pdMS_TO_TICKS(100));
@@ -537,11 +540,24 @@ extern "C" void HAL_UART_MspDeInit(UART_HandleTypeDef *huart) {
   * @retval None
   */
 extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-  printf("{%02x}", gModbusChar);
+  printf("{%02x err:%d}", gModbusChar, huart->ErrorCode);
   if (gModbus_RX_Buffer_count < sizeof(gModbus_RX_Buffer)) {
     gModbus_RX_Buffer[gModbus_RX_Buffer_count++] = gModbusChar;
   }
-  HAL_UART_Receive_IT(huart, &gModbusChar, 1);
+  HAL_StatusTypeDef status = HAL_UART_Receive_IT(huart, &gModbusChar, 1);
+  if(status != HAL_OK) {
+    printf("HAL_UART_Receive_IT error #%d\n", status);
+  }
+}
+
+/**
+  * @brief  Tx Transfer completed callbacks.
+  * @param  huart: pointer to a UART_HandleTypeDef structure that contains
+  *                the configuration information for the specified UART module.
+  * @retval None
+  */
+extern "C" void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+  printf("X");
 }
 
 extern "C" void USART3_IRQHandler(void) {

@@ -138,8 +138,8 @@ int main(void) {
 #endif
 
   static LoxCANDriver_STM32 gLoxCANDriver(tLoxCANDriverType_LoxoneLink);
-#if EXTENSION_RS232 
-  //static LoxLegacyRS232Extension gLoxLegacyRS232Extension(gLoxCANDriver, serial_base);
+#if EXTENSION_RS232
+  static LoxLegacyRS232Extension gLoxLegacyRS232Extension(gLoxCANDriver, serial_base);
 #endif
 #if EXTENSION_MODBUS
   static LoxLegacyModbusExtension gLoxLegacyModbusExtension(gLoxCANDriver, serial_base);

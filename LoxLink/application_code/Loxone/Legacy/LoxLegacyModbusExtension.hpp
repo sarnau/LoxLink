@@ -90,6 +90,7 @@ class LoxLegacyModbusExtension : public LoxLegacyExtension {
   StaticQueue_t txQueue;
   sModbusConfig config;
   int32_t deviceTimeout[254];
+  uint32_t characterTime_us; // duration for one character transmission in us
   uint32_t timePause;
   uint32_t timeTimeout;
 
