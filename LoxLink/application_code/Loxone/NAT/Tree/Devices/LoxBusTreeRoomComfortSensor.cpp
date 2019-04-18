@@ -6,7 +6,7 @@
 //
 
 #include "LoxBusTreeRoomComfortSensor.hpp"
-#include <stdio.h>
+#include <__cross_studio_io.h>
 
 /***
  *  Constructor
@@ -16,8 +16,8 @@ LoxBusTreeRoomComfortSensor::LoxBusTreeRoomComfortSensor(LoxCANBaseDriver &drive
 }
 
 void LoxBusTreeRoomComfortSensor::ConfigUpdate(void) {
-  printf("unknownA = %d\n", config.unknownA);
-  printf("unknownB = %d\n", config.unknownB);
+  debug_printf("unknownA = %d\n", config.unknownA);
+  debug_printf("unknownB = %d\n", config.unknownB);
 }
 
 void LoxBusTreeRoomComfortSensor::ConfigLoadDefaults(void) {

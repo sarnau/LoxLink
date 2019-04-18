@@ -8,7 +8,7 @@
 #include "LoxExtension.hpp"
 #include "LED.hpp"
 #include <assert.h>
-#include <stdio.h>
+#include <__cross_studio_io.h>
 #include <string.h>
 
 /***
@@ -36,7 +36,7 @@ LoxExtension::LoxExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceTyp
 {
   assert(serial != 0);
 #if DEBUG
-  printf("LoxExtension(%07x,%04x,%d,%d)\n", this->serial, this->device_type, this->hardware_version, this->version);
+  debug_printf("LoxExtension(%07x,%04x,%d,%d)\n", this->serial, this->device_type, this->hardware_version, this->version);
 #endif
   SetState(eDeviceState_offline);
   driver.AddExtension(this);

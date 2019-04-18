@@ -8,7 +8,7 @@
 #include "LoxCanMessage.hpp"
 #include "LoxCANBaseDriver.hpp"
 #include <assert.h>
-#include <stdio.h>
+#include <__cross_studio_io.h>
 
 bool LoxCanMessage::isNATmessage(LoxCANBaseDriver &driver) const {
   return (driver.isLoxoneLinkBusDriver() && this->busType == LoxCmdNATBus_t_LoxoneLink) || (driver.isTreeBusDriver() && this->busType == LoxCmdNATBus_t_TreeBus);
@@ -182,7 +182,7 @@ const char *const LoxCanMessage::LegacyCommandString(LoxMsgLegacyCommand_t comma
   case RS232_config_protocol:
     return "RS232_config_protocol";
   }
-  return NULL;
+  return 0;
 }
 
 const char *const LoxCanMessage::HardwareNameString(eDeviceType_t hardware) const {
@@ -266,7 +266,7 @@ const char *const LoxCanMessage::HardwareNameString(eDeviceType_t hardware) cons
   case eDeviceType_t_LEDSpotWWTree: // <https://shop.loxone.com/enuk/led-ceiling-spots-ww-global.html>
     return "LED Spot WW Tree";
   default:
-    return NULL;
+    return 0;
   }
 }
 
@@ -371,61 +371,61 @@ const char *const LoxCanMessage::NATCommandString(LoxMsgNATCommand_t command) co
   default:
     break;
   }
-  return NULL;
+  return 0;
 }
 
 void LoxCanMessage::print(LoxCANBaseDriver &driver) const {
   assert(sizeof(LoxCanMessage) == 12); //, "LoxCanMessage size wrong");
 
-  printf("%08x %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x : ",this->identifier, this->can_data[0], this->can_data[1], this->can_data[2], this->can_data[3], this->can_data[4], this->can_data[5], this->can_data[6], this->can_data[7]);
+  debug_printf("%08x %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x : ",this->identifier, this->can_data[0], this->can_data[1], this->can_data[2], this->can_data[3], this->can_data[4], this->can_data[5], this->can_data[6], this->can_data[7]);
   if (this->isNATmessage(driver)) { // NAT command
     switch (this->directionNat) {
     case LoxCmdNATDirection_t_fromDevice:
-      printf("D");
+      debug_printf("D");
       break;
     case LoxCmdNATDirection_t_illegal:
-      printf("?");
+      debug_printf("?");
       break;
     case LoxCmdNATDirection_t_fromServerShortcut:
-      printf("s");
+      debug_printf("s");
       break;
     case LoxCmdNATDirection_t_fromServer:
-      printf("S");
+      debug_printf("S");
       break;
     }
-    printf(this->fragmented ? "F" : " ");
-    printf(" NAT:%02x/%02x ", this->extensionNat, this->deviceNAT);
+    debug_printf(this->fragmented ? "F" : " ");
+    debug_printf(" NAT:%02x/%02x ", this->extensionNat, this->deviceNAT);
     const char *natStr = NATCommandString(this->commandNat);
     if (natStr)
-      printf(natStr);
+      debug_printf(natStr);
     else
-      printf("Cmd:%02x", this->commandNat);
-    printf(" : ");
+      debug_printf("Cmd:%02x", this->commandNat);
+    debug_printf(" : ");
     if (this->commandNat == Fragment_Start) {
       natStr = NATCommandString(LoxMsgNATCommand_t(this->data[0]));
       if (natStr)
-        printf("(%s) ", natStr);
+        debug_printf("(%s) ", natStr);
     }
   } else { // legacy command
     if (this->serial == 0 && this->hardwareType == eDeviceType_t_Miniserver) {
-      printf("Miniserver Broadcast ");
+      debug_printf("Miniserver Broadcast ");
     } else {
-      printf((this->directionLegacy == LoxMsgLegacyDirection_t_fromServer) ? "S" : "D");
-      printf((this->commandDirection == LoxMsgLegacyCommandDirection_t_fromServer) ? "s" : "d");
-      printf(" %s ", HardwareNameString(this->hardwareType));
-      printf("%07x ", this->identifier & 0xFFFFFFF);
+      debug_printf((this->directionLegacy == LoxMsgLegacyDirection_t_fromServer) ? "S" : "D");
+      debug_printf((this->commandDirection == LoxMsgLegacyCommandDirection_t_fromServer) ? "s" : "d");
+      debug_printf(" %s ", HardwareNameString(this->hardwareType));
+      debug_printf("%07x ", this->identifier & 0xFFFFFFF);
     }
-    //printf("Cmd:%d/", this->commandDirection);
+    //debug_printf("Cmd:%d/", this->commandDirection);
     const char *legStr = LegacyCommandString(this->commandLegacy, this->hardwareType);
     if (legStr) {
-      printf(legStr);
+      debug_printf(legStr);
     } else {
-      printf(legStr);
-      printf("Cmd:%02x", this->commandLegacy);
+      debug_printf(legStr);
+      debug_printf("Cmd:%02x", this->commandLegacy);
     }
-    printf(" : ");
+    debug_printf(" : ");
   }
-  printf("%02x.%02x.%02x.%02x.%02x.%02x.%02x\n", this->data[0], this->data[1], this->data[2], this->data[3], this->data[4], this->data[5], this->data[6]);
+  debug_printf("%02x.%02x.%02x.%02x.%02x.%02x.%02x\n", this->data[0], this->data[1], this->data[2], this->data[3], this->data[4], this->data[5], this->data[6]);
 }
 
 #endif

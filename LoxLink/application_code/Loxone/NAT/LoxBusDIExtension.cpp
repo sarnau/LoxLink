@@ -129,7 +129,7 @@ void LoxBusDIExtension::SendValues() {
  *  A new configuration has been uploaded. Here the extension need to get reconfigured accordingly.
  ***/
 void LoxBusDIExtension::ConfigUpdate(void) {
-  //printf("Config updated: 0x%04x\n", this->config.frequencyInputsBitmask);
+  //debug_printf("Config updated: 0x%04x\n", this->config.frequencyInputsBitmask);
 }
 
 /***

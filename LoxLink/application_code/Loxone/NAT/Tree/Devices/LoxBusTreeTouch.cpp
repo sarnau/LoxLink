@@ -6,7 +6,7 @@
 //
 
 #include "LoxBusTreeTouch.hpp"
-#include <stdio.h>
+#include <__cross_studio_io.h>
 
 /***
  *  Constructor
@@ -16,8 +16,8 @@ LoxBusTreeTouch::LoxBusTreeTouch(LoxCANBaseDriver &driver, uint32_t serial, eAli
 }
 
 void LoxBusTreeTouch::ConfigUpdate(void) {
-  printf("unknown = %d\n", config.unknown);
-  printf("audibleFeedbackB = %d\n", config.audibleFeedbackB);
+  debug_printf("unknown = %d\n", config.unknown);
+  debug_printf("audibleFeedbackB = %d\n", config.audibleFeedbackB);
 }
 
 void LoxBusTreeTouch::ConfigLoadDefaults(void) {

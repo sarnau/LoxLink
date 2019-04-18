@@ -115,41 +115,41 @@ void LED::Startup(void) {
 }
 
 void LED::off(void) {
-  //  printf("LED blinking green\n");
+  //  debug_printf("LED blinking green\n");
   this->led_state.color = eLED_off;
 }
 
 void LED::blink_green(void) {
-  //  printf("LED blinking green\n");
+  //  debug_printf("LED blinking green\n");
   this->led_state.color = eLED_green;
 }
 
 void LED::blink_orange(void) {
-  //  printf("LED blinking orange\n");
+  //  debug_printf("LED blinking orange\n");
   this->led_state.color = eLED_orange;
 }
 
 void LED::blink_red(void) {
-  //  printf("LED blinking red\n");
+  //  debug_printf("LED blinking red\n");
   this->led_state.color = eLED_red;
 }
 
 void LED::identify_on(void) {
-  //  printf("LED identify on\n");
+  //  debug_printf("LED identify on\n");
   this->led_state.identify = true;
 }
 
 void LED::identify_off(void) {
-  //  printf("LED identify off\n");
+  //  debug_printf("LED identify off\n");
   this->led_state.identify = false;
 }
 
 void LED::sync(uint32_t timeInMs) {
-  //  printf("LED sync(%u)\n", timeInMs);
+  //  debug_printf("LED sync(%u)\n", timeInMs);
   this->resync_flag = true;
 }
 
 void LED::set_sync_offset(uint8_t sync_offset) {
-  //  printf("LED sync_offset(%u)\n", sync_offset);
+  //  debug_printf("LED sync_offset(%u)\n", sync_offset);
   this->sync_offset = sync_offset;
 }

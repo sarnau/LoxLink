@@ -6,7 +6,7 @@
 //
 
 #include "LoxBusTreeRgbwDimmer.hpp"
-#include <stdio.h>
+#include <__cross_studio_io.h>
 
 /***
  *  Constructor
@@ -16,9 +16,9 @@ LoxBusTreeRgbwDimmer::LoxBusTreeRgbwDimmer(LoxCANBaseDriver &driver, uint32_t se
 }
 
 void LoxBusTreeRgbwDimmer::ConfigUpdate(void) {
-  printf("lossOfConnectionState = %08lx\n", config.lossOfConnectionState);
-  printf("fadeRate = %08lx\n", config.fadeRate);
-  printf("ledType = %08lx\n", config.ledType);
+  debug_printf("lossOfConnectionState = %08lx\n", config.lossOfConnectionState);
+  debug_printf("fadeRate = %08lx\n", config.fadeRate);
+  debug_printf("ledType = %08lx\n", config.ledType);
 }
 
 void LoxBusTreeRgbwDimmer::ConfigLoadDefaults(void) {
@@ -31,7 +31,7 @@ void LoxBusTreeRgbwDimmer::ReceiveDirect(LoxCanMessage &message) {
 
 void LoxBusTreeRgbwDimmer::ReceiveDirectFragment(LoxMsgNATCommand_t command, uint8_t extensionNAT, uint8_t deviceNAT, const uint8_t *data, uint16_t size) {
     if(command != Config_Data) {
-        printf("frag %02x\n", command);
+        debug_printf("frag %02x\n", command);
     }
     LoxBusTreeDevice::ReceiveDirectFragment(command, extensionNAT, deviceNAT, data, size);
 }

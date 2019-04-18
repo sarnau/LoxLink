@@ -38,7 +38,7 @@ void LoxLegacyRelayExtension::update_relays(uint16_t bitmask) {
   if (this->temperatureOverheatingFlag)
     bitmask = 0;
   this->harewareDigitalOutBitmask = bitmask;
-  //  printf("### Relay Status 0x%x\n", this->harewareDigitalOutBitmask);
+  //  debug_printf("### Relay Status 0x%x\n", this->harewareDigitalOutBitmask);
   for (int i = 0; i < RELAY_EXTENSION_OUTPUTS; ++i) {
     HAL_GPIO_WritePin(gRelayPins[i].gpio, gRelayPins[i].pin, (bitmask & (1 << i)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
   }

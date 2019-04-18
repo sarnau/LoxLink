@@ -6,7 +6,7 @@
 //
 
 #include "LoxLegacyDMXExtension.hpp"
-#include <stdio.h>
+#include <__cross_studio_io.h>
 #include <stdlib.h>
 
 typedef struct {
@@ -59,7 +59,7 @@ void LoxLegacyDMXExtension::search_reply(uint16_t channel, uint16_t manufacturer
 void LoxLegacyDMXExtension::PacketToExtension(LoxCanMessage &message) {
   switch (message.commandLegacy) {
   case dmx_search:
-    printf("Search for DMX devices\n");
+    debug_printf("Search for DMX devices\n");
     if (true) {
       search_reply(0, 0x2637, 0xE0D80800, false); // 0xDxxxxxxx doesn't support Slewrate and it will be set to 0. 0xExxxxxxx works fine.
       search_reply(4, 0x5431, 0xaabbccdd, true);
@@ -68,7 +68,7 @@ void LoxLegacyDMXExtension::PacketToExtension(LoxCanMessage &message) {
     }
     break;
   case DMX_learn:
-    printf("Learn DMX: %d %d\n", message.data[0] | (message.data[1] << 8), message.data[2]);
+    debug_printf("Learn DMX: %d %d\n", message.data[0] | (message.data[1] << 8), message.data[2]);
     break;
   default:
     LoxLegacyExtension::PacketToExtension(message);
@@ -115,13 +115,13 @@ void LoxLegacyDMXExtension::FragmentedPacketToExtension(LoxMsgLegacyFragmentedCo
   case FragCmd_DMX_actor: {
     const DMX_Actor *package = (const DMX_Actor *)fragData;
     const char *const gammaStr = ((package->Slewrate & 0x80) == 0x80) ? "yes" : "no";
-    printf("DMX actor: Type:%s, Slewrate: %d%%, Gamma:%s, Channel:%d, Data:%d %d %d %d\n", DMX_DeviceTypeString(package->Type), package->Slewrate & 0x7F, gammaStr, package->Channel, package->Data[0], package->Data[1], package->Data[2], package->Data[3]);
+    debug_printf("DMX actor: Type:%s, Slewrate: %d%%, Gamma:%s, Channel:%d, Data:%d %d %d %d\n", DMX_DeviceTypeString(package->Type), package->Slewrate & 0x7F, gammaStr, package->Channel, package->Data[0], package->Data[1], package->Data[2], package->Data[3]);
     break;
   }
   case FragCmd_DMX_dimming: {
     const DMX_Dimming *package = (const DMX_Dimming *)fragData;
     const char *const gammaStr = ((package->actor.Slewrate & 0x80) == 0x80) ? "yes" : "no";
-    printf("DMX dimming: Type:%s, Slewrate: %d%%, Gamma:%s, Channel:%d, Data:%d %d %d %d, DeviceId:0x%08x\n", DMX_DeviceTypeString(package->actor.Type), package->actor.Slewrate & 0x7F, gammaStr, package->actor.Channel, package->actor.Data[0], package->actor.Data[1], package->actor.Data[2], package->actor.Data[3], package->DeviceId);
+    debug_printf("DMX dimming: Type:%s, Slewrate: %d%%, Gamma:%s, Channel:%d, Data:%d %d %d %d, DeviceId:0x%08x\n", DMX_DeviceTypeString(package->actor.Type), package->actor.Slewrate & 0x7F, gammaStr, package->actor.Channel, package->actor.Data[0], package->actor.Data[1], package->actor.Data[2], package->actor.Data[3], package->DeviceId);
     break;
   }
   case FragCmd_DMX_composite_actor: {
@@ -133,18 +133,18 @@ void LoxLegacyDMXExtension::FragmentedPacketToExtension(LoxMsgLegacyFragmentedCo
     const char *const percentStr = ((package->Time & 0x8000) == 0x8000) ? "/100%" : "";
     if (package->actor.Type == 11) {       // Lumitech
       if (package->actor.Data[0] == 101) { // RGB
-        printf("DMX composite: Type:%s, Slewrate: %d%%, Gamma:%s, Channel:%d, RGB:%.1f%% %.1f%% %.1f%%, Time:%dms%s\n", DMX_DeviceTypeString(package->actor.Type), package->actor.Slewrate & 0x7F, gammaStr, package->actor.Channel, package->actor.Data[1] * 100.0 / 255, package->actor.Data[2] * 100.0 / 255, package->actor.Data[3] * 100.0 / 255, timeInMs, percentStr);
+        debug_printf("DMX composite: Type:%s, Slewrate: %d%%, Gamma:%s, Channel:%d, RGB:%.1f%% %.1f%% %.1f%%, Time:%dms%s\n", DMX_DeviceTypeString(package->actor.Type), package->actor.Slewrate & 0x7F, gammaStr, package->actor.Channel, package->actor.Data[1] * 100.0 / 255, package->actor.Data[2] * 100.0 / 255, package->actor.Data[3] * 100.0 / 255, timeInMs, percentStr);
       } else {
-        printf("DMX composite: Type:%s, Slewrate: %d%%, Gamma:%s, Channel:%d, Dual White:%.1f%% %dK, Time:%dms%s\n", DMX_DeviceTypeString(package->actor.Type), package->actor.Slewrate & 0x7F, gammaStr, package->actor.Channel, package->actor.Data[1] * 100.0 / 255, (package->actor.Data[2] * (6500 - 2700)) / 255 + 2700, timeInMs, percentStr);
+        debug_printf("DMX composite: Type:%s, Slewrate: %d%%, Gamma:%s, Channel:%d, Dual White:%.1f%% %dK, Time:%dms%s\n", DMX_DeviceTypeString(package->actor.Type), package->actor.Slewrate & 0x7F, gammaStr, package->actor.Channel, package->actor.Data[1] * 100.0 / 255, (package->actor.Data[2] * (6500 - 2700)) / 255 + 2700, timeInMs, percentStr);
       }
     } else {
-      printf("DMX composite: Type:%s, Slewrate: %d%%, Gamma:%s, Channel:%d, Data:%.1f%% %.1f%% %.1f%% %.1f%%, Time:%dms%s\n", DMX_DeviceTypeString(package->actor.Type), package->actor.Slewrate & 0x7F, gammaStr, package->actor.Channel, package->actor.Data[0] * 100.0 / 255, package->actor.Data[1] * 100.0 / 255, package->actor.Data[2] * 100.0 / 255, package->actor.Data[3] * 100.0 / 255, timeInMs, percentStr);
+      debug_printf("DMX composite: Type:%s, Slewrate: %d%%, Gamma:%s, Channel:%d, Data:%.1f%% %.1f%% %.1f%% %.1f%%, Time:%dms%s\n", DMX_DeviceTypeString(package->actor.Type), package->actor.Slewrate & 0x7F, gammaStr, package->actor.Channel, package->actor.Data[0] * 100.0 / 255, package->actor.Data[1] * 100.0 / 255, package->actor.Data[2] * 100.0 / 255, package->actor.Data[3] * 100.0 / 255, timeInMs, percentStr);
     }
     break;
   }
   case FragCmd_DMX_init_rdm_device: {
     const DMX_Init_RDM *package = (const DMX_Init_RDM *)fragData;
-    printf("DMX RDM Init: Slewrate:%d%% %d%% %d%% %d%%, Gamma:%d %d %d %d, RGBW:%d %d %d %d, Channel:%d, DeviceId:0x%08x\n",
+    debug_printf("DMX RDM Init: Slewrate:%d%% %d%% %d%% %d%%, Gamma:%d %d %d %d, RGBW:%d %d %d %d, Channel:%d, DeviceId:0x%08x\n",
       package->Slewrate[0], package->Slewrate[1], package->Slewrate[2], package->Slewrate[3],
       package->Gamma[0], package->Gamma[1], package->Gamma[2], package->Gamma[3],
       package->RGBW[0], package->RGBW[1], package->RGBW[2], package->RGBW[3],

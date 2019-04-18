@@ -1,0 +1,86 @@
+<!DOCTYPE CrossStudio_Project_File>
+<solution Name="LoxLink" target="8" version="2">
+  <project Name="LoxLink">
+    <configuration
+      CMSIS_CORE="Yes"
+      Name="Common"
+      Placement="Flash"
+      Target="STM32F103VE"
+      arm_architecture="v7M"
+      arm_core_type="Cortex-M3"
+      arm_fp_abi="Soft"
+      arm_fpu_type="None"
+      arm_interwork="No"
+      arm_simulator_memory_simulation_parameter="STM32F103VE;0x80000;0x10000"
+      c_preprocessor_definitions="USE_STDPERIPH_DRIVER;STM32F103xE"
+      c_system_include_directories="$(StudioDir)/include;$(PackagesDir)/include;$(ProjectDir);$(ProjectDir)/Libraries/STM32F10x_StdPeriph_Driver/inc"
+      c_user_include_directories="$(ProjectDir)/lib/FreeRTOS;$(ProjectDir)/lib/FreeRTOS/include;$(ProjectDir)/lib/FreeRTOS/include/private;$(ProjectDir)/lib/FreeRTOS/portable/GCC/ARM_CM3;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc;$(ProjectDir)/lib/STM32F1xx/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/CMSIS/Device/ST/STM32L1xx/Include;$(ProjectDir)/application_code/st_code/;$(ProjectDir)/application_code;$(ProjectDir)/application_code/Loxone/;$(ProjectDir)/application_code/Loxone/Legacy/;$(ProjectDir)/application_code/Loxone/NAT/;$(ProjectDir)/application_code/Loxone/NAT/Tree/;$(ProjectDir)/application_code/Loxone/NAT/Tree/Devices/;$(ProjectDir)/application_code/Loxone/CAN Driver/"
+      debug_register_definition_file="$(TargetsDir)/STM32/STM32F103_Peripherals.xml"
+      linker_memory_map_file="$(TargetsDir)/STM32/STM32F103VE_MemoryMap.xml"
+      linker_section_placement_file="$(StudioDir)/targets/Cortex_M/flash_placement.xml"
+      macros="DeviceVectorsFile=STM32F103xE.vec"
+      project_directory=""
+      project_type="Executable"
+      property_groups_file_path="$(TargetsDir)/STM32/propertyGroups.xml"
+      target_get_partname_script="GetPartName()"
+      target_match_partname_script="MatchPartName(&quot;$(Target)&quot;)"
+      target_script_file="$(TargetsDir)/STM32/STM32_Target.js"
+      target_trace_initialize_script="EnableTrace(&quot;$(TraceInterfaceType)&quot;)" />
+    <folder
+      Name="application_code"
+      exclude=""
+      filter="*.c;*.cpp;*.h;*.hpp;*.s"
+      path="application_code"
+      recurse="Yes" />
+    <folder Name="System Files">
+      <file file_name="$(StudioDir)/source/thumb_crt0.s" />
+      <file file_name="$(TargetsDir)/STM32/STM32_Startup.s" />
+      <file file_name="$(TargetsDir)/STM32/$(DeviceVectorsFile)" />
+    </folder>
+    <folder Name="lib">
+      <folder Name="FreeRTOS">
+        <file file_name="lib/FreeRTOS/event_groups.c" />
+        <file file_name="lib/FreeRTOS/list.c" />
+        <file file_name="lib/FreeRTOS/queue.c" />
+        <file file_name="lib/FreeRTOS/stream_buffer.c" />
+        <file file_name="lib/FreeRTOS/tasks.c" />
+        <file file_name="lib/FreeRTOS/timers.c" />
+        <file file_name="lib/FreeRTOS/portable/GCC/ARM_CM3/port.c" />
+        <file file_name="lib/FreeRTOS/FreeRTOSConfig.h" />
+      </folder>
+      <folder
+        Name="STM32F1xx"
+        exclude=""
+        filter=""
+        path="lib/STM32F1xx"
+        recurse="Yes" />
+    </folder>
+    <configuration
+      Name="Release"
+      gcc_optimization_level="Optimize For Size" />
+    <configuration
+      Name="Flash"
+      arm_target_flash_loader_file_path="$(TargetsDir)/STM32/Release/Loader_rpc.elf"
+      arm_target_loader_can_erase_all="Yes" />
+  </project>
+  <configuration
+    Name="Debug"
+    c_preprocessor_definitions="DEBUG"
+    gcc_debugging_level="Level 3"
+    gcc_optimization_level="None"
+    linker_printf_fp_enabled="Float" />
+  <configuration
+    Name="Release"
+    c_preprocessor_definitions="NDEBUG"
+    gcc_debugging_level="None"
+    gcc_omit_frame_pointer="Yes"
+    gcc_optimization_level="Level 1" />
+  <configuration
+    Name="Common"
+    arm_architecture="v7M"
+    arm_core_type="Cortex-M3"
+    arm_linker_heap_size="2048"
+    arm_linker_stack_size="2048"
+    gcc_c_language_standard="gnu11"
+    gcc_cplusplus_language_standard="gnu++11" />
+</solution>

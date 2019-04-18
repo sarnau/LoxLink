@@ -56,26 +56,26 @@ void LoxLegacyModbusExtension::set_tx_mode(bool txMode) {
  *
  ***/
 void LoxLegacyModbusExtension::rs485_setup(void) {
-  printf("RS485 setup : %ld ", this->config.baudrate);
-  printf("%ld", this->config.wordLength);
+  debug_printf("RS485 setup : %ld ", this->config.baudrate);
+  debug_printf("%ld", this->config.wordLength);
   switch (this->config.parity) {
   case 0:
-    printf("N");
+    debug_printf("N");
     break;
   case 1:
-    printf("E");
+    debug_printf("E");
     break;
   case 2:
-    printf("O");
+    debug_printf("O");
     break;
   case 3:
-    printf("0");
+    debug_printf("0");
     break;
   case 4:
-    printf("1");
+    debug_printf("1");
     break;
   }
-  printf("%ld\n", this->config.twoStopBits + 1);
+  debug_printf("%ld\n", this->config.twoStopBits + 1);
   this->characterTime_us = 1000000 * (1 + this->config.wordLength + (this->config.parity != 0) + (this->config.twoStopBits ? 2 : 1)) / this->config.baudrate;
 
   // configure the UART
@@ -91,7 +91,7 @@ void LoxLegacyModbusExtension::rs485_setup(void) {
   status = HAL_UART_Init(&huart3);
   if (status != HAL_OK) {
 #if DEBUG
-    printf("### MODBUS HAL_UART_Init ERROR #%d\n", status);
+    debug_printf("### MODBUS HAL_UART_Init ERROR #%d\n", status);
 #endif
   }
   // RXNE Interrupt Enable
@@ -99,7 +99,7 @@ void LoxLegacyModbusExtension::rs485_setup(void) {
 
   status = HAL_UART_Receive_IT(&huart3, &gModbusChar, 1);
   if(status != HAL_OK) {
-    printf("HAL_UART_Receive_IT error #%d\n", status);
+    debug_printf("HAL_UART_Receive_IT error #%d\n", status);
   }
 }
 
@@ -127,45 +127,45 @@ void LoxLegacyModbusExtension::config_load(void) {
 
   for (int i = 0; i < this->config.entryCount; ++i) {
     const sModbusDeviceConfig *d = &this->config.devices[i];
-    printf("config device #%d: ", i);
+    debug_printf("config device #%d: ", i);
     switch (d->functionCode) {
     case 1:
-      printf("Read coil status");
+      debug_printf("Read coil status");
       break;
     case 2:
-      printf("Read input status");
+      debug_printf("Read input status");
       break;
     case 3:
-      printf("Read holding register");
+      debug_printf("Read holding register");
       break;
     case 4:
-      printf("Read input register");
+      debug_printf("Read input register");
       break;
     default: // should not happen with Loxone Config
-      printf("functionCode(%d)", d->functionCode);
+      debug_printf("functionCode(%d)", d->functionCode);
       break;
     }
-    printf(" slave address:0x%02x ", d->address);
-    printf(" register:0x%02x", d->regNumber);
-    printf(" options:");
+    debug_printf(" slave address:0x%02x ", d->address);
+    debug_printf(" register:0x%02x", d->regNumber);
+    debug_printf(" options:");
     uint16_t flags = d->pollingCycle >> 16;
     if (flags & tModbusFlags_regOrderHighLow)
-      printf("reg order HL,");
+      debug_printf("reg order HL,");
     else
-      printf("reg order LH,");
+      debug_printf("reg order LH,");
     if (flags & tModbusFlags_littleEndian)
-      printf("Little Endian,");
+      debug_printf("Little Endian,");
     else
-      printf("Big Endian,");
+      debug_printf("Big Endian,");
     if (flags & tModbusFlags_combineTwoRegs)
-      printf("2 regs for 32-bit");
+      debug_printf("2 regs for 32-bit");
     uint32_t cycle = d->pollingCycle & 0xFFF;
     if (cycle && flags & tModbusFlags_1000ms) { // in seconds
       cycle = (cycle & 0xFFF) * 1000;
     } else { // in ms
       cycle = cycle * 100;
     }
-    printf(" %.1fs\n", cycle * 0.001);
+    debug_printf(" %.1fs\n", cycle * 0.001);
   }
 
   memset(this->deviceTimeout, 0, sizeof(this->deviceTimeout));
@@ -184,7 +184,7 @@ bool LoxLegacyModbusExtension::_transmitBuffer(int devIndex, const uint8_t *txBu
   HAL_StatusTypeDef status = HAL_UART_Transmit(&huart3, (uint8_t *)txBuffer, txBufferCount, 2 * txBufferCount * this->characterTime_us / 1000); // timeout is twice the time it takes to transmit
   if (status != HAL_OK) {
 #if DEBUG
-    printf("### HAL_UART_Transmit error #%d\n", status);
+    debug_printf("### HAL_UART_Transmit error #%d\n", status);
 #endif
   }
   vTaskDelay(pdMS_TO_TICKS(1));
@@ -196,16 +196,16 @@ bool LoxLegacyModbusExtension::_transmitBuffer(int devIndex, const uint8_t *txBu
   }
   debug_print_buffer((void *)gModbus_RX_Buffer, gModbus_RX_Buffer_count, "### RX DATA:");
   if (!gModbus_RX_Buffer_count) {
-    printf("tModbusError_NoResponse\n");
+    debug_printf("tModbusError_NoResponse\n");
     return false;
   }
   if (gModbus_RX_Buffer_count <= 4) {
-    printf("tModbusError_InvalidReceiveLength\n");
+    debug_printf("tModbusError_InvalidReceiveLength\n");
     return false;
   }
   uint16_t crc = crc16_Modus((void *)gModbus_RX_Buffer, gModbus_RX_Buffer_count - 2);
   if (gModbus_RX_Buffer[gModbus_RX_Buffer_count - 2] != (crc & 0xFF) or gModbus_RX_Buffer[gModbus_RX_Buffer_count - 1] != (crc >> 8)) {
-    printf("tModbusError_CRC_Error\n");
+    debug_printf("tModbusError_CRC_Error\n");
     return false;
   }
   if (gModbus_RX_Buffer[0] != txBuffer[0] or gModbus_RX_Buffer[1] != txBuffer[1]) {
@@ -214,7 +214,7 @@ bool LoxLegacyModbusExtension::_transmitBuffer(int devIndex, const uint8_t *txBu
     } else {
       //
     }
-    printf("tModbusError_InvalidResponse\n");
+    debug_printf("tModbusError_InvalidResponse\n");
     return false;
   }
   debug_print_buffer((void *)gModbus_RX_Buffer, gModbus_RX_Buffer_count, "### CMD:");
@@ -540,13 +540,13 @@ extern "C" void HAL_UART_MspDeInit(UART_HandleTypeDef *huart) {
   * @retval None
   */
 extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-  printf("{%02x err:%d}", gModbusChar, huart->ErrorCode);
+  debug_printf("{%02x err:%d}", gModbusChar, huart->ErrorCode);
   if (gModbus_RX_Buffer_count < sizeof(gModbus_RX_Buffer)) {
     gModbus_RX_Buffer[gModbus_RX_Buffer_count++] = gModbusChar;
   }
   HAL_StatusTypeDef status = HAL_UART_Receive_IT(huart, &gModbusChar, 1);
   if(status != HAL_OK) {
-    printf("HAL_UART_Receive_IT error #%d\n", status);
+    debug_printf("HAL_UART_Receive_IT error #%d\n", status);
   }
 }
 
@@ -557,7 +557,7 @@ extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   * @retval None
   */
 extern "C" void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-  printf("X");
+  debug_printf("X");
 }
 
 extern "C" void USART3_IRQHandler(void) {

@@ -1,7 +1,7 @@
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
 #include "task.h"
-#include <stdio.h>
+#include <__cross_studio_io.h>
 
 /*-----------------------------------------------------------*/
 
@@ -71,7 +71,7 @@ extern "C" void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuf
 extern "C" void vApplicationStackOverflowHook(TaskHandle_t xTask,
   char *pcTaskName) {
   portDISABLE_INTERRUPTS();
-  printf("### vApplicationStackOverflowHook ###\n");
+  debug_printf("### vApplicationStackOverflowHook ###\n");
 
   /* Loop forever */
   for (;;)

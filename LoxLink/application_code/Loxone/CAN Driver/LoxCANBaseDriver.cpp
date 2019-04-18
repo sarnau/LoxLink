@@ -10,7 +10,7 @@
 #include "LoxExtension.hpp"
 #include "task.h"
 #if DEBUG
-#include <stdio.h>
+#include <__cross_studio_io.h>
 #endif
 #include <string.h>
 
@@ -47,7 +47,7 @@ void LoxCANBaseDriver::FilterSetupNAT(int filterIndex, LoxCmdNATBus_t busType, u
   msg.extensionNat = extensionNAT;
   FilterSetup(filterIndex, msg.identifier, 0x1F2FF000, 0);
 #if DEBUG && 0
-  printf("Filter #%d mask:%08x value:%08x\n", filterIndex, 0x1F2FF000, msg.identifier);
+  debug_printf("Filter #%d mask:%08x value:%08x\n", filterIndex, 0x1F2FF000, msg.identifier);
 #endif
 }
 
@@ -56,17 +56,17 @@ void LoxCANBaseDriver::FilterSetupNAT(int filterIndex, LoxCmdNATBus_t busType, u
  ***/
 #if DEBUG
 void LoxCANBaseDriver::StatisticsPrint() const {
-  printf("Sent:%d;", this->statistics.Sent);
-  printf("Rcv:%d;", this->statistics.Rcv);
-  printf("Err:%d;", this->statistics.Err);
-  printf("REC:%d;", this->GetReceiveErrorCounter());
-  printf("TEC:%d;", this->GetTransmitErrorCounter());
-  printf("HWE:%d;", this->statistics.HWE);
-  printf("TQ:%d;", this->statistics.TQ);
-  printf("mTQ:%d;", this->statistics.mTQ);
-  printf("QOvf:%d;", this->statistics.QOvf);
-  printf("RQ:%d;", this->statistics.RQ);
-  printf("mRQ:%d;\n", this->statistics.mRQ);
+  debug_printf("Sent:%d;", this->statistics.Sent);
+  debug_printf("Rcv:%d;", this->statistics.Rcv);
+  debug_printf("Err:%d;", this->statistics.Err);
+  debug_printf("REC:%d;", this->GetReceiveErrorCounter());
+  debug_printf("TEC:%d;", this->GetTransmitErrorCounter());
+  debug_printf("HWE:%d;", this->statistics.HWE);
+  debug_printf("TQ:%d;", this->statistics.TQ);
+  debug_printf("mTQ:%d;", this->statistics.mTQ);
+  debug_printf("QOvf:%d;", this->statistics.QOvf);
+  debug_printf("RQ:%d;", this->statistics.RQ);
+  debug_printf("mRQ:%d;\n", this->statistics.mRQ);
 }
 #endif
 
@@ -87,7 +87,7 @@ void LoxCANBaseDriver::Delay(int msDelay) const {
 void LoxCANBaseDriver::ReceiveMessage(LoxCanMessage &message) {
   ++this->statistics.Rcv;
 #if DEBUG && 0
-  printf("CANR:");
+  debug_printf("CANR:");
   message.print(*this);
 #endif
   for (int i = 0; i < this->extensionCount; ++i) {

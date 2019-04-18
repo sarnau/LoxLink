@@ -6,7 +6,7 @@
 //
 
 #include "LoxBusTreeAlarmSiren.hpp"
-#include <stdio.h>
+#include <__cross_studio_io.h>
 
 /***
  *  Constructor
@@ -20,12 +20,12 @@ void LoxBusTreeAlarmSiren::send_tamper_status(void) {
 }
 
 void LoxBusTreeAlarmSiren::hardware_strobe_light(bool status) {
-  printf("# Strobe light %s\n", status ? "on" : "off");
+  debug_printf("# Strobe light %s\n", status ? "on" : "off");
 }
 
 void LoxBusTreeAlarmSiren::hardware_alarm_sound(bool status) {
   this->alarmSoundMaxDurationTimer = status ? config.maxAudibleAlarmDuration * 1000 : -1;
-  printf("# Alarm sound %s\n", status ? "on" : "off");
+  debug_printf("# Alarm sound %s\n", status ? "on" : "off");
 }
 
 void LoxBusTreeAlarmSiren::Timer10ms(void) {
@@ -50,15 +50,15 @@ void LoxBusTreeAlarmSiren::Timer10ms(void) {
 void LoxBusTreeAlarmSiren::ConfigUpdate(void) {
   int offState = config.offlineHardwareState;
   if ((offState & 3) == 1)
-    printf("offlineHardwareState strobe on\n");
+    debug_printf("offlineHardwareState strobe on\n");
   else if ((offState & 3) == 2)
-    printf("offlineHardwareState strobe off\n");
+    debug_printf("offlineHardwareState strobe off\n");
   offState >>= 2;
   if ((offState & 3) == 1)
-    printf("offlineHardwareState alarm on\n");
+    debug_printf("offlineHardwareState alarm on\n");
   else if ((offState & 3) == 2)
-    printf("offlineHardwareState alarm off\n");
-  printf("maxAudibleAlarmDuration = %ds\n", config.maxAudibleAlarmDuration);
+    debug_printf("offlineHardwareState alarm off\n");
+  debug_printf("maxAudibleAlarmDuration = %ds\n", config.maxAudibleAlarmDuration);
 }
 
 void LoxBusTreeAlarmSiren::SendValues(void) {

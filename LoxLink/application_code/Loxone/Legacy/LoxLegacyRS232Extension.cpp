@@ -15,7 +15,7 @@
 #include "stm32f1xx_hal_uart.h"
 #include "stream_buffer.h"
 #include "task.h"
-#include <stdio.h>
+#include <__cross_studio_io.h>
 #include <string.h>
 
 static UART_HandleTypeDef huart1;
@@ -153,7 +153,7 @@ void LoxLegacyRS232Extension::vRS232TXTask(void *pvParameters) {
       HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, &byte, sizeof(byte), 50);
       if (status != HAL_OK) {
 #if DEBUG
-        printf("### RS232 TX error %d\n", status);
+        debug_printf("### RS232 TX error %d\n", status);
 #endif
       }
     }
@@ -191,7 +191,7 @@ void LoxLegacyRS232Extension::Startup(void) {
   huart1.Init.OverSampling = UART_OVERSAMPLING_16;
   if (HAL_UART_Init(&huart1) != HAL_OK) {
 #if DEBUG
-    printf("### RS232 ERROR\n");
+    debug_printf("### RS232 ERROR\n");
 #endif
   }
 
@@ -228,11 +228,11 @@ void LoxLegacyRS232Extension::PacketToExtension(LoxCanMessage &message) {
       pstr = "1";
       break;
     }
-    printf("# RS232 config hardware %d%s%d, %d baud, endChar:%d:0x%02x, unknown:0x%02x\n", bits, pstr, stopBits, message.value32, this->hasEndCharacter, this->endCharacter, message.data[2]);
+    debug_printf("# RS232 config hardware %d%s%d, %d baud, endChar:%d:0x%02x, unknown:0x%02x\n", bits, pstr, stopBits, message.value32, this->hasEndCharacter, this->endCharacter, message.data[2]);
 #endif
     if (HAL_UART_DeInit(&huart1) != HAL_OK) {
 #if DEBUG
-      printf("### RS232 HAL_UART_DeInit ERROR\n");
+      debug_printf("### RS232 HAL_UART_DeInit ERROR\n");
 #endif
     }
     huart1.Instance = USART1;
@@ -245,7 +245,7 @@ void LoxLegacyRS232Extension::PacketToExtension(LoxCanMessage &message) {
     huart1.Init.OverSampling = UART_OVERSAMPLING_16;
     if (HAL_UART_Init(&huart1) != HAL_OK) {
 #if DEBUG
-      printf("### RS232 HAL_UART_Init ERROR\n");
+      debug_printf("### RS232 HAL_UART_Init ERROR\n");
 #endif
     }
     HAL_UART_Receive_IT(&huart1, &gChar, 1);
@@ -254,7 +254,7 @@ void LoxLegacyRS232Extension::PacketToExtension(LoxCanMessage &message) {
   case RS232_send_bytes: {
     int pos = message.data[0];
     if (pos) {
-      //      printf("# RS232 send data #%d: Bytes:0x%02x.0x%02x.0x%02x.0x%02x.0x%02x.0x%02x\n", pos, message.data[1], message.data[2], message.data[3], message.data[4], message.data[5], message.data[6]);
+      //      debug_printf("# RS232 send data #%d: Bytes:0x%02x.0x%02x.0x%02x.0x%02x.0x%02x.0x%02x\n", pos, message.data[1], message.data[2], message.data[3], message.data[4], message.data[5], message.data[6]);
       int offset = pos * 6 - 2; // pos 0 doesn't have 6 bytes, but only 4, so we need to subtract 2
       int count = sizeof(this->sendData) - offset;
       if (count > 0) { // avoid a buffer overflow
@@ -264,7 +264,7 @@ void LoxLegacyRS232Extension::PacketToExtension(LoxCanMessage &message) {
         memmove(&this->sendData[offset], &message.data[1], count);
       }
     } else {
-      //      printf("# RS232 send header: %d bytes, CRC:0x%02x Bytes:0x%02x.0x%02x.0x%02x.0x%02x\n", message.data[1], message.data[2], message.data[3], message.data[4], message.data[5], message.data[6]);
+      //      debug_printf("# RS232 send header: %d bytes, CRC:0x%02x Bytes:0x%02x.0x%02x.0x%02x.0x%02x\n", message.data[1], message.data[2], message.data[3], message.data[4], message.data[5], message.data[6]);
       this->sendCount = message.data[1];
       this->sendCRC = message.data[2];
       memmove(this->sendData, &message.data[3], 4);
@@ -303,7 +303,7 @@ void LoxLegacyRS232Extension::PacketToExtension(LoxCanMessage &message) {
       checksumModeStr = "Fronius";
       break;
     }
-    printf("# RS232 config protocol ACK:%d:0x%02x NAK:%d:0x%02x Checksum-Mode:%s\n", this->hasAck, this->ack_byte, this->hasNak, this->nak_byte, checksumModeStr);
+    debug_printf("# RS232 config protocol ACK:%d:0x%02x NAK:%d:0x%02x Checksum-Mode:%s\n", this->hasAck, this->ack_byte, this->hasNak, this->nak_byte, checksumModeStr);
 #endif
     break;
   }
@@ -380,7 +380,7 @@ extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   size_t xBytesSent = xStreamBufferSendFromISR(gUART_RX_Stream, &gChar, 1, &xHigherPriorityTaskWoken);
   if (xBytesSent != 1) {
 #if DEBUG
-    printf("RS232 RX Stream error");
+    debug_printf("RS232 RX Stream error");
 #endif
   }
   HAL_UART_Receive_IT(huart, &gChar, 1);

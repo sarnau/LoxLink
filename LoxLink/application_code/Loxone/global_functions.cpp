@@ -6,7 +6,7 @@
 //
 
 #include "global_functions.hpp"
-#include <stdio.h>
+#include <__cross_studio_io.h>
 #include <string.h>
 
 uint32_t gRandomSeed = 1;
@@ -98,17 +98,17 @@ void debug_print_buffer(const void *data, size_t size, const char *header) {
   const uint8_t *dp = (const uint8_t *)data;
   for (int loffset = 0; loffset < size; loffset += LineLength) {
     if (header)
-      printf("%s ", header);
-    printf("%04x : ", loffset);
+      debug_printf("%s ", header);
+    debug_printf("%04x : ", loffset);
     for (int i = 0; i < LineLength; ++i) {
       int offset = loffset + i;
       if (offset < size) {
-        printf("%02x ", dp[offset]);
+        debug_printf("%02x ", dp[offset]);
       } else {
-        printf("   ");
+        debug_printf("   ");
       }
     }
-    putchar(' ');
+    debug_printf(" ");
     for (int i = 0; i < LineLength; ++i) {
       int offset = loffset + i;
       if (offset >= size)
@@ -116,9 +116,9 @@ void debug_print_buffer(const void *data, size_t size, const char *header) {
       uint8_t c = dp[offset];
       if (c < 0x20 || c >= 0x7f)
         c = '.';
-      putchar(c);
+      debug_printf("%c", c);
     }
-    printf("\n");
+    debug_printf("\n");
   }
 }
 #endif

@@ -9,7 +9,7 @@
 #include "LoxExtension.hpp"
 #include "event_groups.h"
 #include "task.h"
-#include <stdio.h>
+#include <__cross_studio_io.h>
 #include <string.h>
 
 #define CAN_GPIO_PORT GPIOB
@@ -23,6 +23,7 @@ static CAN_HandleTypeDef gCan;
 static StaticQueue_t gCanReceiveQueue;
 static EventGroupHandle_t gCANRXEventGroup;
 static LoxCANDriver_STM32 *gCANDriver;
+static volatile bool gCANDriverIsRunning;
 
 typedef enum {
   eMainEvents_LoxCanMessageReceived = 0x1,
@@ -39,7 +40,8 @@ LoxCANDriver_STM32::LoxCANDriver_STM32(tLoxCANDriverType type) : LoxCANBaseDrive
 extern "C" void xPortSysTickHandler(void);
 extern "C" void HAL_SYSTICK_Callback(void) {
   xPortSysTickHandler();
-  LoxCANDriver_STM32::CANSysTick();
+  if(gCANDriverIsRunning) // do not call into the timer, before the event group is configured
+    LoxCANDriver_STM32::CANSysTick();
 }
 
 /***
@@ -96,7 +98,7 @@ void LoxCANDriver_STM32::vCANTXTask(void *pvParameters) {
         _this->statistics.mTQ = tq;
       ++_this->statistics.Sent;
 #if DEBUG
-      printf("CANS:");
+      debug_printf("CANS:");
       message.print(*_this);
 #endif
       const CAN_TxHeaderTypeDef hdr = {
@@ -171,6 +173,8 @@ void LoxCANDriver_STM32::Startup(void) {
 
   // FYI: At least one filter is required to be able to receive any data.
   LoxCANBaseDriver::Startup();
+
+  gCANDriverIsRunning = true;
 }
 
 /***

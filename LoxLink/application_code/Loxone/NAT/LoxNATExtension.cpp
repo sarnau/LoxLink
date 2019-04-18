@@ -10,7 +10,7 @@
 #include "LoxCANBaseDriver.hpp"
 #include "global_functions.hpp"
 #include <assert.h>
-#include <stdio.h>
+#include <__cross_studio_io.h>
 #include <string.h>
 
 /***
@@ -177,16 +177,16 @@ void LoxNATExtension::update(const eUpdatePackage *updatePackage) {
 
   switch (updatePackage->updatePackageType) {
   case eUpdatePackageType_write_flash:
-    printf("write flash\n");
+    debug_printf("write flash\n");
     break;
   case eUpdatePackageType_receive_crc:
-    printf("receive CRC\n");
+    debug_printf("receive CRC\n");
     break;
   case eUpdatePackageType_verify:
-    printf("verify\n");
+    debug_printf("verify\n");
     break;
   case eUpdatePackageType_verify_and_reset:
-    printf("verify and reset\n");
+    debug_printf("verify and reset\n");
     break;
   default:
     break;
