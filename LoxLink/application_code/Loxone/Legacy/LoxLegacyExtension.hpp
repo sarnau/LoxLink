@@ -10,7 +10,7 @@
 
 #include "LoxExtension.hpp"
 
-#define EXTENSION_RS232 0
+#define EXTENSION_RS232 1
 #define EXTENSION_MODBUS 0
 
 /////////////////////////////////////////////////////////////////

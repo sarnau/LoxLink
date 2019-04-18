@@ -12,7 +12,7 @@
  *  Constructor
  ***/
 LoxBusTreeAlarmSiren::LoxBusTreeAlarmSiren(LoxCANBaseDriver &driver, uint32_t serial, eAliveReason_t alive)
-  : LoxBusTreeDevice(driver, serial, eDeviceType_t_AlarmSirenTree, 0, 10000725, 1, sizeof(config), &config, alive), hardwareTamperStatusOk(true), tamperStatusOk(true), tamperStatusTimer(0), alarmSoundMaxDurationTimer(-1) {
+  : LoxBusTreeDevice(driver, serial, eDeviceType_t_AlarmSirenTree, 0, 10020225, 1, sizeof(config), &config, alive), hardwareTamperStatusOk(true), tamperStatusOk(true), tamperStatusTimer(0), alarmSoundMaxDurationTimer(-1) {
 }
 
 void LoxBusTreeAlarmSiren::send_tamper_status(void) {
