@@ -23,7 +23,7 @@ class __attribute__((__packed__)) tConfigHeader {
 public:
   uint8_t size;            // size of the configuration in bytes
   uint8_t version;         // version number for the configuration
-  uint8_t blinkSyncOffset; // allows to sync LEDs between devices, so they flash in a specific order
+  uint8_t blinkSyncOffset; // allows to sync LEDs between devices, so they flash in a specific order, 0xFF = status LED is off during normal operation
   uint8_t _unused;         // 32-bit alignment
   uint32_t offlineTimeout; // time in s after which the extension/device is considered offline. Reset with each message from the server.
 };
