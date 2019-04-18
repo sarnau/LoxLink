@@ -1,17 +1,17 @@
 # STM32F103VET6
 
-Core: Cortex-M3 32-bit RISC
-Operating frequency: 72MHz
-Working voltage: 2-3.6V
-Packing: LQFP100; I/O port: 80
-Storage resources: 384kB Flash, 64kB RAM (103V with E suffix memory maximum)
-Interface resources: 3xSPI, 5xUSART, 2xI2S, 2xI2C, 1xFSMC, 1xLCD, 1xSDIO, 1xUSB, 1xCAN
-Analog-to-digital conversion: 3xAD (12-bit, 1us, time-sharing 16 channels), 2xDA (12-bit)
+- Core: Cortex-M3 32-bit RISC
+- Operating frequency: 72MHz
+- Working voltage: 2-3.6V
+- Packing: LQFP100; I/O port: 80
+- Storage resources: 384kB Flash, 64kB RAM (103V with E suffix memory maximum)
+- Interface resources: 3xSPI, 5xUSART, 2xI2S, 2xI2C, 1xFSMC, 1xLCD, 1xSDIO, 1xUSB, 1xCAN
+- Analog-to-digital conversion: 3xAD (12-bit, 1us, time-sharing 16 channels), 2xDA (12-bit)
 
 ![PCB board](board.jpg)
 
 1. 5V power input, using DC2.1*5.5 standard female, input range 4-9V
-2. CAN interface, it has been equipped with 120Ω (R3) between CANH/CANL
+2. CAN interface, it has been equipped with 120Ω (R3) between CANH/CANL
 3. CAN chip, JTA1051
 4. The CPU: STM32F103VET6, LQFP100 package
 5. GPIO connector
@@ -25,7 +25,7 @@ Analog-to-digital conversion: 3xAD (12-bit, 1us, time-sharing 16 channels), 2xDA
 13. BOOT boot setting options (BOOT0, BOOT1)
 14. Power supply 3.3V, GND lead-out, convenient for other wiring
 15. RS485 outlet
-16. MAX3485 chip, it has been equipped with 120Ω (R2) between TR+/TR-
+16. MAX3485 chip, it has been equipped with 120Ω (R2) between TR+/TR-
 17. MAX3232 chip
 18. Serial port header, DB9 female
 19. AMS1117E-3.3v power chip
