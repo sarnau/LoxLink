@@ -18,14 +18,6 @@
 //#include "LoxLegacyRelayExtension.hpp"
 #include "LoxBusTreeRgbwDimmer.hpp"
 
-void new_task_code(void *p) {
-  unsigned int v = 0;
-  while (1) {
-    v++;
-    ctl_timeout_wait(ctl_get_current_time() + 1000);
-  }
-}
-
 /***
  *
  ***/
@@ -65,10 +57,6 @@ int main(void) {
   gLoxCANDriver.Startup();
 
   Start_Watchdog();
-  static CTL_TASK_t test_task;
-#define STACKSIZE 64
-  static unsigned new_task_stack[1 + STACKSIZE + 1];
-  ctl_task_run(&test_task, 1, new_task_code, 0, "test_task", STACKSIZE, new_task_stack + 1, 0);
   ctl_task_set_priority(&main_task, 0); // drop to lowest priority to start created tasks running.
   while (1) {
   }
