@@ -6,10 +6,9 @@
 //
 
 #include "LED.hpp"
-#include "FreeRTOS.h"
 #include "stm32f1xx_hal_gpio.h"
 #include "stm32f1xx_hal_rcc.h"
-#include "task.h"
+#include <ctl_api.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -55,14 +54,14 @@ void LED::vLEDTask(void *pvParameters) {
       LED_on_off(state.color);
       int period = ((base_period * 12) / 100) / identifySpeedup; // 12% on (measured via looking at video material)
       for (int i = 0; i < period/10; ++i) {
-        vTaskDelay(pdMS_TO_TICKS(10));
+        ctl_timeout_wait(ctl_get_current_time() + 10);
         if (state.state != _this->led_state.state || _this->resync_flag)
           goto restart;
       }
       LED_on_off(eLED_off);
       period = (base_period - period) / identifySpeedup;
       for (int i = 0; i < period/10; ++i) {
-        vTaskDelay(pdMS_TO_TICKS(10));
+        ctl_timeout_wait(ctl_get_current_time() + 10);
         if (state.state != _this->led_state.state || _this->resync_flag)
           goto restart;
       }
@@ -71,20 +70,20 @@ void LED::vLEDTask(void *pvParameters) {
       // 15ms delay per unit in the rack, in which 5 is 15ms
       ldelay = _this->sync_offset * 3;
       for (int i = 0; i < ldelay/10; ++i) {
-        vTaskDelay(pdMS_TO_TICKS(10));
+        ctl_timeout_wait(ctl_get_current_time() + 10);
         if (state.state != _this->led_state.state || _this->resync_flag)
           goto restart; // force resync when the LED change or a sync is received
       }
       LED_on_off(state.color);
       int period = (base_period * 12) / 100; // 12% on (measured via looking at video material)
       for (int i = 0; i < period/10; ++i) {
-        vTaskDelay(pdMS_TO_TICKS(10));
+        ctl_timeout_wait(ctl_get_current_time() + 10);
         if (state.state != _this->led_state.state || _this->resync_flag)
           goto restart;
       }
       LED_on_off(eLED_off);
       for (int i = 0; i < (base_period - period - ldelay)/10; ++i) {
-        vTaskDelay(pdMS_TO_TICKS(10));
+        ctl_timeout_wait(ctl_get_current_time() + 10);
         if (state.state != _this->led_state.state || _this->resync_flag)
           goto restart;
       }
@@ -109,9 +108,10 @@ void LED::Startup(void) {
   GPIO_Init.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_Init);
 
-  static StackType_t sLEDTaskStack[configMINIMAL_STACK_SIZE];
-  static StaticTask_t sLEDTask;
-  xTaskCreateStatic(LED::vLEDTask, "LEDTask", configMINIMAL_STACK_SIZE, this, 2, sLEDTaskStack, &sLEDTask);
+  #define STACKSIZE 128          
+  static unsigned stack[1+STACKSIZE+1];
+  static CTL_TASK_t led_task;
+  ctl_task_run(&led_task, 2, LED::vLEDTask, this, "LED", STACKSIZE, stack+1, 0);
 }
 
 void LED::off(void) {

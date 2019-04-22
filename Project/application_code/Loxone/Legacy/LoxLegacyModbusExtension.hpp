@@ -8,7 +8,6 @@
 #ifndef LoxLegacyModbusExtension_hpp
 #define LoxLegacyModbusExtension_hpp
 
-#include "FreeRTOS.h"
 #include "LoxLegacyExtension.hpp"
 #if EXTENSION_MODBUS
 #include "queue.h"

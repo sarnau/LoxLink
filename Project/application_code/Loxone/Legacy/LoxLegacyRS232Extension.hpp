@@ -8,7 +8,6 @@
 #ifndef LoxLegacyRS232Extension_hpp
 #define LoxLegacyRS232Extension_hpp
 
-#include "FreeRTOS.h"
 #include "LoxLegacyExtension.hpp"
 #if EXTENSION_RS232
 #include "queue.h"

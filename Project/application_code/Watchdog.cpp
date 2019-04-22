@@ -1,7 +1,7 @@
 #include "Watchdog.hpp"
-#include "FreeRTOS.h"
 #include "stm32f1xx_hal_iwdg.h"
-#include "task.h"
+#include <ctl_api.h>
+#include <string.h>
 
 IWDG_HandleTypeDef gIWDG;
 
@@ -11,12 +11,12 @@ IWDG_HandleTypeDef gIWDG;
 void vWatchdogTask(void *pvParameters) {
   while (1) {
     HAL_IWDG_Refresh(&gIWDG);
-    vTaskDelay(pdMS_TO_TICKS(1000)); // 1s delay
+    ctl_timeout_wait(ctl_get_current_time() + 1000);
   }
 }
 
 /***
- *
+ *  Setup the watchdog and run a task to keep it alive
  ***/
 void Start_Watchdog(void) {
   /* 
@@ -32,9 +32,13 @@ void Start_Watchdog(void) {
   gIWDG.Init.Reload = 1562; // about 10s
   HAL_IWDG_Init(&gIWDG);
 
-  static StackType_t sWatchdogTaskStack[configMINIMAL_STACK_SIZE];
-  static StaticTask_t sWatchdogTask;
-  xTaskCreateStatic(vWatchdogTask, "WatchdogTask", configMINIMAL_STACK_SIZE, NULL, 2, sWatchdogTaskStack, &sWatchdogTask);
-
+  // Run this task at almost the lowest priority (1)
+  #define STACKSIZE 64          
+  static unsigned stack[1+STACKSIZE+1];
+  memset(stack, 0xcd, sizeof(stack));  // write known values into the stack
+  stack[0]=stack[1+STACKSIZE]=0xfacefeed; // put marker values at the words before/after the stack
+  static CTL_TASK_t watchdog;
+  ctl_task_run(&watchdog, 1, vWatchdogTask, 0, "Watchdog", STACKSIZE, stack+1, 0);
+  
   __HAL_IWDG_START(&gIWDG);
 }

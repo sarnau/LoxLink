@@ -9,6 +9,7 @@
 #define LoxCANBaseDriver_hpp
 
 #include "LoxCanMessage.hpp"
+#include <ctl_api.h>
 
 class LoxExtension;
 
@@ -61,7 +62,7 @@ public:
   virtual uint8_t GetReceiveErrorCounter() const = 0;
 
   // a ms delay, uses FreeRTOS
-  void Delay(int msDelay) const;
+  void Delay(CTL_TIME_t msDelay) const;
 
   // send a message onto the CAN bus
   virtual void SendMessage(LoxCanMessage &message) = 0;

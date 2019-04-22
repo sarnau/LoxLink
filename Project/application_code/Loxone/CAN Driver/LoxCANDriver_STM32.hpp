@@ -9,21 +9,23 @@
 #define LoxCANDriver_STM32_hpp
 
 #include "LoxCANBaseDriver.hpp"
-
-#include "FreeRTOS.h"
 #include "LoxCanMessage.hpp"
-#include "queue.h"
-#include "stm32f1xx_hal_conf.h"
+#include "ctl_fifo.h"
 
 class LoxExtension;
 
 class LoxCANDriver_STM32 : public LoxCANBaseDriver {
-  StaticQueue_t transmitQueue;
+  LoxCanMessage transmitBuffer[64];
+  CTL_EVENT_SET_t transmitEvent;
+  CTL_FIFO_t transmitFifo;
+  LoxCanMessage receiveBuffer[64];
+
+public: // used by HAL_CAN_RxFifo0MsgPendingCallback()
+  CTL_FIFO_t receiveFifo;
+
+private:
   static void vCANRXTask(void *pvParameters);
   static void vCANTXTask(void *pvParameters);
-
-public: // internal method
-  static void CANSysTick(void);
 
 public:
   LoxCANDriver_STM32(tLoxCANDriverType type);

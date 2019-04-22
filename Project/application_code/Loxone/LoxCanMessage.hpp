@@ -332,7 +332,7 @@ public:
     };
     struct __attribute__((__packed__)) {           // Legacy package format of the CAN identifier
       unsigned serial : 24;                        // serial number of the device, typically printed with the hardware type as %07x
-      eDeviceType_t hardwareType : 4;              // hardware type (WARNING: only the lower 4 bits of it!)
+      int hardwareType : 4;              // hardware type (WARNING: only the lower 4 bits of it!)
       LoxMsgLegacyDirection_t directionLegacy : 1; // from/to server
     };
   };

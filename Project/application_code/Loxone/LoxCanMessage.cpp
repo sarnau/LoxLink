@@ -412,11 +412,11 @@ void LoxCanMessage::print(LoxCANBaseDriver &driver) const {
     } else {
       debug_printf((this->directionLegacy == LoxMsgLegacyDirection_t_fromServer) ? "S" : "D");
       debug_printf((this->commandDirection == LoxMsgLegacyCommandDirection_t_fromServer) ? "s" : "d");
-      debug_printf(" %s ", HardwareNameString(this->hardwareType));
+      debug_printf(" %s ", HardwareNameString(eDeviceType_t(this->hardwareType)));
       debug_printf("%07x ", this->identifier & 0xFFFFFFF);
     }
     //debug_printf("Cmd:%d/", this->commandDirection);
-    const char *legStr = LegacyCommandString(this->commandLegacy, this->hardwareType);
+    const char *legStr = LegacyCommandString(this->commandLegacy, eDeviceType_t(this->hardwareType));
     if (legStr) {
       debug_printf(legStr);
     } else {

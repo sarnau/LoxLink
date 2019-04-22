@@ -6,9 +6,7 @@
 //
 
 #include "LoxCANBaseDriver.hpp"
-#include "FreeRTOS.h"
 #include "LoxExtension.hpp"
-#include "task.h"
 #if DEBUG
 #include <__cross_studio_io.h>
 #endif
@@ -77,8 +75,8 @@ void LoxCANBaseDriver::StatisticsReset() {
 /***
  *  A ms delay, implemented via RTOS
  ***/
-void LoxCANBaseDriver::Delay(int msDelay) const {
-  vTaskDelay(pdMS_TO_TICKS(msDelay));
+void LoxCANBaseDriver::Delay(CTL_TIME_t msDelay) const {
+  ctl_timeout_wait(ctl_get_current_time() + msDelay + 1); // +1 to always round-up
 }
 
 /***

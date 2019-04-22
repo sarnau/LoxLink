@@ -5,6 +5,16 @@
 extern "C" {
 #endif
 
+#include <ctl_api.h>
+#include <stdint.h>
+
+typedef enum {
+  eMainEvents_10ms = 0x01,
+  eMainEvents_CanMessaged = 0x04,
+} eMainEvents;
+
+extern CTL_EVENT_SET_t gMainEvent;
+
 // Reason for the alive/info response from the Extension/Device.
 // These only seem to exist for logging purposes. The Miniserver does
 // not seem to do anything special with them.
@@ -28,7 +38,10 @@ typedef enum /*: uint8_t*/ {
   eAliveReason_t_low_power_reset = 0x26,       // LPWRSTF: Low-power reset flag
 } eAliveReason_t;
 
-eAliveReason_t MX_reset_reason(void);
+extern eAliveReason_t gResetReason;
+
+void system_init(void);
+uint32_t serialnumber_24bit(void);
 #if DEBUG
 void MX_print_cpu_info(void);
 #endif

@@ -11,20 +11,24 @@
       arm_fp_abi="Soft"
       arm_fpu_type="None"
       arm_interwork="No"
+      arm_linker_heap_size="128"
+      arm_linker_process_stack_size="1024"
+      arm_linker_stack_size="1024"
       arm_simulator_memory_simulation_parameter="STM32F103VE;0x80000;0x10000"
-      c_preprocessor_definitions="USE_STDPERIPH_DRIVER;STM32F103xE"
+      c_preprocessor_definitions="STM32F103xE;NESTED_INTERRUPTS;CTL_TASKING;USE_PROCESS_STACK"
       c_system_include_directories="$(StudioDir)/include;$(PackagesDir)/include;$(ProjectDir);$(ProjectDir)/Libraries/STM32F10x_StdPeriph_Driver/inc"
-      c_user_include_directories="$(ProjectDir)/lib/FreeRTOS;$(ProjectDir)/lib/FreeRTOS/include;$(ProjectDir)/lib/FreeRTOS/include/private;$(ProjectDir)/lib/FreeRTOS/portable/GCC/ARM_CM3;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc;$(ProjectDir)/lib/STM32F1xx/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/CMSIS/Device/ST/STM32L1xx/Include;$(ProjectDir)/application_code/st_code/;$(ProjectDir)/application_code;$(ProjectDir)/application_code/Loxone/;$(ProjectDir)/application_code/Loxone/Legacy/;$(ProjectDir)/application_code/Loxone/NAT/;$(ProjectDir)/application_code/Loxone/NAT/Tree/;$(ProjectDir)/application_code/Loxone/NAT/Tree/Devices/;$(ProjectDir)/application_code/Loxone/CAN Driver/"
+      c_user_include_directories="$(PackagesDir)/libraries/libctl/include;$(TargetsDir)/STM32/include;$(TargetsDir)/CMSIS_3/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc;$(ProjectDir)/lib/STM32F1xx/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/CMSIS/Device/ST/STM32L1xx/Include;$(ProjectDir)/lib/ctl_fifo/;$(ProjectDir)/application_code/st_code/;$(ProjectDir)/application_code;$(ProjectDir)/application_code/Loxone/;$(ProjectDir)/application_code/Loxone/Legacy/;$(ProjectDir)/application_code/Loxone/NAT/;$(ProjectDir)/application_code/Loxone/NAT/Tree/;$(ProjectDir)/application_code/Loxone/NAT/Tree/Devices/;$(ProjectDir)/application_code/Loxone/CAN Driver/"
       debug_register_definition_file="$(TargetsDir)/STM32/STM32F103_Peripherals.xml"
+      link_use_multi_threaded_libraries="Yes"
+      linker_additional_files="$(PackagesDir)/libraries/libctl/lib/libctl$(LibExt).a"
       linker_memory_map_file="$(TargetsDir)/STM32/STM32F103VE_MemoryMap.xml"
       linker_section_placement_file="$(StudioDir)/targets/Cortex_M/flash_placement.xml"
-      macros="DeviceVectorsFile=STM32F103xE.vec"
       project_directory=""
       project_type="Executable"
       property_groups_file_path="$(TargetsDir)/STM32/propertyGroups.xml"
       target_get_partname_script="GetPartName()"
       target_match_partname_script="MatchPartName(&quot;$(Target)&quot;)"
-      target_script_file="$(TargetsDir)/STM32/STM32_Target.js"
+      target_reset_script="Reset()"
       target_trace_initialize_script="EnableTrace(&quot;$(TraceInterfaceType)&quot;)" />
     <folder
       Name="application_code"
@@ -34,26 +38,24 @@
       recurse="Yes" />
     <folder Name="System Files">
       <file file_name="$(StudioDir)/source/thumb_crt0.s" />
+      <file file_name="$(TargetsDir)/STM32/STM32_ctl.c" />
       <file file_name="$(TargetsDir)/STM32/STM32_Startup.s" />
-      <file file_name="$(TargetsDir)/STM32/$(DeviceVectorsFile)" />
+      <file file_name="$(TargetsDir)/STM32/STM32_Target.js">
+        <configuration Name="Common" file_type="Reset Script" />
+      </file>
+      <file file_name="$(PackagesDir)/libraries/libctl/source/threads.js" />
     </folder>
     <folder Name="lib">
-      <folder Name="FreeRTOS">
-        <file file_name="lib/FreeRTOS/event_groups.c" />
-        <file file_name="lib/FreeRTOS/list.c" />
-        <file file_name="lib/FreeRTOS/queue.c" />
-        <file file_name="lib/FreeRTOS/stream_buffer.c" />
-        <file file_name="lib/FreeRTOS/tasks.c" />
-        <file file_name="lib/FreeRTOS/timers.c" />
-        <file file_name="lib/FreeRTOS/portable/GCC/ARM_CM3/port.c" />
-        <file file_name="lib/FreeRTOS/FreeRTOSConfig.h" />
-      </folder>
       <folder
         Name="STM32F1xx"
         exclude=""
         filter=""
         path="lib/STM32F1xx"
         recurse="Yes" />
+      <folder Name="ctl_fifo">
+        <file file_name="lib/ctl_fifo/ctl_fifo.c" />
+        <file file_name="lib/ctl_fifo/ctl_fifo.h" />
+      </folder>
     </folder>
     <configuration
       Name="Release"
