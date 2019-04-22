@@ -98,7 +98,7 @@ void LoxCANDriver_STM32::Startup(void) {
   sCANTXTaskStack[0] = sCANTXTaskStack[1 + RX_STACKSIZE] = 0xfacefeed; // put marker values at the words before/after the stack
   ctl_task_run(&sCANTXTask, 0x20, LoxCANDriver_STM32::vCANTXTask, this, "CAN_TX", RX_STACKSIZE, sCANTXTaskStack + 1, 0);
 
-#define TX_STACKSIZE 128
+#define TX_STACKSIZE 256
   static unsigned sCANRXTaskStack[1 + TX_STACKSIZE + 1];
   sCANRXTaskStack[0] = sCANRXTaskStack[1 + TX_STACKSIZE] = 0xfacefeed; // put marker values at the words before/after the stack
   static CTL_TASK_t sCANRXTask;
