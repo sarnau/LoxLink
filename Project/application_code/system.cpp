@@ -29,7 +29,7 @@ extern "C" void ctl_handle_error(CTL_ERROR_CODE_t e) {
  *  - every 10ms for short delays
  *  - every second for long delays, like timeouts
  ***/
-void Timer_Callback_1000Hz(void) {
+static void Timer_Callback_1000Hz(void) {
   ctl_increment_tick_from_isr();
   HAL_IncTick(); // this should not be necessary, because we do not need HAL functions, which rely on this
   static int msCounter = 0;
