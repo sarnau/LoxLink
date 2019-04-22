@@ -7,6 +7,7 @@ extern "C" {
 
 #include <ctl_api.h>
 #include <stdint.h>
+#include <__cross_studio_io.h>
 
 typedef enum {
   eMainEvents_10ms = 0x01,

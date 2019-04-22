@@ -1,7 +1,6 @@
 #include "Watchdog.hpp"
 #include "stm32f1xx_hal_iwdg.h"
 #include <ctl_api.h>
-#include <string.h>
 
 IWDG_HandleTypeDef gIWDG;
 
@@ -35,7 +34,6 @@ void Start_Watchdog(void) {
   // Run this task at almost the lowest priority (1)
   #define STACKSIZE 64          
   static unsigned stack[1+STACKSIZE+1];
-  memset(stack, 0xcd, sizeof(stack));  // write known values into the stack
   stack[0]=stack[1+STACKSIZE]=0xfacefeed; // put marker values at the words before/after the stack
   static CTL_TASK_t watchdog;
   ctl_task_run(&watchdog, 1, vWatchdogTask, 0, "Watchdog", STACKSIZE, stack+1, 0);

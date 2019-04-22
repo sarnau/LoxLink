@@ -2,10 +2,9 @@
 #include "stm32f1xx_hal.h" // HAL_IncTick
 #include "stm32f1xx_hal_conf.h"
 #include "stm32f1xx_hal_pwr.h"
-#include "stm32f1xx_ll_cortex.h" // LL_CPUID_...()
 #include "stm32f1xx_ll_rcc.h"
+#include "stm32f1xx_ll_cortex.h" // LL_CPUID_...()
 #include "stm32f1xx_ll_utils.h" // LL_GetFlashSize()
-#include <__cross_studio_io.h>
 
 
 CTL_EVENT_SET_t gMainEvent;
@@ -18,7 +17,7 @@ eAliveReason_t gResetReason;
  *  
  ***/
 extern "C" void ctl_handle_error(CTL_ERROR_CODE_t e) {
-  //debug_printf("ctl error %d\n", e);
+  debug_break();
   while (1)
     ;
 }
@@ -32,7 +31,7 @@ extern "C" void ctl_handle_error(CTL_ERROR_CODE_t e) {
  ***/
 void Timer_Callback_1000Hz(void) {
   ctl_increment_tick_from_isr();
-  HAL_IncTick(); // should not be necessary, because we do not need HAL functions which rely on this
+  HAL_IncTick(); // this should not be necessary, because we do not need HAL functions, which rely on this
   static int msCounter = 0;
   if((msCounter % 10) == 0) {
     ctl_events_set_clear(&gMainEvent, eMainEvents_10ms, 0x00); // 10ms event
@@ -41,7 +40,7 @@ void Timer_Callback_1000Hz(void) {
 }
 
 /***
- *
+ *  Why did the board reboot? This is transmitted back to the Miniserver.
  ***/
 static eAliveReason_t MX_reset_reason(void) {
   eAliveReason_t reason = eAliveReason_t_unknown;
@@ -64,7 +63,7 @@ static eAliveReason_t MX_reset_reason(void) {
 }
 
 /***
- *
+ *  Return a 24-bit serial number based on the STM32 UID, which is used to generate Extension/Device serial numbers
  ***/
 uint32_t serialnumber_24bit(void)
 {

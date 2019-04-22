@@ -1,10 +1,7 @@
+#include "system.hpp"
+
 #include "LED.hpp"
 #include "Watchdog.hpp"
-#include "stm32f1xx_hal.h"
-#include "system.hpp"
-#include <ctl_api.h>
-#include <string.h>
-#include <__cross_studio_io.h>
 
 #include "LoxCANDriver_STM32.hpp"
 #include "LoxBusTreeExtension.hpp"
@@ -18,9 +15,6 @@
 //#include "LoxLegacyRelayExtension.hpp"
 #include "LoxBusTreeRgbwDimmer.hpp"
 
-/***
- *
- ***/
 int main(void) {
   system_init();
 
@@ -50,7 +44,7 @@ int main(void) {
   static LoxBusTreeRgbwDimmer gLoxBusTreeRgbwDimmer(gTreeExtension.Driver(eTreeBranch_rightBranch), 0xb0200000, gResetReason);
   gTreeExtension.AddDevice(&gLoxBusTreeRgbwDimmer, eTreeBranch_rightBranch);
 
-#if DEBUG
+#if DEBUG && 0
   MX_print_cpu_info();
 #endif
   gLED.Startup();
