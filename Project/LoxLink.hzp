@@ -20,7 +20,6 @@
       c_user_include_directories="$(PackagesDir)/libraries/libctl/include;$(TargetsDir)/STM32/include;$(TargetsDir)/CMSIS_3/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc;$(ProjectDir)/lib/STM32F1xx/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/CMSIS/Device/ST/STM32L1xx/Include;$(ProjectDir)/lib/ctl_fifo/;$(ProjectDir)/application_code/st_code/;$(ProjectDir)/application_code;$(ProjectDir)/application_code/Loxone/;$(ProjectDir)/application_code/Loxone/Legacy/;$(ProjectDir)/application_code/Loxone/NAT/;$(ProjectDir)/application_code/Loxone/NAT/Tree/;$(ProjectDir)/application_code/Loxone/NAT/Tree/Devices/;$(ProjectDir)/application_code/Loxone/CAN Driver/"
       debug_register_definition_file="$(TargetsDir)/STM32/STM32F103_Peripherals.xml"
       link_use_multi_threaded_libraries="Yes"
-      linker_additional_files="$(PackagesDir)/libraries/libctl/lib/libctl$(LibExt).a"
       linker_memory_map_file="$(TargetsDir)/STM32/STM32F103VE_MemoryMap.xml"
       linker_section_placement_file="$(StudioDir)/targets/Cortex_M/flash_placement.xml"
       project_directory=""
@@ -44,6 +43,17 @@
         <configuration Name="Common" file_type="Reset Script" />
       </file>
       <file file_name="$(PackagesDir)/libraries/libctl/source/threads.js" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/include/ctl.h" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_sem.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_mutex.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_mq.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_mem_blk.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_libc.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_evt.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_bq.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_cm3.s" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_cm3_int.s" />
     </folder>
     <folder Name="lib">
       <folder
