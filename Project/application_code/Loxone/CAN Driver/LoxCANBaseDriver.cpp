@@ -96,7 +96,7 @@ void LoxCANBaseDriver::ReceiveMessage(LoxCanMessage &message) {
 /***
  *  Forward a 10ms heartbeat to all extensions
  ***/
-void LoxCANBaseDriver::Heartbeat(void)
+void LoxCANBaseDriver::Timer10ms(void)
 {
   for (int i = 0; i < this->extensionCount; ++i)
     this->extensions[i]->Timer10ms();

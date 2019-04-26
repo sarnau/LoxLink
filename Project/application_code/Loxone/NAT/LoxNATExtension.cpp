@@ -236,6 +236,7 @@ void LoxNATExtension::SetState(eDeviceState state) {
 LoxNATExtension::LoxNATExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version, uint8_t configVersion, uint8_t configSize, tConfigHeader *configPtr, eAliveReason_t alive)
   : LoxExtension(driver, serial, device_type, hardware_version, version), busType(LoxCmdNATBus_t_LoxoneLink), configVersion(configVersion), configSize(configSize), configPtr(configPtr), aliveReason(alive), extensionNAT(0x00), deviceNAT(0x00), upTimeInMs(0) {
   assert(configPtr != NULL);
+  assert(configSize <= MAX_FRAGMENT_SIZE);
   this->configPtr->size = configSize;
   this->configPtr->version = configVersion;
   this->NATStateCounter = 0;

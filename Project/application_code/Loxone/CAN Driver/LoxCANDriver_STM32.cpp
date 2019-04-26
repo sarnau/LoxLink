@@ -41,7 +41,7 @@ void LoxCANDriver_STM32::vCANRXTask(void *pvParameters) {
       }
     }
     if (events & eMainEvents_10ms) {
-      _this->Heartbeat();
+      _this->Timer10ms();
     }
   }
 }

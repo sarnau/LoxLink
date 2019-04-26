@@ -11,6 +11,8 @@
 #include "LoxExtension.hpp"
 #include "system.hpp"
 
+#define MAX_FRAGMENT_SIZE     64
+
 // Configuration for extensions all share the same header. The configuration is stored in FLASH and
 // validated via a CRC with the Miniserver to be current. If not, the Miniserver automatically uploads
 // a new configuration to the extension.
@@ -87,7 +89,7 @@ protected:
   uint16_t fragSize;
   uint16_t fragOffset;
   uint32_t fragCRC;
-  uint8_t fragBuffer[1024];
+  uint8_t fragBuffer[MAX_FRAGMENT_SIZE];
 
   // some internal state variables
   LoxCmdNATBus_t busType;                 // LoxoneLink extension or a Tree device?

@@ -71,7 +71,7 @@ public:
   void ReceiveMessage(LoxCanMessage &message);
 
   // forward 10ms timer heartbeat to extensions
-  void Heartbeat(void);
+  void Timer10ms(void);
 };
 
 #endif /* LoxCANBaseDriver_hpp */
