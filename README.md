@@ -1,6 +1,6 @@
 # LoxLink
 
-Various implementations of Loxone Link and Loxone Tree Bus on a STM32F103xE, which can be bought with a CAN bus for a bit more than 10 Euro at e.g. Aliexpress.
+Various implementations of Loxone Link and Loxone Tree Bus on a STM32F103VET6, which can be bought with a CAN bus, RS232 and RS485 for a bit more something between 10-25 Euro at e.g. Aliexpress. The prices seem to vary a lot, it is worth to shop around for any STM32F103 with a CAN bus.
 
 Project for the CrossWorks for ARM 4.4 from Rowley Associates.
 
