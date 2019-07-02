@@ -17,3 +17,5 @@ Examples for:
   - Tree Touch
 
 Multiple extensions and even tree devices behind multiple Tree extensions are possible.
+
+Please read the protocol documentation at https://github.com/sarnau/Inside-The-Loxone-Miniserver for more details.
