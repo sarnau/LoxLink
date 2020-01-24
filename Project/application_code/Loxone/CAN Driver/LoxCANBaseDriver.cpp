@@ -79,12 +79,12 @@ void LoxCANBaseDriver::Delay(CTL_TIME_t msDelay) const {
   ctl_timeout_wait(ctl_get_current_time() + msDelay + 1); // +1 to always round-up
 }
 
-/***
+/*** 
  *  Received a message
  ***/
 void LoxCANBaseDriver::ReceiveMessage(LoxCanMessage &message) {
   ++this->statistics.Rcv;
-#if DEBUG && 0
+#if DEBUG && 1
   debug_printf("CANR:");
   message.print(*this);
 #endif
