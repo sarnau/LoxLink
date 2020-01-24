@@ -219,6 +219,7 @@ const char *const LoxCanMessage::HardwareNameString(eDeviceType_t hardware) cons
     return "Modbus 232 Extension";
   case eDeviceType_t_FroelingExtensionSerial:
     return "Froeling Extension";
+
   case eDeviceType_t_ValveActuatorTree: // <https://shop.loxone.com/enuk/valve-actuator.html>
     return "Valve Actuator Tree";
   case eDeviceType_t_MotionSensorTree: // <https://shop.loxone.com/enuk/motion-sensor.html>
@@ -234,9 +235,9 @@ const char *const LoxCanMessage::HardwareNameString(eDeviceType_t hardware) cons
   case eDeviceType_t_LEDSurfaceMountSpotRGBWTree: // not sure
     return "LED Surface Mount Spot RGBW Tree";
   case eDeviceType_t_LEDSpotRGBWTreeGen1: // <https://shop.loxone.com/enuk/led-spot-rgbw-global.html>
-    return "LED Sport RGBW Gen 1 Tree";
+    return "LED Spot RGBW Tree Gen 1";
   case eDeviceType_t_NFCCodeTouchTree: // <https://shop.loxone.com/enuk/nfc-code-touch.html>
-    return "NFC Code Touch Tree";
+    return "NFC Code Touch Tree Gen 1";
   case eDeviceType_t_WeatherStationTree: // <https://shop.loxone.com/enuk/weather-station.html>
     return "Weather Station Tree";
   case eDeviceType_t_NanoDITree: // <https://shop.loxone.com/enuk/nano-di-tree.html>
@@ -248,7 +249,7 @@ const char *const LoxCanMessage::HardwareNameString(eDeviceType_t hardware) cons
   case eDeviceType_t_LEDSurfaceMountSpotWWTree: // not sure
     return "LED Surface Mount Spot WW Tree";
   case eDeviceType_t_LEDSpotWWTreeGen1: // <https://shop.loxone.com/enuk/led-spots-ww-global.html>
-    return "LED Spot WW Gen 1 Tree";
+    return "LED Spot WW Tree Gen 1";
   case eDeviceType_t_RoomComfortSensorTree: // <https://shop.loxone.com/enuk/room-comfort-sensor.html>
     return "Room Comfort Sensor Tree";
   case eDeviceType_t_LEDPendulumSlimRGBWTree: // <https://shop.loxone.com/enuk/led-pendulum-slim-global.html>
@@ -256,7 +257,7 @@ const char *const LoxCanMessage::HardwareNameString(eDeviceType_t hardware) cons
   case eDeviceType_t_AlarmSirenTree: // <https://shop.loxone.com/enuk/alarm-siren.html>
     return "Alarm Siren Tree";
   case eDeviceType_t_DamperTree: // <https://shop.loxone.com/enus/damper-tree.html>
-    return "Damper Tree Tree";
+    return "Damper Tree";
   case eDeviceType_t_LeafTree: // <https://shop.loxone.com/dede/leaf-1.html>
     return "Leaf Tree";
   case eDeviceType_t_IntegratedWindowContactTree: // unreleased
@@ -314,10 +315,19 @@ const char *const LoxCanMessage::NATCommandString(LoxMsgNATCommand_t command) co
     return "KNX_Send_Telegram";
   case KNX_Group_Address_Config:
     return "KNX_Group_Address_Config";
+  case GroupIdentify:
+    return "GroupIdentify";
+  case Tree_LinkSnifferPacker:
+    return "Tree_LinkSnifferPacker";
+
   case Digital_Value:
     return "Digital_Value";
   case Analog_Value:
     return "Analog_Value";
+  case Internorm_Digital_Value:
+    return "Internorm_Digital_Value";
+  case Internorm_Analog_Value:
+    return "Internorm_Analog_Value";
   case RGBW:
     return "RGBW";
   case Frequency:
@@ -332,6 +342,9 @@ const char *const LoxCanMessage::NATCommandString(LoxMsgNATCommand_t command) co
     return "TreeKeypad_Send";
   case Composite_White:
     return "Composite_White";
+  case TreeInternormDataPacket:
+    return "TreeInternormDataPacket";
+
   case CryptoValueDigital:
     return "CryptoValueDigital";
   case CryptoValueAnalog:
@@ -342,14 +355,22 @@ const char *const LoxCanMessage::NATCommandString(LoxMsgNATCommand_t command) co
     return "CryptoNfcId";
   case CryptoKeyPacket:
     return "CryptoKeyPacket";
-  case CryptoDeviceIdResponse:
-    return "CryptoDeviceIdResponse";
+  case CryptoDeviceIdReply:
+    return "CryptoDeviceIdReply";
   case CryptoDeviceIdRequest:
     return "CryptoDeviceIdRequest";
-  case CryptoChallengeRequestFromServer:
-    return "CryptoChallengeRequestFromServer";
-  case CryptoChallengeRequestToServer:
-    return "CryptoChallengeRequestToServer";
+  case CryptoChallengeRollingKeyReply:
+    return "CryptoChallengeRollingKeyReply";
+  case CryptoChallengeRollingKeyRequest:
+    return "CryptoChallengeRollingKeyRequest";
+  case CryptoChallengeRequest:
+    return "CryptoChallengeRequest";
+  case CryptoChallengeReply:
+    return "CryptoChallengeReply";
+
+  case Update_New:
+    return "Update_New";
+
   case Fragment_Start:
     return "Fragment_Start";
   case Fragment_Data:

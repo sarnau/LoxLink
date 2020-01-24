@@ -93,10 +93,14 @@ typedef enum {
   Tree_Shortcut_Test = 0x1B,
   KNX_Send_Telegram = 0x1C,
   KNX_Group_Address_Config = 0x1D,
+  GroupIdentify = 0x1E, // 16-bit:array element count, 16-bit: flag, 32-bit: ???, 6-byte array:[32-bit:serial, 8-bit:index , 8-bit:filler]
+  Tree_LinkSnifferPacker = 0x1F,
 
   // starting from 0x80: getter/setter values commands
   Digital_Value = 0x80,
   Analog_Value = 0x81,
+  Internorm_Digital_Value = 0x82,
+  Internorm_Analog_Value = 0x83,
   RGBW = 0x84,
   Frequency = 0x85,
   AccessCodeInput = 0x86,
@@ -104,6 +108,7 @@ typedef enum {
   Composite_RGBW = 0x88,
   TreeKeypad_Send = 0x89,
   Composite_White = 0x8A,
+  TreeInternormDataPacket = 0x8D,
 
   // starting from 0x90: encrypted commands
   CryptoValueDigital = 0x90,         // after decryption maps to Digital_Value
@@ -111,10 +116,14 @@ typedef enum {
   CryptoValueAccessCodeInput = 0x92, // after decryption maps to AccessCodeInput
   CryptoNfcId = 0x93,
   CryptoKeyPacket = 0x94,
-  CryptoDeviceIdResponse = 0x98,
+  CryptoDeviceIdReply = 0x98,
   CryptoDeviceIdRequest = 0x99,
-  CryptoChallengeRequestFromServer = 0x9A,
-  CryptoChallengeRequestToServer = 0x9B,
+  CryptoChallengeRollingKeyReply = 0x9A,
+  CryptoChallengeRollingKeyRequest = 0x9B,
+  CryptoChallengeRequest = 0x9C, // needed starting version 10.3.11.10
+  CryptoChallengeReply = 0x9D, // needed starting version 10.3.11.10
+
+  Update_New = 0xEF, // Modern updates can be uploaded as larger fragmented packages
 
   // starting from 0xF0: NAT assignments, large packages, update, etc
   Fragment_Start = 0xF0,
