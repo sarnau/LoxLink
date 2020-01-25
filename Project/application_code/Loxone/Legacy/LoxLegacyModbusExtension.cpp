@@ -32,7 +32,7 @@ static volatile int gModbus_RX_Buffer_count;
  *  Constructor
  ***/
 LoxLegacyModbusExtension::LoxLegacyModbusExtension(LoxCANBaseDriver &driver, uint32_t serial)
-  : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_ModbusExtension << 24), eDeviceType_t_ModbusExtension, 0, 10020326, &config, sizeof(config)) {
+  : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_ModbusExtension << 24), eDeviceType_t_ModbusExtension, 0, 10020326, &fragData, sizeof(fragData)) {
   assert(sizeof(sModbusConfig) == 0x810);
 }
 
@@ -439,14 +439,16 @@ void LoxLegacyModbusExtension::PacketToExtension(LoxCanMessage &message) {
  ***/
 void LoxLegacyModbusExtension::FragmentedPacketToExtension(LoxMsgLegacyFragmentedCommand_t fragCommand, const void *fragData, int size) {
   switch (fragCommand) {
-  case FragCmd_Modbus_config: {
-    const sModbusConfig *config = (const sModbusConfig *)fragData;
-    if (size <= sizeof(sModbusConfig) and config->version == 1) { // valid config?
+  case FragCmd_config: {
+    const sModbusConfig *configFragData = (const sModbusConfig *)fragData;
+    if (size <= sizeof(sModbusConfig) and configFragData->version == 1) { // valid config?
+      memcpy(config, fragData, sizeof(config));
       config_load();
     }
     break;
   }
   default:
+    LoxLegacyExtension::FragmentedPacketToExtension(fragCommand, fragData, size);
     break;
   }
 }

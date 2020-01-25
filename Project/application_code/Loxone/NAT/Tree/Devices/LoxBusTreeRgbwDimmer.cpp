@@ -12,7 +12,7 @@
  *  Constructor
  ***/
 LoxBusTreeRgbwDimmer::LoxBusTreeRgbwDimmer(LoxCANBaseDriver &driver, uint32_t serial, eAliveReason_t alive)
-  : LoxBusTreeDevice(driver, serial, eDeviceType_t_RGBW24VDimmerTree, 0, 10020220, 1, sizeof(config), &config, alive) {
+  : LoxBusTreeDevice(driver, serial, eDeviceType_t_RGBW24VDimmerTree, 0, 10031111, 1, sizeof(config), &config, alive) {
 }
 
 void LoxBusTreeRgbwDimmer::ConfigUpdate(void) {

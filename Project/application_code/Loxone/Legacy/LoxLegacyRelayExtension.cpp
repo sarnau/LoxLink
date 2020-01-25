@@ -48,7 +48,7 @@ void LoxLegacyRelayExtension::update_relays(uint16_t bitmask) {
  *  Constructor
  ***/
 LoxLegacyRelayExtension::LoxLegacyRelayExtension(LoxCANBaseDriver &driver, uint32_t serial)
-  : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_RelayExtension << 24), eDeviceType_t_RelayExtension, 2, 10020123), harewareDigitalOutBitmask(0), temperatureForceSend(false), temperatureOverheatingFlag(false), temperatureMsTimer(0), temperature(0) {
+  : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_RelayExtension << 24), eDeviceType_t_RelayExtension, 2, 10031108), harewareDigitalOutBitmask(0), temperatureForceSend(false), temperatureOverheatingFlag(false), temperatureMsTimer(0), temperature(0) {
 }
 
 /***

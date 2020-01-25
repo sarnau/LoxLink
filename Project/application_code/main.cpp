@@ -4,16 +4,16 @@
 #include "Watchdog.hpp"
 
 #include "LoxCANDriver_STM32.hpp"
-#include "LoxBusTreeExtension.hpp"
-//#include "LoxBusDIExtension.hpp"
+//#include "LoxBusTreeExtension.hpp"
+#include "LoxBusDIExtension.hpp"
 //#include "LoxBusTreeAlarmSiren.hpp"
 //#include "LoxBusTreeRoomComfortSensor.hpp"
 //#include "LoxBusTreeTouch.hpp"
 //#include "LoxLegacyDMXExtension.hpp"
 //#include "LoxLegacyRS232Extension.hpp"
 //#include "LoxLegacyModbusExtension.hpp"
-//#include "LoxLegacyRelayExtension.hpp"
-#include "LoxBusTreeRgbwDimmer.hpp"
+#include "LoxLegacyRelayExtension.hpp"
+//#include "LoxBusTreeRgbwDimmer.hpp"
 
 int main(void) {
   system_init();
@@ -31,18 +31,18 @@ int main(void) {
 #if EXTENSION_MODBUS
 //  static LoxLegacyModbusExtension gLoxLegacyModbusExtension(gLoxCANDriver, serial_base);
 #endif
-  //  static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, gResetReason);
-  //  static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
+  static LoxBusDIExtension gDIExtension(gLoxCANDriver, serial_base, gResetReason);
+  static LoxLegacyRelayExtension gRelayExtension(gLoxCANDriver, serial_base);
   //static LoxLegacyDMXExtension gDMXExtension(gLoxCANDriver, serial_base);
-  static LoxBusTreeExtension gTreeExtension(gLoxCANDriver, serial_base, gResetReason);
+  //static LoxBusTreeExtension gTreeExtension(gLoxCANDriver, serial_base, gResetReason);
   //  static LoxBusTreeRoomComfortSensor gTreeRoomComfortSensor(gTreeExtension.Driver(eTreeBranch_rightBranch), 0xb0112233, gResetReason);
   //  gTreeExtension.AddDevice(&gTreeRoomComfortSensor, eTreeBranch_rightBranch);
   //  static LoxBusTreeTouch gLoxBusTreeTouch(gTreeExtension.Driver(eTreeBranch_leftBranch), 0xb010035b, gResetReason);
   //  gTreeExtension.AddDevice(&gLoxBusTreeTouch, eTreeBranch_leftBranch);
   //  static LoxBusTreeAlarmSiren gLoxBusTreeAlarmSiren(gTreeExtension.Driver(eTreeBranch_leftBranch), 0xb010035c, gResetReason);
   //  gTreeExtension.AddDevice(&gLoxBusTreeAlarmSiren, eTreeBranch_leftBranch);
-  static LoxBusTreeRgbwDimmer gLoxBusTreeRgbwDimmer(gTreeExtension.Driver(eTreeBranch_rightBranch), 0xb0200000, gResetReason);
-  gTreeExtension.AddDevice(&gLoxBusTreeRgbwDimmer, eTreeBranch_rightBranch);
+  //static LoxBusTreeRgbwDimmer gLoxBusTreeRgbwDimmer(gTreeExtension.Driver(eTreeBranch_rightBranch), 0xb0200000, gResetReason);
+  //gTreeExtension.AddDevice(&gLoxBusTreeRgbwDimmer, eTreeBranch_rightBranch);
 
 #if DEBUG && 0
   MX_print_cpu_info();

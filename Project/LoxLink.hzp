@@ -16,18 +16,19 @@
       arm_linker_stack_size="1024"
       arm_simulator_memory_simulation_parameter="STM32F103VE;0x80000;0x10000"
       c_preprocessor_definitions="STM32F103xE;NESTED_INTERRUPTS;CTL_TASKING;USE_PROCESS_STACK"
-      c_system_include_directories="$(StudioDir)/include;$(PackagesDir)/include;$(ProjectDir);$(ProjectDir)/Libraries/STM32F10x_StdPeriph_Driver/inc"
-      c_user_include_directories="$(PackagesDir)/libraries/libctl/include;$(TargetsDir)/STM32/include;$(TargetsDir)/CMSIS_3/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc;$(ProjectDir)/lib/STM32F1xx/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/CMSIS/Device/ST/STM32L1xx/Include;$(ProjectDir)/lib/ctl_fifo/;$(ProjectDir)/application_code/st_code/;$(ProjectDir)/application_code;$(ProjectDir)/application_code/Loxone/;$(ProjectDir)/application_code/Loxone/Legacy/;$(ProjectDir)/application_code/Loxone/NAT/;$(ProjectDir)/application_code/Loxone/NAT/Tree/;$(ProjectDir)/application_code/Loxone/NAT/Tree/Devices/;$(ProjectDir)/application_code/Loxone/CAN Driver/"
+      c_user_include_directories="$(PackagesDir)/libraries/libctl/include;$(TargetsDir)/STM32/include;$(TargetsDir)/CMSIS_3/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc;$(ProjectDir)/lib/STM32F1xx/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/CMSIS/Device/ST/STM32L1xx/Include;$(ProjectDir)/lib/ctl_fifo/;$(ProjectDir)/application_code/st_code/;$(ProjectDir)/application_code;$(ProjectDir)/application_code/Loxone/;$(ProjectDir)/application_code/Loxone/Legacy/;$(ProjectDir)/application_code/Loxone/NAT/;$(ProjectDir)/application_code/Loxone/NAT/Tree/;$(ProjectDir)/application_code/Loxone/NAT/Tree/Devices/;$(ProjectDir)/application_code/Loxone/CAN Driver/;$(ProjectDir)/application_code/Loxone/CryptoCanCode/"
       debug_register_definition_file="$(TargetsDir)/STM32/STM32F103_Peripherals.xml"
       link_use_multi_threaded_libraries="Yes"
       linker_memory_map_file="$(TargetsDir)/STM32/STM32F103VE_MemoryMap.xml"
       linker_section_placement_file="$(StudioDir)/targets/Cortex_M/flash_placement.xml"
+      macros="DeviceVectorsFile=STM32F103xE.vec"
       project_directory=""
       project_type="Executable"
       property_groups_file_path="$(TargetsDir)/STM32/propertyGroups.xml"
       target_get_partname_script="GetPartName()"
       target_match_partname_script="MatchPartName(&quot;$(Target)&quot;)"
       target_reset_script="Reset()"
+      target_script_file="$(TargetsDir)/STM32/STM32_Target.js"
       target_trace_initialize_script="EnableTrace(&quot;$(TraceInterfaceType)&quot;)" />
     <folder
       Name="application_code"
@@ -72,7 +73,7 @@
       gcc_optimization_level="Optimize For Size" />
     <configuration
       Name="Flash"
-      arm_target_flash_loader_file_path="$(TargetsDir)/STM32/Release/Loader_rpc.elf"
+      arm_target_flash_loader_file_path="$(LOADER:$(TargetsDir)/STM32/Release/Loader_rpc.elf)"
       arm_target_loader_can_erase_all="Yes" />
   </project>
   <configuration
@@ -94,5 +95,6 @@
     arm_linker_heap_size="2048"
     arm_linker_stack_size="2048"
     gcc_c_language_standard="gnu11"
-    gcc_cplusplus_language_standard="gnu++11" />
+    gcc_cplusplus_language_standard="gnu++11"
+    target_reset_script="" />
 </solution>

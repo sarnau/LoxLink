@@ -106,7 +106,7 @@ protected:
   void send_message(LoxMsgNATCommand_t command, LoxCanMessage &msg);
   void send_special_message(LoxMsgNATCommand_t command);
   void lox_send_package_if_nat(LoxMsgNATCommand_t command, LoxCanMessage &msg);
-  void send_fragmented_message(LoxMsgNATCommand_t command, const void *data, int dataCount, uint8_t deviceNAT);
+  void send_fragmented_message(LoxMsgNATCommand_t command, const void *data, int dataCount);
   void send_alive_package(void);
   void send_can_status(LoxMsgNATCommand_t command, eTreeBranch branch);
   void send_info_package(LoxMsgNATCommand_t command, uint8_t /*eAliveReason_t*/ reason);

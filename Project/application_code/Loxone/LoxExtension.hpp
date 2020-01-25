@@ -31,6 +31,11 @@ protected:
   LoxCANBaseDriver &driver;
   eDeviceState state;
 
+  // authorization and encryption
+  uint32_t cryptAesKey[4];
+  uint32_t cryptAesIV;
+  uint8_t cryptDeviceID[12];
+
   virtual void SetState(eDeviceState state);
   virtual void ReceiveDirect(LoxCanMessage &message){};
   virtual void ReceiveBroadcast(LoxCanMessage &message){};

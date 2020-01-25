@@ -11,7 +11,7 @@
 #include <string.h>
 
 LoxBusTreeExtension::LoxBusTreeExtension(LoxCANBaseDriver &driver, uint32_t serial, eAliveReason_t alive)
-  : LoxNATExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_TreeBaseExtension << 24), eDeviceType_t_TreeBaseExtension, 0, 9030305, 0, sizeof(config), &config, alive), treeDevicesLeftCount(0), treeDevicesRightCount(0), leftDriver(this, eTreeBranch_leftBranch), rightDriver(this, eTreeBranch_rightBranch) {
+  : LoxNATExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_TreeBaseExtension << 24), eDeviceType_t_TreeBaseExtension, 0, 10031125, 0, sizeof(config), &config, alive), treeDevicesLeftCount(0), treeDevicesRightCount(0), leftDriver(this, eTreeBranch_leftBranch), rightDriver(this, eTreeBranch_rightBranch) {
 }
 
 /***

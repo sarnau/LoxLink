@@ -86,7 +86,7 @@ void LoxLegacyRS232Extension::forwardBuffer(const uint8_t *buffer, size_t byteCo
 #if DEBUG && 0
   debug_print_buffer(buffer, byteCount, "RS232 MS:");
 #endif
-  send_fragmented_data(FragCmd_C232_bytes_received, buffer, byteCount);
+  send_fragmented_message(FragCmd_C232_bytes_received, buffer, byteCount);
 }
 
 /***

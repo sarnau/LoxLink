@@ -8,15 +8,23 @@
 #include "LoxLegacyExtension.hpp"
 #include "LED.hpp"
 #include "stm32f1xx_ll_cortex.h"
+#include "global_functions.hpp"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+extern "C" {
+  #include "CryptoCanAlgo.h"
+}
 
 /***
  *  Constructor
  ***/
 LoxLegacyExtension::LoxLegacyExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceType_t device_type, uint8_t hardware_version, uint32_t version, void *fragPtr, uint16_t fragMaxSize)
   : LoxExtension(driver, serial, device_type, hardware_version, version), aliveCountdown(0), isMuted(false), forceStartMessage(true), firmwareUpdateActive(false), fragPtr(fragPtr), fragMaxSize(fragMaxSize) {
+  if(this->fragPtr == NULL || this->fragMaxSize < sizeof(this->fragMinimalPackage))
+    this->fragPtr = this->fragMinimalPackage;
+  if(this->fragMaxSize < sizeof(this->fragMinimalPackage))
+    this->fragMaxSize = sizeof(this->fragMinimalPackage);
   SetState(eDeviceState_offline);
   gLED.identify_off();
   gLED.blink_red();
@@ -43,7 +51,7 @@ void LoxLegacyExtension::sendCommandWithValues(LoxMsgLegacyCommand_t command, ui
 /***
  *  Send a fragmented command to the Miniserver
  ***/
-void LoxLegacyExtension::send_fragmented_data(LoxMsgLegacyFragmentedCommand_t fragCommand, const void *buffer, uint32_t byteCount) {
+void LoxLegacyExtension::send_fragmented_message(LoxMsgLegacyFragmentedCommand_t fragCommand, const void *buffer, uint32_t byteCount) {
   // never send fragmented package if the extension is not active, except for the page CRC command.
   if ((this->state != eDeviceState_online or this->isMuted) and FragCmd_page_CRC_external != fragCommand)
     return;
@@ -301,6 +309,39 @@ void LoxLegacyExtension::PacketFromExtension(LoxCanMessage &message) {
  *  Packages with firmware update data, sent to all extensions of a certain type.
  ***/
 void LoxLegacyExtension::PacketFirmwareUpdate(LoxCanMessage &message) {
+}
+
+/***
+ *  Fragmented package received
+ ***/
+void LoxLegacyExtension::FragmentedPacketToExtension(LoxMsgLegacyFragmentedCommand_t fragCommand, const void *fragData, int size)
+{
+  switch (fragCommand) {
+  case FragCmd_CryptoChallengeRequest: // The authorization scheme is identical to the NAT extensions
+    static uint32_t decryptData[4]; // 16 bytes
+    memcpy(decryptData, fragData, sizeof(decryptData));
+    CryptoCanAlgo_DecryptInitPacket((uint8_t *)decryptData, this->serial);
+    if(decryptData[0] == 0xdeadbeef) {
+      CryptoCanAlgo_SolveChallenge(decryptData[1], this->serial, this->cryptDeviceID, this->cryptAesKey, &this->cryptAesIV);
+      memset(decryptData, 0xa5, sizeof(decryptData));
+      decryptData[0] = 0xdeadbeef;
+      decryptData[1] = random_range(0, 0xFFFF);
+      CryptoCanAlgo_EncryptDataPacket((uint8_t *)decryptData, this->cryptAesKey, this->cryptAesIV);
+      send_fragmented_message(FragCmd_CryptoChallengeReply, decryptData, sizeof(decryptData));
+    }
+    break;
+  case FragCmd_CryptoChallengeReply:
+    memcpy(decryptData, fragData, sizeof(decryptData));
+    CryptoCanAlgo_DecryptDataPacket((uint8_t *)decryptData, this->cryptAesKey, this->cryptAesIV);
+    if(decryptData[0] == 0xdeadbeef) {
+      memset(decryptData, 0xa5, sizeof(decryptData));
+      decryptData[0] = 0xdeadbeef;
+      decryptData[1] = random_range(0, 0xFFFF);
+      CryptoCanAlgo_EncryptDataPacket((uint8_t *)decryptData, this->cryptAesKey, this->cryptAesIV);
+      send_fragmented_message(FragCmd_CryptoChallengeReply, decryptData, sizeof(decryptData));
+    }
+    break;
+  }
 }
 
 /***

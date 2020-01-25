@@ -10,6 +10,9 @@
 #include <assert.h>
 #include <__cross_studio_io.h>
 #include <string.h>
+extern "C" {
+  #include "CryptoCanAlgo.h"
+}
 
 /***
  *  Update the extension state
@@ -39,5 +42,10 @@ LoxExtension::LoxExtension(LoxCANBaseDriver &driver, uint32_t serial, eDeviceTyp
   debug_printf("LoxExtension(%07x,%04x,%d,%d)\n", this->serial, this->device_type, this->hardware_version, this->version);
 #endif
   SetState(eDeviceState_offline);
+
+  // the default device ID is the master device ID. Tree devices should override this
+  // to return the HAL_GetUID(), which is what real Tree devices do.
+  memcpy(this->cryptDeviceID, CryptoMasterDeviceID, sizeof(CryptoMasterDeviceID));
+
   driver.AddExtension(this);
 }

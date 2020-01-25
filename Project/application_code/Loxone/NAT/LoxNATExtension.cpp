@@ -9,6 +9,10 @@
 #include "LED.hpp"
 #include "LoxCANBaseDriver.hpp"
 #include "global_functions.hpp"
+extern "C" {
+  #include "CryptoCanAlgo.h"
+}
+#include "stm32f1xx_hal.h" // HAL_IncTick
 #include <assert.h>
 #include <__cross_studio_io.h>
 #include <string.h>
@@ -89,7 +93,7 @@ void LoxNATExtension::send_frequency_value(uint8_t index, uint32_t value) {
 /***
  *  Send a fragmented package, which can be longer than 7 bytes.
  ***/
-void LoxNATExtension::send_fragmented_message(LoxMsgNATCommand_t command, const void *data, int size, uint8_t deviceNAT) {
+void LoxNATExtension::send_fragmented_message(LoxMsgNATCommand_t command, const void *data, int size) {
   LoxCanMessage msg;
 
   // Send the fragmented header
@@ -161,7 +165,7 @@ void LoxNATExtension::send_info_package(LoxMsgNATCommand_t command, uint8_t /*eA
   infoPackage.reason = reason;
   infoPackage.device_type = this->device_type;
   infoPackage.hardware_version = this->hardware_version;
-  send_fragmented_message(command, &infoPackage, sizeof(infoPackage), 0x00);
+  send_fragmented_message(command, &infoPackage, sizeof(infoPackage));
 }
 
 /***
@@ -347,6 +351,50 @@ void LoxNATExtension::ReceiveDirectFragment(LoxMsgNATCommand_t command, uint8_t 
     break;
   case Update_Reply:
     update((const eUpdatePackage *)data);
+    break;
+  case CryptoDeviceIdRequest: // so far only Tree devices are asked for a DeviceId
+    static uint32_t decryptData[4]; // 16 bytes
+    memcpy(decryptData, data, sizeof(decryptData));
+    CryptoCanAlgo_DecryptInitPacketLegacy((uint8_t *)decryptData, sizeof(decryptData), this->serial);
+    static uint32_t replyData[8]; // 32 bytes
+    memset(replyData, 0, sizeof(replyData));
+    if(decryptData[0] == 0xdeadbeef) {
+      replyData[0] = 0xdeadbeef;
+    } else { // illegal request?
+      replyData[0] = 0; // return a correct, but invalid reply
+    }
+    replyData[1] = random_range(0, 0xFFFF);
+    // generate a base serial from the STM32 UID
+    // Warning: be aware that two relay extension need two different serial numbers!
+    HAL_GetUID((uint32_t *)this->cryptDeviceID);
+    memcpy(replyData + 2, this->cryptDeviceID, sizeof(cryptDeviceID));
+    CryptoCanAlgo_EncryptInitPacketLegacy((uint8_t *)replyData, sizeof(replyData), this->serial);
+    send_fragmented_message(CryptoDeviceIdReply, replyData, sizeof(replyData));
+    break;
+  case CryptoDeviceIdReply: // we should never receive this one
+    break;
+  case CryptoChallengeRequest: // from the Miniserver: check the authorization of an extension
+    memcpy(decryptData, data, sizeof(decryptData));
+    CryptoCanAlgo_DecryptInitPacket((uint8_t *)decryptData, this->serial);
+    if(decryptData[0] == 0xdeadbeef) {
+      CryptoCanAlgo_SolveChallenge(decryptData[1], this->serial, this->cryptDeviceID, this->cryptAesKey, &this->cryptAesIV);
+      memset(decryptData, 0xa5, sizeof(decryptData));
+      decryptData[0] = 0xdeadbeef;
+      decryptData[1] = random_range(0, 0xFFFF);
+      CryptoCanAlgo_EncryptDataPacket((uint8_t *)decryptData, this->cryptAesKey, this->cryptAesIV);
+      send_fragmented_message(CryptoChallengeReply, decryptData, sizeof(decryptData));
+    }
+    break;
+  case CryptoChallengeReply: // from the Miniserver: validate an existing authorization
+    memcpy(decryptData, data, sizeof(decryptData));
+    CryptoCanAlgo_DecryptDataPacket((uint8_t *)decryptData, this->cryptAesKey, this->cryptAesIV);
+    if(decryptData[0] == 0xdeadbeef) {
+      memset(decryptData, 0xa5, sizeof(decryptData));
+      decryptData[0] = 0xdeadbeef;
+      decryptData[1] = random_range(0, 0xFFFF);
+      CryptoCanAlgo_EncryptDataPacket((uint8_t *)decryptData, this->cryptAesKey, this->cryptAesIV);
+      send_fragmented_message(CryptoChallengeReply, decryptData, sizeof(decryptData));
+    }
     break;
   default:
     break;

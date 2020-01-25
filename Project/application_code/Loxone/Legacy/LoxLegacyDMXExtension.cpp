@@ -152,6 +152,7 @@ void LoxLegacyDMXExtension::FragmentedPacketToExtension(LoxMsgLegacyFragmentedCo
     break;
   }
   default:
+    LoxLegacyExtension::FragmentedPacketToExtension(fragCommand, fragData, size);
     break;
   }
 }

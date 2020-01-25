@@ -10,7 +10,7 @@
 
 #include "LoxLegacyExtension.hpp"
 #if EXTENSION_MODBUS
-#include "queue.h"
+//#include "queue.h"
 
 #define Modbus_RX_BUFFERSIZE 64
 #define Modbus_TX_BUFFERSIZE 1024
@@ -87,6 +87,7 @@ typedef struct {            // default values:
 
 class LoxLegacyModbusExtension : public LoxLegacyExtension {
   StaticQueue_t txQueue;
+  uint8_t fragData[sizeof(config)];
   sModbusConfig config;
   int32_t deviceTimeout[254];
   uint32_t characterTime_us; // duration for one character transmission in us

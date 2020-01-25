@@ -12,7 +12,7 @@
  *  Constructor
  ***/
 LoxBusTreeTouch::LoxBusTreeTouch(LoxCANBaseDriver &driver, uint32_t serial, eAliveReason_t alive)
-  : LoxBusTreeDevice(driver, serial, eDeviceType_t_TouchTree, 0, 10020130, 2, sizeof(config), &config, alive) {
+  : LoxBusTreeDevice(driver, serial, eDeviceType_t_TouchTree, 0, 10031114, 2, sizeof(config), &config, alive) {
 }
 
 void LoxBusTreeTouch::ConfigUpdate(void) {
