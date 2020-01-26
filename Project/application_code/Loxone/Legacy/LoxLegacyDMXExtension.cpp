@@ -39,7 +39,7 @@ typedef struct {
  *  Constructor
  ***/
 LoxLegacyDMXExtension::LoxLegacyDMXExtension(LoxCANBaseDriver &driver, uint32_t serial)
-  : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_DMXExtension << 24), eDeviceType_t_DMXExtension, 0, 9000915, fragData, sizeof(fragData)) {
+  : LoxLegacyExtension(driver, (serial & 0xFFFFFF) | (eDeviceType_t_DMXExtension << 24), eDeviceType_t_DMXExtension, 0, 10031107, fragData, sizeof(fragData)) {
 }
 
 /***
