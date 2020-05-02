@@ -1,0 +1,110 @@
+<!DOCTYPE CrossStudio_Project_File>
+<solution Name="LoxLink" target="8" version="2">
+  <project Name="LoxLink">
+    <configuration
+      CMSIS_CORE="Yes"
+      Name="Common"
+      Placement="Flash"
+      Target="STM32F103VE"
+      arm_architecture="v7M"
+      arm_core_type="Cortex-M3"
+      arm_fp_abi="Soft"
+      arm_fpu_type="None"
+      arm_interwork="No"
+      arm_linker_heap_size="128"
+      arm_linker_jtag_pad_pre_dr="1"
+      arm_linker_jtag_pad_pre_ir="5"
+      arm_linker_process_stack_size="1024"
+      arm_linker_stack_size="1024"
+      arm_simulator_memory_simulation_filename="$(TargetsDir)/STM32/STM32SimulatorMemory$(HostDLL)"
+      arm_simulator_memory_simulation_parameter="STM32F103VE;0x80000;0x10000"
+      arm_target_loader_applicable_loaders="Flash"
+      arm_target_loader_default_loader="Flash"
+      arm_target_trace_interface_type="None"
+      c_preprocessor_definitions="STM32F103xE;NESTED_INTERRUPTS;CTL_TASKING;USE_PROCESS_STACK"
+      c_user_include_directories="$(PackagesDir)/libraries/libctl/include;$(TargetsDir)/STM32/include;$(TargetsDir)/CMSIS_3/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc/Legacy;$(ProjectDir)/lib/STM32F1xx/STM32F1xx_HAL_Driver/Inc;$(ProjectDir)/lib/STM32F1xx/CMSIS/Include;$(ProjectDir)/lib/STM32F1xx/CMSIS/Device/ST/STM32L1xx/Include;$(ProjectDir)/lib/ctl_fifo/;$(ProjectDir)/application_code/st_code/;$(ProjectDir)/application_code;$(ProjectDir)/application_code/Loxone/;$(ProjectDir)/application_code/Loxone/Legacy/;$(ProjectDir)/application_code/Loxone/NAT/;$(ProjectDir)/application_code/Loxone/NAT/Tree/;$(ProjectDir)/application_code/Loxone/NAT/Tree/Devices/;$(ProjectDir)/application_code/Loxone/CAN Driver/;$(ProjectDir)/application_code/Loxone/CryptoCanCode/"
+      debug_register_definition_file="$(TargetsDir)/STM32/STM32F103_Peripherals.xml"
+      link_use_multi_threaded_libraries="Yes"
+      linker_memory_map_file="$(TargetsDir)/STM32/STM32F103VE_MemoryMap.xml"
+      linker_section_placement_file="$(StudioDir)/targets/Cortex_M/flash_placement.xml"
+      macros="DeviceVectorsFile=STM32F103xE.vec"
+      project_directory=""
+      project_type="Executable"
+      property_groups_file_path="$(TargetsDir)/STM32/propertyGroups.xml"
+      target_get_partname_script="GetPartName()"
+      target_match_partname_script="MatchPartName(&quot;$(Target)&quot;)"
+      target_reset_script="Reset()"
+      target_script_file="$(TargetsDir)/STM32/STM32_Target.js"
+      target_trace_initialize_script="EnableTrace(&quot;$(TraceInterfaceType)&quot;)" />
+    <configuration Name="RAM" target_reset_script="Reset()" />
+    <configuration
+      Name="Flash"
+      arm_target_flash_loader_file_path="$(LOADER:$(TargetsDir)/STM32/Release/Loader_rpc.elf)"
+      arm_target_loader_can_erase_all="Yes"
+      arm_target_loader_can_lock_all="No"
+      arm_target_loader_can_lock_range="No"
+      arm_target_loader_can_unlock_all="No"
+      arm_target_loader_can_unlock_range="No"
+      target_reset_script="FLASHReset()" />
+    <folder
+      Name="application_code"
+      exclude=""
+      filter="*.c;*.cpp;*.h;*.hpp;*.s"
+      path="application_code"
+      recurse="Yes" />
+    <folder Name="System Files">
+      <file file_name="$(StudioDir)/source/thumb_crt0.s" />
+      <file file_name="$(TargetsDir)/STM32/STM32_ctl.c" />
+      <file file_name="$(TargetsDir)/STM32/STM32_Startup.s" />
+      <file file_name="$(TargetsDir)/STM32/STM32_Target.js">
+        <configuration Name="Common" file_type="Reset Script" />
+      </file>
+      <file file_name="$(PackagesDir)/libraries/libctl/source/threads.js" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/include/ctl.h" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_sem.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_mutex.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_mq.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_mem_blk.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_libc.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_evt.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_bq.c" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_cm3.s" />
+      <file file_name="$(PackagesDir)/libraries/libctl/source/ctl_cm3_int.s" />
+    </folder>
+    <folder Name="lib">
+      <folder
+        Name="STM32F1xx"
+        exclude=""
+        filter=""
+        path="lib/STM32F1xx"
+        recurse="Yes" />
+      <folder Name="ctl_fifo">
+        <file file_name="lib/ctl_fifo/ctl_fifo.c" />
+        <file file_name="lib/ctl_fifo/ctl_fifo.h" />
+      </folder>
+    </folder>
+  </project>
+  <configuration
+    Name="Debug"
+    c_preprocessor_definitions="DEBUG"
+    gcc_debugging_level="Level 3"
+    gcc_optimization_level="None"
+    linker_printf_fp_enabled="Float" />
+  <configuration
+    Name="Release"
+    c_preprocessor_definitions="NDEBUG"
+    gcc_debugging_level="None"
+    gcc_omit_frame_pointer="Yes"
+    gcc_optimization_level="Level 1" />
+  <configuration
+    Name="Common"
+    arm_architecture="v7M"
+    arm_core_type="Cortex-M3"
+    arm_linker_heap_size="2048"
+    arm_linker_stack_size="2048"
+    c_preprocessor_definitions="STARTUP_FROM_RESET"
+    gcc_c_language_standard="gnu11"
+    gcc_cplusplus_language_standard="gnu++11"
+    target_reset_script="" />
+</solution>
