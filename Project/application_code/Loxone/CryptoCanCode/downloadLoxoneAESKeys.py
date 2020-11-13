@@ -6,7 +6,7 @@
 import struct
 import ftplib
 import binascii
-import StringIO
+import io
 import sys
 
 loxoneMiniServerIP = '192.168.178.200'  # IP address of the Loxone Miniserver
@@ -22,26 +22,26 @@ def RSHash(key):
     a = 63689
     hash = 0
     for i in range(len(key)):
-        hash = hash * a + ord(key[i])
+        hash = hash * a + key[i]
         hash = hash & 0xFFFFFFFF
         a = a * 378551
     return hash
 def JSHash(key):
     hash = 1315423911
     for i in range(len(key)):
-        hash ^= (hash >> 2) + ord(key[i]) + (hash * 32)
+        hash ^= (hash >> 2) + key[i] + (hash * 32)
         hash = hash & 0xFFFFFFFF
     return hash
 def DJBHash(key):
     hash = 5381
     for i in range(len(key)):
-        hash += hash * 32 + ord(key[i])
+        hash += hash * 32 + key[i]
         hash = hash & 0xFFFFFFFF
     return hash
 def DEKHash(key):
     hash = len(key)
     for i in range(len(key)):
-        hash = ((hash << 5) ^ (hash >> 27)) ^ ord(key[i])
+        hash = ((hash << 5) ^ (hash >> 27)) ^ key[i]
         hash = hash & 0xFFFFFFFF
     return hash
 
@@ -54,7 +54,7 @@ ftp.cwd('update')
 version = ftp.nlst()[0].split(' ')[-1].split('_')[0]
 
 # Load DigitalInputTree update into a buffer
-sio = StringIO.StringIO()
+sio = io.BytesIO()
 def handle_binary(more_data):
     sio.write(more_data)
 ftp.retrbinary("RETR %s_B1E1424BFF667AF471D715EE6745FDF0.upd" % version, callback=handle_binary)
@@ -73,7 +73,7 @@ if offset >= 0:
     def hexCStr(buf):
         str = ''
         for val in buf:
-            str += '0x%02x,' % ord(val)
+            str += '0x%02x,' % val
         return str[:-1]
 
     f = open('secrets.c', 'w')
