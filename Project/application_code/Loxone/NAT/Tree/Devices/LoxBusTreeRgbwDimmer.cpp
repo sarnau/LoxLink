@@ -25,7 +25,9 @@ void LoxBusTreeRgbwDimmer::ConfigLoadDefaults(void) {
 }
 
 void LoxBusTreeRgbwDimmer::ReceiveDirect(LoxCanMessage &message) {
+    #if DEBUG
     message.print(this->driver);
+    #endif
     LoxBusTreeDevice::ReceiveDirect(message);
 }
 
