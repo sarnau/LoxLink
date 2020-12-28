@@ -75,7 +75,7 @@ void LoxNATExtension::send_analog_value(uint8_t index, uint32_t value, uint16_t 
   LoxCanMessage msg;
   msg.value8 = index;
   msg.data[2] = flags >> 8;
-  msg.data[1] = format & (flags & 0xF0);
+  msg.data[1] = format | (flags & 0xF0);
   msg.value32 = value;
   lox_send_package_if_nat(Analog_Value, msg);
 }
