@@ -374,6 +374,15 @@ void LoxNATExtension::ReceiveDirectFragment(LoxMsgNATCommand_t command, uint8_t 
   case CryptoDeviceIdReply: // we should never receive this one
     break;
   case CryptoChallengeRequest: // from the Miniserver: check the authorization of an extension
+    if(this->driver.isTreeBusDriver()){
+      // The TreeDevice overrides the Master cryptDeviceID after it has received a
+      // CryptoDeviceIdRequest, but this process only happens the first time that the
+      // Miniserver discovers the TreeDevice. If the LoxLink-based TreeDevice gets reset,
+      // the cryptDeviceID variable gets reset to its default state. This means that the
+      // TreeDevice will encrypt the CryptoDeviceIdReply with the Master cryptDeviceID
+      // while the Miniserver expects that the UID will be used.
+      HAL_GetUID((uint32_t *)this->cryptDeviceID);
+    }
     memcpy(decryptData, data, sizeof(decryptData));
     CryptoCanAlgo_DecryptInitPacket((uint8_t *)decryptData, this->serial);
     if(decryptData[0] == 0xdeadbeef) {
