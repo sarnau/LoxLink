@@ -14,7 +14,7 @@ uint32_t gRandomSeed = 1;
 uint16_t random_range(uint16_t minimum, uint16_t maximum) {
   gRandomSeed = 1103515245 * gRandomSeed + 12345;
   uint16_t value = (gRandomSeed >> 16) & 0x7FFF;
-  uint16_t range = maximum - minimum + 1;
+  uint32_t range = (uint32_t)maximum - minimum + 1;
   return value % range + minimum;
 }
 
