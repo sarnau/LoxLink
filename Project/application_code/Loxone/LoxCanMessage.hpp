@@ -15,32 +15,37 @@ class LoxCANBaseDriver;
 
 // All Loxone extension device types
 typedef enum /*: uint16_t*/ {
-  eDeviceType_t_Miniserver = 0x0000,              // broadcasts sent from the Miniserver
-  eDeviceType_t_Extension = 0x0001,               // <https://shop.loxone.com/enuk/extension.html>
-  eDeviceType_t_DimmerExtension = 0x0002,         // <https://shop.loxone.com/enuk/extension.html>
-  eDeviceType_t_EnOceanExtension = 0x0003,        // <https://shop.loxone.com/enuk/enocean-extension.html>
-  eDeviceType_t_DMXExtension = 0x0004,            // <https://shop.loxone.com/enuk/dmx-extension.html>
-  eDeviceType_t_OneWireExtension = 0x0005,        // <https://shop.loxone.com/enuk/1-wire-extension.html>
-  eDeviceType_t_RS232Extension = 0x0006,          // <https://shop.loxone.com/enuk/rs232-extension.html>
-  eDeviceType_t_RS485Extension = 0x0007,          // <https://shop.loxone.com/enuk/rs485-extension.html>
-  eDeviceType_t_IRExtension = 0x0008,             // <http://www.loxone.com/dede/service/dokumentation/extensions/ir.html> - discontinued
-  eDeviceType_t_ModbusExtension = 0x0009,         // <https://shop.loxone.com/enuk/modbus-extension.html>
-  eDeviceType_t_FroelingExtension = 0x000a,       // <https://shop.loxone.com/enuk/froeling-extension.html>
-  eDeviceType_t_RelayExtension = 0x000b,          // <https://shop.loxone.com/enuk/relay-extension.html>
-  eDeviceType_t_AirBaseExtension = 0x000c,        // <https://shop.loxone.com/enuk/air-base-extension.html>
-  eDeviceType_t_DaliExtension = 0x000d,           // <https://shop.loxone.com/enuk/dali-extension.html>
-  eDeviceType_t_Modbus232Extension = 0x000e,      // unreleased
-  eDeviceType_t_FroelingExtensionSerial = 0x000f, // The Froehling Extension can't receive at this type, because 0x1F is used for the legacy software update. For Loxone Link the extension uses eDeviceType_t_FroelingExtension.
-  eDeviceType_t_NATProtocol = 0x0010,             // LoxCmdNATBus_t_LoxoneLink
-  eDeviceType_t_TreeBusProtocol = 0x0011,         // LoxCmdNATBus_t_TreeBus
-  // the following extensions are all NAT based
-  eDeviceType_t_InternormExtension = 0x0012,   // <https://shop.loxone.com/enuk/internorm-extension.html>
-  eDeviceType_t_TreeBaseExtension = 0x0013,    // <https://shop.loxone.com/enuk/tree-extension.html>
-  eDeviceType_t_DIExtension = 0x0014,          // <https://shop.loxone.com/enuk/di-extension.html>
-  eDeviceType_t_KNXExtension = 0x0015,         // unreleased
-  eDeviceType_t_AIExtension = 0x0016,          // <https://shop.loxone.com/enuk/ai-extension.html>
-  eDeviceType_t_AOExtension = 0x0017,          // <https://shop.loxone.com/enuk/ao-extension.html>
-  eDeviceType_t_LegacySoftwareUpdate = 0x001F, // only used for legacy software updates
+  eDeviceType_t_Miniserver = 0x0000,                  // broadcasts sent from the Miniserver
+  eDeviceType_t_Extension = 0x0001,                   // <https://shop.loxone.com/enuk/extension.html>
+  eDeviceType_t_DimmerExtension = 0x0002,             // <https://shop.loxone.com/enuk/extension.html>
+  eDeviceType_t_EnOceanExtension = 0x0003,            // <https://shop.loxone.com/enuk/enocean-extension.html>
+  eDeviceType_t_DMXExtension = 0x0004,                // <https://shop.loxone.com/enuk/dmx-extension.html>
+  eDeviceType_t_OneWireExtension = 0x0005,            // <https://shop.loxone.com/enuk/1-wire-extension.html>
+  eDeviceType_t_RS232Extension = 0x0006,              // <https://shop.loxone.com/enuk/rs232-extension.html>
+  eDeviceType_t_RS485Extension = 0x0007,              // <https://shop.loxone.com/enuk/rs485-extension.html>
+  eDeviceType_t_IRExtension = 0x0008,                 // <http://www.loxone.com/dede/service/dokumentation/extensions/ir.html> - discontinued
+  eDeviceType_t_ModbusExtension = 0x0009,             // <https://shop.loxone.com/enuk/modbus-extension.html>
+  eDeviceType_t_FroelingExtension = 0x000a,           // <https://shop.loxone.com/enuk/froeling-extension.html>
+  eDeviceType_t_RelayExtension = 0x000b,              // <https://shop.loxone.com/enuk/relay-extension.html>
+  eDeviceType_t_AirBaseExtension = 0x000c,            // <https://shop.loxone.com/enuk/air-base-extension.html>
+  eDeviceType_t_DaliExtension = 0x000d,               // <https://shop.loxone.com/enuk/dali-extension.html>
+  eDeviceType_t_Modbus232Extension = 0x000e,          // unreleased
+  eDeviceType_t_FroelingExtensionSerial = 0x000f,     // The Froehling Extension can't receive at this type, because 0x1F is used for the legacy software update. For Loxone Link the extension uses eDeviceType_t_FroelingExtension.
+  eDeviceType_t_NATProtocol = 0x0010,                 // LoxCmdNATBus_t_LoxoneLink
+  eDeviceType_t_TreeBusProtocol = 0x0011,             // LoxCmdNATBus_t_TreeBus
+  // the following extensions are all NAT based      
+  eDeviceType_t_InternormExtension = 0x0012,          // <https://shop.loxone.com/enuk/internorm-extension.html>
+  eDeviceType_t_TreeBaseExtension = 0x0013,           // <https://shop.loxone.com/enuk/tree-extension.html>
+  eDeviceType_t_DIExtension = 0x0014,                 // <https://shop.loxone.com/enuk/di-extension.html>
+  eDeviceType_t_KNXExtension = 0x0015,                // unreleased
+  eDeviceType_t_AIExtensionV1 = 0x0016,               // <https://shop.loxone.com/enuk/ai-extension.html>
+  eDeviceType_t_AOExtension = 0x0017,                 // <https://shop.loxone.com/enuk/ao-extension.html>
+  eDeviceType_t_SchuecoExtension = 0x0018,            // <https://shop.loxone.com/enuk/schueco-extension.html>
+  eDeviceType_t_AIExtension = 0x0019,                 // <https://shop.loxone.com/enuk/ai-extension.html>
+
+  eDeviceType_t_LegacySoftwareUpdate = 0x001F,        // only used for legacy software updates
+  eDeviceType_t_MBusExtension = 0x0020,               // unreleased Version:12.4.3.9 
+  eDeviceType_t_TestDevice = 0x001A,                  // To test new ID
 
   // These are Tree devices on the Tree bus behind a Tree Base Extension.
   eDeviceType_t_ValveActuatorTree = 0x8001,           // <https://shop.loxone.com/enuk/valve-actuator.html>
@@ -66,6 +71,19 @@ typedef enum /*: uint16_t*/ {
   eDeviceType_t_IntegratedWindowContactTree = 0x8015, // unreleased
   eDeviceType_t_LEDSpotRGBWTree = 0x8016,             // <https://shop.loxone.com/enuk/led-ceiling-spots-rgbw-global.html>
   eDeviceType_t_LEDSpotWWTree = 0x8017,               // <https://shop.loxone.com/enuk/led-ceiling-spots-ww-global.html>
+  eDeviceType_t_PowerTree = 0x8018,                   // unreleased
+  eDeviceType_t_Nano2RelayTree = 0x8019,              // <https://shop.loxone.com/enuk/nano-2-relay-tree.html>
+  eDeviceType_t_AhriTree = 0x801a,                    // unreleased
+  eDeviceType_t_MagnusTree = 0x801b,                  // unreleased
+  eDeviceType_t_NFCCodeTouch2Tree = 0x801c,           // <https://shop.loxone.com/enuk/nfc-code-touch-tree-white.html>
+  eDeviceType_t_TreeToAirBridgeTree = 0x801d,         // <https://shop.loxone.com/enuk/tree-to-air-bridge.html>
+  eDeviceType_t_NanoMotorControllerTree = 0x801e,     // <https://shop.loxone.com/enuk/nano-motor-controller-tree.html>
+  eDeviceType_t_TouchPureFlexTree = 0x801f,           // <https://shop.loxone.com/enuk/touch-pure-flex-tree-white.html>
+  eDeviceType_t_BelimoTree = 0x8020,                  // <https://shop.loxone.com/enuk/belimo-tree.html>
+  eDeviceType_t_PowerSupplyBackupTree = 0x8021,       // <https://shop.loxone.com/enuk/power-supply-backup.html>
+  eDeviceType_t_TouchPureCO2Tree = 0x8022,            // <https://shop.loxone.com/enuk/touch-pure-co2-tree-white.html>
+  eDeviceType_t_WallboxTree = 0x8023,                 // <https://shop.loxone.com/enuk/wallbox-tree-16a.html>
+  eDeviceType_t_TestDeviceTree = 0x8004               // To test new IDs
 } eDeviceType_t;
 
 /////////////////////////////////////////////////////////////////
